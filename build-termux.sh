@@ -1,7 +1,7 @@
 #!/data/data/com.termux/files/usr/bin/bash
 set -e
 pkg update -y
-pkg install -y openjdk-17 wget unzip git
+pkg install -y openjdk-17 wget unzip git aapt2
 export JAVA_HOME=$PREFIX/opt/openjdk
 if [ ! -d "$JAVA_HOME" ]; then export JAVA_HOME=$PREFIX/lib/jvm/java-17-openjdk; fi
 export PATH="$JAVA_HOME/bin:$PATH"
