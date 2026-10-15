@@ -17,6 +17,7 @@ public class ScheduleReceiver extends BroadcastReceiver {
         if (address == null || address.trim().isEmpty() || body == null || body.trim().isEmpty() || id <= 0) return;
 
         Db db = new Db(context);
+        db.deleteSchedule(id);
         db.status(id, "جارٍ الإرسال");
         db.saveOutgoingToSystemProvider(context, id);
         try {
