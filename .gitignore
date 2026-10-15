@@ -1,0 +1,14 @@
+.gradle/
+build/
+app/build/
+local.properties
+*.jks
+*.keystore
+key.properties
+google-services.json
+.idea/
+*.iml
+
+one-click.sh.backup
+*.apk
+*.zip

@@ -1,0 +1,1 @@
+package com.hashem.sms; import android.content.*; public class SentReceiver extends BroadcastReceiver{public void onReceive(Context c,Intent i){long id=i.getLongExtra("id",-1);if(id>0)new Db(c).status(id,getResultCode()==-1?"sent":"failed");}}

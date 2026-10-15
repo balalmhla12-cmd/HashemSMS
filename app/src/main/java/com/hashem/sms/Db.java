@@ -1,0 +1,16 @@
+package com.hashem.sms;
+import android.content.*;import android.database.sqlite.*;import android.database.*;import java.util.*;
+public class Db extends SQLiteOpenHelper{
+ public Db(Context c){super(c,"hashem.db",null,2);} 
+ public void onCreate(SQLiteDatabase d){d.execSQL("CREATE TABLE messages(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,type TEXT,status TEXT,ts INTEGER,thread INTEGER,read INTEGER DEFAULT 0,star INTEGER DEFAULT 0)");d.execSQL("CREATE TABLE groups(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE)");d.execSQL("CREATE TABLE group_members(gid INTEGER,address TEXT,name TEXT,PRIMARY KEY(gid,address))");d.execSQL("CREATE TABLE schedules(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,at INTEGER)");}
+ public void onUpgrade(SQLiteDatabase d,int a,int b){if(a<2){d.execSQL("ALTER TABLE messages ADD COLUMN star INTEGER DEFAULT 0");}}
+ public long addMessage(String a,String b,String t,String s){ContentValues v=cv(a,b,t,s);return getWritableDatabase().insert("messages",null,v);}
+ public void status(long id,String s){ContentValues v=new ContentValues();v.put("status",s);getWritableDatabase().update("messages",v,"id=?",new String[]{""+id});}
+ private ContentValues cv(String a,String b,String t,String s){ContentValues v=new ContentValues();v.put("address",a);v.put("body",b);v.put("type",t);v.put("status",s);v.put("ts",System.currentTimeMillis());return v;}
+ public Cursor list(String filter){String w="";if("unread".equals(filter))w=" WHERE read=0";else if("failed".equals(filter))w=" WHERE status='failed' OR status='لم يتم الإرسال'";else if("archived".equals(filter))w=" WHERE type='archived'";else if("blocked".equals(filter))w=" WHERE type='blocked'";else if("trash".equals(filter))w=" WHERE type='trash'";return getReadableDatabase().rawQuery("SELECT * FROM messages"+w+" ORDER BY ts DESC",null);}
+ public Cursor thread(String address){return getReadableDatabase().query("messages",null,"address=? AND type!='trash'",new String[]{address},null,null,"ts ASC");}
+ public Cursor messagesByIds(ArrayList<Long> ids){if(ids.isEmpty())return getReadableDatabase().rawQuery("SELECT * FROM messages WHERE 1=0",null);StringBuilder q=new StringBuilder();String[] a=new String[ids.size()];for(int i=0;i<ids.size();i++){if(i>0)q.append(',');q.append('?');a[i]=String.valueOf(ids.get(i));}return getReadableDatabase().rawQuery("SELECT * FROM messages WHERE id IN ("+q+") ORDER BY ts ASC",a);}
+ public void deleteMessages(ArrayList<Long> ids){if(ids.isEmpty())return;StringBuilder q=new StringBuilder();String[] a=new String[ids.size()];for(int i=0;i<ids.size();i++){if(i>0)q.append(',');q.append('?');a[i]=String.valueOf(ids.get(i));}ContentValues v=new ContentValues();v.put("type","trash");getWritableDatabase().update("messages",v,"id IN ("+q+")",a);}
+ public void starMessages(ArrayList<Long> ids){if(ids.isEmpty())return;StringBuilder q=new StringBuilder();String[] a=new String[ids.size()];for(int i=0;i<ids.size();i++){if(i>0)q.append(',');q.append('?');a[i]=String.valueOf(ids.get(i));}getWritableDatabase().execSQL("UPDATE messages SET star=CASE WHEN star=1 THEN 0 ELSE 1 END WHERE id IN ("+q+")",a);}
+ public void deleteThread(String address){ContentValues v=new ContentValues();v.put("type","trash");getWritableDatabase().update("messages",v,"address=?",new String[]{address});}
+}

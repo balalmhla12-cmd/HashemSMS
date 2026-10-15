@@ -1,0 +1,5 @@
+plugins { id 'com.android.application' }
+
+android { namespace 'com.hashem.sms'; compileSdk 36
+    defaultConfig { applicationId 'com.hashem.sms'; minSdk 26; targetSdk 36; versionCode 3; versionName '1.2.0' }
+}

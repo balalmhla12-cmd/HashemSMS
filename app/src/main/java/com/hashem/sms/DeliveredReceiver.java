@@ -1,0 +1,1 @@
+package com.hashem.sms; import android.content.*; public class DeliveredReceiver extends BroadcastReceiver{public void onReceive(Context c,Intent i){long id=i.getLongExtra("id",-1);if(id>0&&getResultCode()==-1)new Db(c).status(id,"delivered");}}
