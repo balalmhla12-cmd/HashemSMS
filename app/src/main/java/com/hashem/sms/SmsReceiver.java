@@ -22,7 +22,8 @@ public class SmsReceiver extends BroadcastReceiver {
   for (SmsMessage part : parts) if (part != null && part.getMessageBody() != null) text.append(part.getMessageBody());
   String body = text.toString();
   if (address == null || body.isEmpty()) return;
-  new Db(context).addMessage(address, body, "in", "received");
+  Db db = new Db(context);
+  long providerId = -1;
   try {
    ContentValues values = new ContentValues();
    values.put(Telephony.Sms.ADDRESS, address);
@@ -31,12 +32,13 @@ public class SmsReceiver extends BroadcastReceiver {
    values.put(Telephony.Sms.READ, 0);
    values.put(Telephony.Sms.SEEN, 0);
    values.put(Telephony.Sms.TYPE, Telephony.Sms.MESSAGE_TYPE_INBOX);
-   context.getContentResolver().insert(Telephony.Sms.Inbox.CONTENT_URI, values);
-  } catch (SecurityException ignored) {
-   // Provider access depends on the app's default SMS role.
-  } catch (IllegalArgumentException ignored) {
-   // Keep the local copy if the device provider rejects the record.
+   android.net.Uri saved = context.getContentResolver().insert(Telephony.Sms.Inbox.CONTENT_URI, values);
+   if (saved != null && saved.getLastPathSegment() != null) providerId = Long.parseLong(saved.getLastPathSegment());
+  } catch (Exception ignored) {
+   // Provider access depends on the app's default SMS role and device implementation.
   }
+  long localId = db.addMessage(address, body, "in", "received");
+  if (providerId > 0) db.linkProviderMessage(localId, providerId);
   notifyUser(context, address, body);
  }
  private void notifyUser(Context context, String address, String body) {
