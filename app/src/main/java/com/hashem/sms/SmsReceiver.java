@@ -39,7 +39,7 @@ public class SmsReceiver extends BroadcastReceiver {
   }
   long localId = db.addMessage(address, body, "in", "received");
   if (providerId > 0) db.linkProviderMessage(localId, providerId);
-  notifyUser(context, address, body);
+  if (!db.isConversationBlocked(address)) notifyUser(context, address, body);
  }
  private void notifyUser(Context context, String address, String body) {
   try {
