@@ -6,7 +6,7 @@ public class MainActivity extends Activity{
  public void onCreate(Bundle b){super.onCreate(b);db=new Db(this);build();requestPermissionsIfNeeded();}
  TextView tv(String s,int sp){TextView t=new TextView(this);t.setText(s);t.setTextSize(sp);t.setTextColor(Color.rgb(30,30,30));t.setPadding(24,16,24,16);return t;}
  Button button(String label){Button b=new Button(this);b.setText(label);return b;}
- @Override protected void onResume(){super.onResume();if(db!=null&&!systemSynced&&syncSystemMessages()){systemSynced=true;if(list!=null)render();}}
+ @Override protected void onResume(){super.onResume();if(db!=null){if(!systemSynced&&syncSystemMessages())systemSynced=true;if(list!=null)render();}}
  boolean syncSystemMessages(){if(!getPackageName().equals(Telephony.Sms.getDefaultSmsPackage(this)))return false;try{android.database.Cursor c=getContentResolver().query(Telephony.Sms.CONTENT_URI,new String[]{Telephony.Sms._ID,Telephony.Sms.ADDRESS,Telephony.Sms.BODY,Telephony.Sms.TYPE,Telephony.Sms.DATE,Telephony.Sms.READ},null,null,Telephony.Sms.DATE+" DESC");if(c==null)return false;while(c.moveToNext())db.importSystemMessage(c.getLong(0),c.getString(1),c.getString(2),c.getInt(3),c.getLong(4),c.getInt(5));c.close();return true;}catch(SecurityException e){return false;}}
  void build(){root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(8,8,8,8);root.setBackgroundColor(Color.rgb(255,251,254));
   LinearLayout bar=new LinearLayout(this);bar.setGravity(Gravity.CENTER_VERTICAL);title=tv("هاشم SMS",24);title.setTextColor(purple);bar.addView(title,new LinearLayout.LayoutParams(0,-2,1));Button def=button("تعيين كتطبيق SMS");def.setOnClickListener(v->requestDefault());bar.addView(def);root.addView(bar);
