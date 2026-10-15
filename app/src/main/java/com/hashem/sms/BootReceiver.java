@@ -31,8 +31,14 @@ public class BootReceiver extends BroadcastReceiver {
             scheduled.setAction(context.getPackageName() + ".SCHEDULED." + id);
             PendingIntent pi = PendingIntent.getBroadcast(context, (int)(id % 100000), scheduled,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-            if (at <= now) alarms.set(AlarmManager.RTC_WAKEUP, now + 5000, pi);
-            else alarms.set(AlarmManager.RTC_WAKEUP, at, pi);
+            long triggerAt = at <= now ? now + 5000 : at;
+            if (android.os.Build.VERSION.SDK_INT >= 31 && alarms.canScheduleExactAlarms()) {
+                alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi);
+            } else if (android.os.Build.VERSION.SDK_INT >= 23) {
+                alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi);
+            } else {
+                alarms.set(AlarmManager.RTC_WAKEUP, triggerAt, pi);
+            }
         }
         c.close();
     }
