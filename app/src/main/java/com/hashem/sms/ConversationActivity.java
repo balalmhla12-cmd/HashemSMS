@@ -22,6 +22,8 @@ public class ConversationActivity extends Activity {
 
     @Override public void onCreate(Bundle b){ super.onCreate(b); db=new Db(this); address=getIntent().getStringExtra("address"); if(address==null)address=""; db.markThreadRead(address); build(); render(); }
 
+    @Override protected void onResume(){super.onResume();if(db!=null&&messages!=null)render();}
+
     void build(){
         root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(Color.rgb(255,251,254));
         LinearLayout top=new LinearLayout(this); top.setGravity(Gravity.CENTER_VERTICAL);
