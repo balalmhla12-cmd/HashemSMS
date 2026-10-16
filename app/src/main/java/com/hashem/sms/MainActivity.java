@@ -74,7 +74,7 @@ public class MainActivity extends Activity{
   if(id<=0){runOnUiThread(()->{if(!isFinishing()&&!isDestroyed())Toast.makeText(this,"تعذّر حفظ الرسالة محليًا",Toast.LENGTH_LONG).show();});return false;}
   try{
    db.saveOutgoingToSystemProvider(getApplicationContext(),id);
-   SmsManager sm=subscriptionId>=0&&Build.VERSION.SDK_INT>=22?SmsManager.createForSubscriptionId(subscriptionId):SmsManager.getDefault();
+   SmsManager sm;if(subscriptionId>=0){if(Build.VERSION.SDK_INT>=31)sm=SmsManager.getDefault().createForSubscriptionId(subscriptionId);else sm=SmsManager.getSmsManagerForSubscriptionId(subscriptionId);}else sm=SmsManager.getDefault();
    ArrayList<String> parts=sm.divideMessage(body);ArrayList<PendingIntent> sent=new ArrayList<>(),del=new ArrayList<>();
    for(int i=0;i<parts.size();i++){Intent si=new Intent(getApplicationContext(),SentReceiver.class);si.putExtra("id",id);si.putExtra("partCount",parts.size());si.putExtra("partIndex",i);si.setAction(getPackageName()+".SENT."+id+"."+i);Intent di=new Intent(getApplicationContext(),DeliveredReceiver.class);di.putExtra("id",id);di.putExtra("partCount",parts.size());di.putExtra("partIndex",i);di.setAction(getPackageName()+".DELIVERED."+id+"."+i);sent.add(PendingIntent.getBroadcast(getApplicationContext(),1000+(int)(id%100000)*10+i,si,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));del.add(PendingIntent.getBroadcast(getApplicationContext(),2000+(int)(id%100000)*10+i,di,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));}
    sm.sendMultipartTextMessage(recipient,null,parts,sent,del);
