@@ -51,7 +51,7 @@ public class MainActivity extends Activity{
   LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.HORIZONTAL);
   Button selectAll=button("تحديد كل النتائج");Button clear=button("إلغاء التحديد");
   actions.addView(selectAll,new LinearLayout.LayoutParams(0,-2,1));actions.addView(clear,new LinearLayout.LayoutParams(0,-2,1));panel.addView(actions);
-  LinearLayout rows=new LinearLayout(this);rows.setOrientation(LinearLayout.VERTICAL);ScrollView scroll=new ScrollView(this);scroll.setFillViewport(false);scroll.addView(rows);panel.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
+  LinearLayout rows=new LinearLayout(this);rows.setOrientation(LinearLayout.VERTICAL);ScrollView scroll=new ScrollView(this);scroll.setFillViewport(false);scroll.addView(rows);int pickerHeight=(int)(getResources().getDisplayMetrics().density*360);panel.addView(scroll,new LinearLayout.LayoutParams(-1,pickerHeight));
   final String[] currentQuery={""};
   Runnable refresh=()->{
    rows.removeAllViews();currentQuery[0]=query.getText().toString().trim().toLowerCase(Locale.ROOT);int shown=0;
