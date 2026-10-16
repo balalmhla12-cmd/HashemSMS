@@ -25,15 +25,20 @@ public class SmsReceiver extends BroadcastReceiver {
         }
         final PendingResult pendingResult = goAsync();
         final Context appContext = context.getApplicationContext();
-        new Thread(() -> {
-            try {
-                handleIncomingSms(appContext, intent);
-            } catch (Exception e) {
-                Log.e(TAG, "Failed to process incoming SMS broadcast", e);
-            } finally {
-                pendingResult.finish();
-            }
-        }, "hashem-sms-receiver").start();
+        try {
+            new Thread(() -> {
+                try {
+                    handleIncomingSms(appContext, intent);
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to process incoming SMS broadcast", e);
+                } finally {
+                    pendingResult.finish();
+                }
+            }, "hashem-sms-receiver").start();
+        } catch (Exception e) {
+            Log.e(TAG, "Unable to start background SMS processing", e);
+            pendingResult.finish();
+        }
     }
 
     private void handleIncomingSms(Context context, Intent intent) {
