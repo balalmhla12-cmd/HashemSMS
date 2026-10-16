@@ -106,8 +106,8 @@ int countUnreadForAddress(String address){android.database.Cursor c=db.getReadab
  }
  void selectedConversationMenu(View anchor){
   if(selectedConversations.isEmpty()){Toast.makeText(this,"حدد محادثة واحدة على الأقل",Toast.LENGTH_SHORT).show();return;}
-  PopupMenu menu=new PopupMenu(this,anchor);menu.getMenu().add("حذف إلى سلة المهملات");menu.getMenu().add("وضع علامة غير مقروءة");menu.getMenu().add("حظر المحددة");menu.getMenu().add("تثبيت المحددة");menu.getMenu().add("أرشفة المحددة");
-  menu.setOnMenuItemClickListener(item->{String x=item.getTitle().toString();ArrayList<String> chosen=new ArrayList<>(selectedConversations);
+  PopupMenu menu=new PopupMenu(this,anchor);menu.getMenu().add("تحديد كل المحادثات");menu.getMenu().add("حذف إلى سلة المهملات");menu.getMenu().add("وضع علامة غير مقروءة");menu.getMenu().add("حظر المحددة");menu.getMenu().add("تثبيت المحددة");menu.getMenu().add("أرشفة المحددة");
+  menu.setOnMenuItemClickListener(item->{String x=item.getTitle().toString();if(x.equals("تحديد كل المحادثات")){selectedConversations.clear();CursorWrapper allRows=new CursorWrapper(db.listThreads(filter));while(allRows.moveToNext())selectedConversations.add(allRows.getString("address"));allRows.close();render();return true;}ArrayList<String> chosen=new ArrayList<>(selectedConversations);
    if(x.equals("حذف إلى سلة المهملات"))new AlertDialog.Builder(this).setTitle("نقل المحادثات إلى المهملات").setMessage("سيتم نقل "+chosen.size()+" محادثة إلى سلة المهملات.").setNegativeButton("إلغاء",null).setPositiveButton("نقل",(d,w)->{for(String a:chosen)db.deleteThread(a);finishConversationSelection();}).show();
    else{for(String a:chosen){if(x.equals("وضع علامة غير مقروءة"))db.markThreadUnread(a);else if(x.equals("حظر المحددة"))db.setConversationFlag(a,"blocked",true);else if(x.equals("تثبيت المحددة"))db.setConversationFlag(a,"pinned",true);else if(x.equals("أرشفة المحددة"))db.setConversationFlag(a,"archived",true);}finishConversationSelection();}
    return true;
