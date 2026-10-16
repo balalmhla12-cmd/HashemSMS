@@ -14,7 +14,7 @@ public class SentReceiver extends BroadcastReceiver {
    int completed=prefs.getInt(prefix+"completed",0)+1,failures=prefs.getInt(prefix+"failures",0)+(success?0:1);boolean finished=completed>=total;
    SharedPreferences.Editor e=prefs.edit().putBoolean(prefix+"done_"+index,true).putInt(prefix+"completed",completed).putInt(prefix+"failures",failures);
    Db db=new Db(context);db.status(id,finished?(failures==0?"تم الإرسال":"لم يتم الإرسال"):"جارٍ الإرسال");
-   if(finished){db.updateSystemProviderStatus(context,id,failures==0);e.remove(prefix+"completed").remove(prefix+"failures");for(int i=0;i<total;i++)e.remove(prefix+"done_"+i);}
+   if(finished){if(failures>0)android.util.Log.e("HashemSMS","Multipart SMS send failed for message id="+id+" partsFailed="+failures);db.updateSystemProviderStatus(context,id,failures==0);e.remove(prefix+"completed").remove(prefix+"failures");for(int i=0;i<total;i++)e.remove(prefix+"done_"+i);}
    e.commit();
   }
  }
