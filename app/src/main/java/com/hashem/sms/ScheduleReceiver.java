@@ -21,7 +21,8 @@ public class ScheduleReceiver extends BroadcastReceiver {
         db.status(id, "جارٍ الإرسال");
         db.saveOutgoingToSystemProvider(context, id);
         try {
-            SmsManager sms = SmsManager.getDefault();
+            int subId = context.getSharedPreferences("sms_preferences", Context.MODE_PRIVATE).getInt("subscription_id", -1);
+            SmsManager sms = (Build.VERSION.SDK_INT >= 22 && subId >= 0) ? SmsManager.getSmsManagerForSubscriptionId(subId) : SmsManager.getDefault();
             ArrayList<String> parts = sms.divideMessage(body);
             ArrayList<PendingIntent> sent = new ArrayList<>();
             ArrayList<PendingIntent> delivered = new ArrayList<>();
