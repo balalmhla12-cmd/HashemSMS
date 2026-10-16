@@ -26,3 +26,5 @@
 ## البناء من Termux
 
 يوجد سكربت باسم `build-termux.sh` لمحاولة إعداد أدوات البناء وتجميع APK تجريبي محليًا.
+
+<!-- Build verification branch: validates the current phase 4b source without changing app behavior. -->
