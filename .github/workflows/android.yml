@@ -71,6 +71,7 @@ jobs:
             adb shell pm grant com.hashem.sms android.permission.RECEIVE_SMS || true
             adb shell pm grant com.hashem.sms android.permission.SEND_SMS || true
             adb shell pm grant com.hashem.sms android.permission.READ_CONTACTS || true
+            adb shell pm grant com.hashem.sms android.permission.READ_PHONE_STATE || true
             adb shell pm grant com.hashem.sms android.permission.POST_NOTIFICATIONS || true
             adb shell am start -W -n com.hashem.sms/.MainActivity
             sleep 5
