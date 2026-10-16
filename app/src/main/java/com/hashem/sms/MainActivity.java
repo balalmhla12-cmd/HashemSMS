@@ -68,7 +68,7 @@ public class MainActivity extends Activity{
   final String recipient=a==null?"":a.trim(),body=b==null?"":b;if(recipient.isEmpty()||body.trim().isEmpty()){Toast.makeText(this,"أدخل رقم الهاتف ونص الرسالة",Toast.LENGTH_SHORT).show();return;}
   final android.content.Context appContext=getApplicationContext();final Db appDb=new Db(appContext);chooseSmsSubscription(subId->SmsSending.EXECUTOR.execute(()->SmsSending.sendSmsInBackground(appContext,appDb,recipient,body,"MAIN",1000,2000,subId,true)));
  }
- void chooseSmsSubscription( void chooseSmsSubscription(java.util.function.IntConsumer action){
+ void chooseSmsSubscription(java.util.function.IntConsumer action){
   try{android.telephony.TelephonyManager tm=(android.telephony.TelephonyManager)getSystemService(TELEPHONY_SERVICE);
   if(Build.VERSION.SDK_INT<23||tm==null||tm.getPhoneCount()<=1){action.accept(-1);return;}}catch(SecurityException e){action.accept(-1);return;}
   if(checkSelfPermission("android.permission.READ_PHONE_STATE")!=PackageManager.PERMISSION_GRANTED){pendingSubscriptionAction=action;requestPermissions(new String[]{"android.permission.READ_PHONE_STATE"},61);return;}
