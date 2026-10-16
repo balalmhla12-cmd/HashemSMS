@@ -17,6 +17,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -49,3 +50,40 @@ jobs:
           name: HashemSMS-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Capture app screen on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          script: |
+            adb wait-for-device
+            adb shell pm wait-for-device
+            adb shell settings put global window_animation_scale 0
+            adb shell settings put global transition_animation_scale 0
+            adb shell settings put global animator_duration_scale 0
+            adb install -r app/build/outputs/apk/debug/app-debug.apk
+            adb shell pm grant com.hashem.sms android.permission.READ_SMS || true
+            adb shell pm grant com.hashem.sms android.permission.RECEIVE_SMS || true
+            adb shell pm grant com.hashem.sms android.permission.SEND_SMS || true
+            adb shell pm grant com.hashem.sms android.permission.READ_CONTACTS || true
+            adb shell pm grant com.hashem.sms android.permission.READ_PHONE_STATE || true
+            adb shell pm grant com.hashem.sms android.permission.POST_NOTIFICATIONS || true
+            adb shell am start -W -n com.hashem.sms/.MainActivity
+            sleep 5
+            mkdir -p preview
+            adb shell screencap -p /sdcard/hashemsms-preview.png
+            adb pull /sdcard/hashemsms-preview.png preview/hashemsms-preview.png
+            test -s preview/hashemsms-preview.png
+
+      - name: Upload visual preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: HashemSMS-visual-preview
+          path: preview/hashemsms-preview.png
+          if-no-files-found: error
+          retention-days: 14

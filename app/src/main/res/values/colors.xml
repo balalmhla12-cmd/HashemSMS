@@ -1,3 +1,23 @@
 <resources>
- <color name="primary">#6750A4</color><color name="surface">#FFFBFE</color><color name="surface_dark">#1C1B1F</color><color name="text">#1C1B1F</color><color name="text_dark">#E6E1E5</color>
+    <color name="primary">#08D9F5</color>
+    <color name="surface">#061F39</color>
+    <color name="surface_dark">#03162B</color>
+    <color name="text">#F3F8FF</color>
+    <color name="text_dark">#A8C2D8</color>
+    <color name="hs_background">#03162B</color>
+    <color name="hs_surface">#061F39</color>
+    <color name="hs_surface_elevated">#0A2A49</color>
+    <color name="hs_surface_selected">#0B4567</color>
+    <color name="hs_cyan">#08D9F5</color>
+    <color name="hs_cyan_bright">#13CFF3</color>
+    <color name="hs_cyan_dim">#087FA6</color>
+    <color name="hs_gold">#F4BC42</color>
+    <color name="hs_text_primary">#F3F8FF</color>
+    <color name="hs_text_secondary">#A8C2D8</color>
+    <color name="hs_outline">#145174</color>
+    <color name="hs_error">#FF6868</color>
+    <color name="hs_incoming_bubble">#123A5B</color>
+    <color name="hs_outgoing_bubble">#087FD0</color>
+    <color name="hs_chip">#082641</color>
+    <color name="hs_black">#020D1B</color>
 </resources>
