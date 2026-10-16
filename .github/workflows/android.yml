@@ -49,3 +49,32 @@ jobs:
           name: HashemSMS-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Capture app screen on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          script: |
+            adb install app/build/outputs/apk/debug/app-debug.apk
+            adb shell pm grant com.hashem.sms android.permission.READ_SMS || true
+            adb shell pm grant com.hashem.sms android.permission.RECEIVE_SMS || true
+            adb shell pm grant com.hashem.sms android.permission.SEND_SMS || true
+            adb shell pm grant com.hashem.sms android.permission.READ_CONTACTS || true
+            adb shell pm grant com.hashem.sms android.permission.POST_NOTIFICATIONS || true
+            adb shell am start -n com.hashem.sms/.MainActivity
+            sleep 8
+            mkdir -p preview
+            adb shell screencap -p /sdcard/hashemsms-preview.png
+            adb pull /sdcard/hashemsms-preview.png preview/hashemsms-preview.png
+
+      - name: Upload visual preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: HashemSMS-visual-preview
+          path: preview/hashemsms-preview.png
+          if-no-files-found: error
+          retention-days: 14
