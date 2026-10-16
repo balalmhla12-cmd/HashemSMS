@@ -15,7 +15,7 @@ public class SentReceiver extends BroadcastReceiver {
    SharedPreferences.Editor e=prefs.edit().putBoolean(prefix+"done_"+index,true).putInt(prefix+"completed",completed).putInt(prefix+"failures",failures);
    Db db=new Db(context);db.status(id,finished?(failures==0?"تم الإرسال":"لم يتم الإرسال"):"جارٍ الإرسال");
    if(finished){db.updateSystemProviderStatus(context,id,failures==0);e.remove(prefix+"completed").remove(prefix+"failures");for(int i=0;i<total;i++)e.remove(prefix+"done_"+i);}
-   e.apply();
+   e.commit();
   }
  }
 }
