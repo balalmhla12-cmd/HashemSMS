@@ -15,7 +15,7 @@ public class DeliveredReceiver extends BroadcastReceiver {
    int completed=prefs.getInt(prefix+"completed",0)+1,failures=prefs.getInt(prefix+"failures",0)+(success?0:1);boolean finished=completed>=total;
    SharedPreferences.Editor e=prefs.edit().putBoolean(prefix+"done_"+index,true).putInt(prefix+"completed",completed).putInt(prefix+"failures",failures);
    if(finished){new Db(context).status(id,failures==0?"تم التسليم":"لم يتم التسليم");e.remove(prefix+"completed").remove(prefix+"failures");for(int i=0;i<total;i++)e.remove(prefix+"done_"+i);}
-   e.apply();
+   e.commit();
   }
  }
 }
