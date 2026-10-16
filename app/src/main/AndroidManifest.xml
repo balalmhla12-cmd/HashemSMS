@@ -10,7 +10,7 @@
  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
  <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
  <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
- <application android:theme="@style/AppTheme" android:label="هاشم SMS" android:allowBackup="true" android:supportsRtl="true">
+ <application android:theme="@style/AppTheme" android:label="هاشم SMS" android:icon="@drawable/ic_hashem_sms" android:roundIcon="@drawable/ic_hashem_sms" android:allowBackup="true" android:supportsRtl="true">
   <activity android:name=".ConversationActivity" android:exported="false"/>
   <activity android:name=".MainActivity" android:exported="true">
    <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
