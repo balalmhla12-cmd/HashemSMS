@@ -28,7 +28,7 @@ public class ConversationActivity extends Activity {
     @Override protected void onResume(){super.onResume();if(db!=null&&messages!=null)render();}
 
     void build(){
-        root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setPadding(10,8,10,8); root.setBackgroundColor(Color.rgb(3,22,43));
+        root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setPadding(10,8,10,8); root.setBackgroundResource(R.drawable.hs_screen_background);
         LinearLayout top=new LinearLayout(this); top.setGravity(Gravity.CENTER_VERTICAL);top.setPadding(0,0,0,8);
         Button back=actionButton("‹",false); back.setTextSize(25); back.setOnClickListener(v->finish()); top.addView(back,new LinearLayout.LayoutParams(52,52));
         LinearLayout identity=new LinearLayout(this);identity.setOrientation(LinearLayout.VERTICAL);
@@ -36,11 +36,11 @@ public class ConversationActivity extends Activity {
         TextView subtitle=tv("رسائل نصية · SMS",12);subtitle.setTextColor(Color.rgb(168,194,216));subtitle.setPadding(8,0,8,0);
         identity.addView(selectionTitle);identity.addView(subtitle);top.addView(identity,new LinearLayout.LayoutParams(0,-2,1));
         Button more=actionButton("⋮",false);more.setTextSize(22);more.setOnClickListener(v->conversationMenu(v)); top.addView(more,new LinearLayout.LayoutParams(48,52)); root.addView(top);
-        search=new EditText(this); search.setHint("بحث في هذه المحادثة"); search.setSingleLine(); search.setTextSize(14);search.setPadding(16,4,16,4);search.setBackground(rounded(Color.rgb(6,31,57),Color.rgb(20,81,116),26));search.setVisibility(View.GONE);
+        search=new EditText(this); search.setHint("بحث في هذه المحادثة");search.setHintTextColor(Color.rgb(168,194,216));search.setTextColor(Color.rgb(243,248,255)); search.setSingleLine(); search.setTextSize(14);search.setPadding(16,4,16,4);search.setBackground(rounded(Color.rgb(6,31,57),Color.rgb(20,81,116),26));search.setVisibility(View.GONE);
         search.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int d){} public void onTextChanged(CharSequence s,int a,int b,int c){render();} public void afterTextChanged(Editable e){}}); root.addView(search);
         ScrollView sv=new ScrollView(this);sv.setClipToPadding(false);sv.setPadding(0,4,0,4); messages=new LinearLayout(this); messages.setOrientation(LinearLayout.VERTICAL); sv.addView(messages); root.addView(sv,new LinearLayout.LayoutParams(-1,0,1));
         LinearLayout composerRow=new LinearLayout(this);composerRow.setGravity(Gravity.CENTER_VERTICAL);composerRow.setPadding(8,6,4,6);composerRow.setBackground(rounded(Color.rgb(6,31,57),Color.rgb(20,81,116),30));
-        composer=new EditText(this); composer.setHint("رسالة نصية"); composer.setTextSize(16);composer.setMinLines(1);composer.setMaxLines(5);composer.setPadding(12,6,12,6);composer.setBackgroundColor(Color.TRANSPARENT);composerRow.addView(composer,new LinearLayout.LayoutParams(0,-2,1));
+        composer=new EditText(this); composer.setHint("رسالة نصية");composer.setHintTextColor(Color.rgb(168,194,216));composer.setTextColor(Color.rgb(243,248,255)); composer.setTextSize(16);composer.setMinLines(1);composer.setMaxLines(5);composer.setPadding(12,6,12,6);composer.setBackgroundColor(Color.TRANSPARENT);composerRow.addView(composer,new LinearLayout.LayoutParams(0,-2,1));
         Button send=actionButton("إرسال",true);send.setOnClickListener(v->send());LinearLayout.LayoutParams sendLp=new LinearLayout.LayoutParams(-2,46);sendLp.setMargins(4,0,0,0);composerRow.addView(send,sendLp);LinearLayout.LayoutParams rowLp=new LinearLayout.LayoutParams(-1,-2);rowLp.topMargin=8;root.addView(composerRow,rowLp); setContentView(root);
     }
 
