@@ -5,31 +5,17 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 
 public class SentReceiver extends BroadcastReceiver {
- @Override public void onReceive(Context context, Intent intent) {
-  long id = intent.getLongExtra("id", -1);
-  if (id <= 0) return;
-  int total = Math.max(1, intent.getIntExtra("partCount", 1));
-  int index = intent.getIntExtra("partIndex", 0);
-  boolean success = getResultCode() == -1;
-  String prefix = "message_" + id + "_";
-  synchronized (SentReceiver.class) {
-   SharedPreferences prefs = context.getSharedPreferences("sms_send_results", Context.MODE_PRIVATE);
-   if (prefs.getBoolean(prefix + "done_" + index, false)) return;
-   int completed = prefs.getInt(prefix + "completed", 0) + 1;
-   int failures = prefs.getInt(prefix + "failures", 0) + (success ? 0 : 1);
-   SharedPreferences.Editor editor = prefs.edit();
-   editor.putBoolean(prefix + "done_" + index, true);
-   editor.putInt(prefix + "completed", completed);
-   editor.putInt(prefix + "failures", failures);
-   Db db = new Db(context);
-   if (completed >= total) {
-    boolean allSent = failures == 0;
-    db.status(id, allSent ? "تم الإرسال" : "لم يتم الإرسال");
-    db.updateSystemProviderStatus(context, id, allSent);
-   } else {
-    db.status(id, "جارٍ الإرسال");
-   }
-   editor.apply();
+ @Override public void onReceive(Context context,Intent intent){
+  long id=intent.getLongExtra("id",-1);if(id<=0)return;
+  int total=Math.max(1,intent.getIntExtra("partCount",1)),index=intent.getIntExtra("partIndex",0);
+  boolean success=getResultCode()==android.app.Activity.RESULT_OK;String prefix="message_"+id+"_";
+  synchronized(SentReceiver.class){
+   SharedPreferences prefs=context.getSharedPreferences("sms_send_results",Context.MODE_PRIVATE);
+   if(prefs.getBoolean(prefix+"done_"+index,false))return;
+   int completed=prefs.getInt(prefix+"completed",0)+1,failures=prefs.getInt(prefix+"failures",0)+(success?0:1);
+   SharedPreferences.Editor e=prefs.edit().putBoolean(prefix+"done_"+index,true).putInt(prefix+"completed",completed).putInt(prefix+"failures",failures);
+   Db db=new Db(context);db.status(id,completed>=total?(failures==0?"تم الإرسال":"لم يتم الإرسال"):"جارٍ الإرسال");
+   if(completed>=total)db.updateSystemProviderStatus(context,id,failures==0);e.apply();
   }
  }
 }
