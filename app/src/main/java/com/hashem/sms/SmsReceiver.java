@@ -67,34 +67,50 @@ public class SmsReceiver extends BroadcastReceiver {
 
         Db db = new Db(context);
         long providerId = -1;
+        long effectiveTimestamp = timestamp > 0 ? timestamp : System.currentTimeMillis();
+        boolean duplicateFallback = false;
+        Db.PROVIDER_SYNC_LOCK.lock();
         try {
-            ContentValues values = new ContentValues();
-            values.put(Telephony.Sms.ADDRESS, address);
-            values.put(Telephony.Sms.BODY, body);
-            values.put(Telephony.Sms.DATE, timestamp > 0 ? timestamp : System.currentTimeMillis());
-            values.put(Telephony.Sms.READ, 0);
-            values.put(Telephony.Sms.SEEN, 0);
-            values.put(Telephony.Sms.TYPE, Telephony.Sms.MESSAGE_TYPE_INBOX);
-            Uri saved = context.getContentResolver().insert(Telephony.Sms.Inbox.CONTENT_URI, values);
-            if (saved != null && saved.getLastPathSegment() != null) {
-                providerId = Long.parseLong(saved.getLastPathSegment());
-            } else {
-                Log.e(TAG, "Android SMS provider returned no URI after inserting incoming SMS");
+            try {
+                ContentValues values = new ContentValues();
+                values.put(Telephony.Sms.ADDRESS, address);
+                values.put(Telephony.Sms.BODY, body);
+                values.put(Telephony.Sms.DATE, effectiveTimestamp);
+                values.put(Telephony.Sms.READ, 0);
+                values.put(Telephony.Sms.SEEN, 0);
+                values.put(Telephony.Sms.TYPE, Telephony.Sms.MESSAGE_TYPE_INBOX);
+                Uri saved = context.getContentResolver().insert(Telephony.Sms.Inbox.CONTENT_URI, values);
+                if (saved != null && saved.getLastPathSegment() != null) {
+                    providerId = Long.parseLong(saved.getLastPathSegment());
+                } else {
+                    Log.e(TAG, "Android SMS provider returned no URI after inserting incoming SMS");
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to insert incoming SMS into Android SMS provider", e);
             }
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to insert incoming SMS into Android SMS provider", e);
-        }
-
-        long localId;
-        try {
-            localId = db.addMessage(address, body, "in", "received");
-            if (localId <= 0) {
-                Log.e(TAG, "Failed to save incoming SMS to local database");
-                return;
+            if (providerId <= 0) {
+                long existingId = db.findRecentIncomingMessage(address, body, effectiveTimestamp, 10000L);
+                if (existingId > 0) {
+                    duplicateFallback = true;
+                    Log.i(TAG, "Skipped likely duplicate incoming SMS after provider insert failure; local id=" + existingId);
+                }
             }
-            if (providerId > 0) db.linkProviderMessage(localId, providerId);
+            if (!duplicateFallback) {
+                long localId = db.addMessage(address, body, "in", "received");
+                if (localId <= 0) {
+                    Log.e(TAG, "Failed to save incoming SMS to local database");
+                    return;
+                }
+                if (providerId > 0) db.linkProviderMessage(localId, providerId);
+            }
         } catch (Exception e) {
             Log.e(TAG, "Failed to save/link incoming SMS in local database", e);
+            return;
+        } finally {
+            Db.PROVIDER_SYNC_LOCK.unlock();
+        }
+        if (duplicateFallback) {
+            context.sendBroadcast(new Intent(ACTION_SMS_UPDATED).setPackage(context.getPackageName()));
             return;
         }
 
