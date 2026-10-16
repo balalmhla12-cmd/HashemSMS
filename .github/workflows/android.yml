@@ -35,13 +35,10 @@ jobs:
       - name: Install Android SDK packages
         run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Run Android lint
+      - name: Build debug APK
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon lintDebug
-
-      - name: Build debug APK
-        run: ./gradlew --no-daemon assembleDebug
+          ./gradlew --no-daemon assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -49,3 +46,6 @@ jobs:
           name: HashemSMS-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Run Android lint
+        run: ./gradlew --no-daemon lintDebug
