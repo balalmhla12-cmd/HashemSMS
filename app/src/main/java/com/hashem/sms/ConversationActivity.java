@@ -65,7 +65,9 @@ public class ConversationActivity extends Activity {
         if(db!=null&&messages!=null){
             registerSmsUpdatedReceiver();
             loadMessages(false);
-            markConversationReadAsync();
+            if(!readMarkInFlight&&db.hasUnreadIncomingMessages(address)){
+                markConversationReadAsync();
+            }
         }
     }
 
