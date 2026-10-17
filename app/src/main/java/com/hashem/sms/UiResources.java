@@ -15,6 +15,10 @@ final class UiResources {
         return ContextCompat.getColor(context, resourceId);
     }
 
+    static int dp(Context context, float value) {
+        return Math.round(value * context.getResources().getDisplayMetrics().density);
+    }
+
     static void configureSystemBars(Activity activity) {
         if (Build.VERSION.SDK_INT != 26) return;
         View decor = activity.getWindow().getDecorView();
