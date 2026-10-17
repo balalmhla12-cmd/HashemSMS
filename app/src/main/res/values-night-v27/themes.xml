@@ -12,7 +12,7 @@
         <item name="colorOutline">@color/outline</item>
         <item name="colorError">@color/error</item>
         <item name="colorOnError">@color/on_error</item>
-        <item name="colorBackground">@color/surface</item>
+        <item name="android:colorBackground">@color/surface</item>
         <item name="colorOnBackground">@color/on_surface</item>
         <item name="android:colorAccent">@color/primary</item>
         <item name="android:colorControlActivated">@color/primary</item>
