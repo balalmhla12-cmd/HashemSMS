@@ -63,6 +63,15 @@ final class NotificationHelper {
   finally{cancelConversationNotification(app,address);app.sendBroadcast(new Intent(SmsReceiver.ACTION_SMS_UPDATED).setPackage(app.getPackageName()));}
  }
 
+ static boolean isConversationNotificationActive(Context c,String address){
+  if(address==null||address.trim().isEmpty())return false;
+  try{NotificationManager m=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);if(m==null)return false;
+   if(Build.VERSION.SDK_INT<Build.VERSION_CODES.M)return true;
+   int id=notificationId(c,address);
+   for(android.service.notification.StatusBarNotification n:m.getActiveNotifications())if(n.getId()==id)return true;
+  }catch(RuntimeException e){Log.w(TAG,"Unable to inspect active conversation notification",e);}
+  return false;
+ }
  static void showConversationNotification(Context c,String address){showConversationNotification(c,address,null);}
  static void showConversationNotification(Context c,String address,String failedReply){
   if(address==null||address.trim().isEmpty())return;Context app=c.getApplicationContext();

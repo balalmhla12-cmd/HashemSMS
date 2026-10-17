@@ -20,6 +20,6 @@ public class SentReceiver extends BroadcastReceiver {
    if(finished){if(failures>0)android.util.Log.e("HashemSMS","Multipart SMS send failed for message id="+id+" partsFailed="+failures);db.updateSystemProviderStatus(context,id,failures==0);e.remove(prefix+"completed").remove(prefix+"failures");for(int i=0;i<total;i++)e.remove(prefix+"done_"+i);}
    e.commit();
   }
-  if(finished&&"NOTIFICATION_REPLY".equals(intent.getStringExtra("tag"))){String address=intent.getStringExtra(NotificationHelper.EXTRA_ADDRESS);if(address!=null&&!address.trim().isEmpty())NotificationHelper.showConversationNotification(context,address);}
+  if(finished&&"NOTIFICATION_REPLY".equals(intent.getStringExtra("tag"))){String address=intent.getStringExtra(NotificationHelper.EXTRA_ADDRESS);if(address!=null&&!address.trim().isEmpty()&&NotificationHelper.isConversationNotificationActive(context,address))NotificationHelper.showConversationNotification(context,address);}
  }
 }
