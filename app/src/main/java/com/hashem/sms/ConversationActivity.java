@@ -27,9 +27,9 @@ public class ConversationActivity extends Activity {
     GradientDrawable rounded(int color,int stroke,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(radius*getResources().getDisplayMetrics().density);if(stroke!=0)d.setStroke(1,color==0?stroke:stroke);return d;}
     Button actionButton(String label,boolean primary){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setTextSize(14);b.setTypeface(Typeface.DEFAULT,Typeface.BOLD);b.setTextColor(primary?Color.WHITE:Color.rgb(56,30,114));b.setPadding(14,6,14,6);b.setBackground(rounded(primary?purple:Color.rgb(234,221,255),primary?0:Color.rgb(218,207,237),28));if(android.os.Build.VERSION.SDK_INT>=21)b.setStateListAnimator(null);return b;}
 
-    @Override public void onCreate(Bundle b){ super.onCreate(b); db=new Db(this); address=getIntent().getStringExtra("address"); if(address==null)address=""; db.markThreadRead(address);NotificationHelper.cancelConversationNotification(this,address); build(); render(); }
+    @Override public void onCreate(Bundle b){ super.onCreate(b); db=new Db(this); address=getIntent().getStringExtra("address"); if(address==null)address=""; NotificationHelper.markConversationRead(this,address); build(); render(); }
 
-    @Override protected void onResume(){super.onResume();if(db!=null&&messages!=null){db.markThreadRead(address);NotificationHelper.cancelConversationNotification(this,address);render();}}
+    @Override protected void onResume(){super.onResume();if(db!=null&&messages!=null){NotificationHelper.markConversationRead(this,address);render();}}
 
     void build(){
         root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setPadding(10,8,10,8); root.setBackgroundColor(Color.rgb(255,251,254));

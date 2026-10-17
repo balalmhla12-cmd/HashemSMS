@@ -101,7 +101,7 @@ public class Db extends SQLiteOpenHelper{
  public boolean removeSchedule(long id){return getWritableDatabase().delete("schedules","id=?",new String[]{String.valueOf(id)})==1;}
  public java.util.ArrayList<Object[]> notificationMessages(String address,int limit){
   java.util.ArrayList<Object[]> rows=new java.util.ArrayList<>();Cursor c=null;
-  try{c=getReadableDatabase().query("messages",new String[]{"body","type","ts"},"address=? AND trash=0 AND type!='trash'",new String[]{address},null,null,"ts DESC",String.valueOf(Math.max(1,limit)));while(c.moveToNext())rows.add(new Object[]{c.getString(0),c.getString(1),c.getLong(2)});}
+  try{c=getReadableDatabase().query("messages",new String[]{"body","type","ts","status"},"address=? AND trash=0 AND type!='trash'",new String[]{address},null,null,"ts DESC",String.valueOf(Math.max(1,limit)));while(c.moveToNext())rows.add(new Object[]{c.getString(0),c.getString(1),c.getLong(2),c.getString(3)});}
   finally{if(c!=null)c.close();}java.util.Collections.reverse(rows);return rows;
  }
  public void deleteSchedule(long id){getWritableDatabase().delete("schedules","id=?",new String[]{String.valueOf(id)});}

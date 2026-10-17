@@ -115,7 +115,7 @@ public class SmsReceiver extends BroadcastReceiver {
         }
 
         try {
-            if (!db.isConversationBlocked(address)) NotificationHelper.showConversationNotification(context, address);
+            NotificationHelper.showConversationNotification(context, address);
         } catch (Exception e) {
             Log.e(TAG, "Failed to check conversation block state or notify user", e);
         }
