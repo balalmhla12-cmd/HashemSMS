@@ -1,0 +1,2 @@
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@color/on_fab,@color/on_chip_selected,@color/on_unread_accent" />
