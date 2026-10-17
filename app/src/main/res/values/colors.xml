@@ -1,3 +1,27 @@
 <resources>
- <color name="primary">#6750A4</color><color name="surface">#FFFBFE</color><color name="surface_dark">#1C1B1F</color><color name="text">#1C1B1F</color><color name="text_dark">#E6E1E5</color>
+    <color name="primary">#6750A4</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="surface">#FFFBFE</color>
+    <color name="on_surface">#1C1B1F</color>
+    <color name="on_surface_variant">#645E6E</color>
+    <color name="primary_container">#EADDFF</color>
+    <color name="bubble_in">#F1F0F4</color>
+    <color name="bubble_out">#E8DDFF</color>
+    <color name="divider">#E6E1EB</color>
+    <color name="unread_accent">#6750A4</color>
+    <color name="error">#B3261E</color>
+    <color name="on_error">#FFFFFF</color>
+    <color name="on_primary_container">#381E72</color>
+    <color name="surface_variant">#F3EFF8</color>
+    <color name="outline">#DACFED</color>
+    <color name="avatar_container">#E8DEF8</color>
+    <color name="primary_variant">#381E72</color>
+    <color name="on_surface_emphasis">#201F24</color>
+    <color name="on_surface_subtle">#64606C</color>
+    <color name="timestamp">#787480</color>
+    <color name="conversation_text">#232323</color>
+    <color name="search_border">#E6E0EC</color>
+    <color name="surface_dark">#1C1B1F</color>
+    <color name="text">#1C1B1F</color>
+    <color name="text_dark">#E6E1E5</color>
 </resources>

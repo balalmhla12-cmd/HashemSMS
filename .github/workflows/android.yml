@@ -47,6 +47,9 @@ jobs:
           cp "$RUNNER_TEMP/hashemsms-lint-baseline/app/build/reports/lint-results-debug.xml" "$RUNNER_TEMP/lint-baseline.xml"
           cp "$RUNNER_TEMP/hashemsms-lint-baseline/app/build/reports/lint-results-debug.html" "$RUNNER_TEMP/lint-baseline.html"
 
+      - name: Reject hard-coded Java color constructors
+        run: python3 scripts/check_no_hardcoded_colors.py
+
       - name: Run database migration and lifecycle unit tests
         run: |
           chmod +x gradlew
@@ -101,6 +104,9 @@ jobs:
                   out.write("\n**FAIL:** lint count exceeds the baseline.\n")
               else:
                   out.write("\n**PASS:** warning/error counts do not exceed the baseline.\n")
+          print(f"BASELINE_LINT_WARNINGS={bw} BASELINE_LINT_ERRORS={be}")
+          print("BASELINE_LINT_WARNING_TYPES=" + ", ".join(f"{name}:{count}" for name, count in bk.most_common(3)))
+          print(f"CURRENT_LINT_WARNINGS={cw} CURRENT_LINT_ERRORS={ce}")
           if cw > bw or ce > be: sys.exit(1)
           PY
 
