@@ -22,7 +22,7 @@ import java.util.Map;
 
 final class NotificationHelper {
  static final String CHANNEL_ID="sms_messages",GROUP_KEY="com.hashem.sms.CONVERSATIONS",EXTRA_ADDRESS="address",ACTION_MARK_READ="com.hashem.sms.ACTION_MARK_READ",ACTION_REPLY="com.hashem.sms.ACTION_REPLY",REPLY_KEY="reply_text";
- private static final String TAG="HashemSMS",ID_PREFS="conversation_notification_ids",ID_PREFIX="address_";
+ private static final String TAG="HashemSMS",ID_PREFS="conversation_notification_ids",ID_PREFIX="address_",APPROX_PREFS="approximate_alarm_notifications";
  private static final int FIRST_ID=100000,LAST_ID=999999;
  private NotificationHelper(){}
 
@@ -130,8 +130,9 @@ final class NotificationHelper {
     .setStyle(new Notification.BigTextStyle().bigText(body)).setContentIntent(pi).setAutoCancel(true).setCategory(Notification.CATEGORY_STATUS);m.notify(1000000+(int)(id%100000),b.build());
   }catch(SecurityException e){Log.w(TAG,"Notification permission denied for missed schedule",e);}catch(Exception e){Log.e(TAG,"Unable to notify about missed scheduled message",e);}
  }
+ static void clearApproximateAlarmNotice(Context c,long id){c.getApplicationContext().getSharedPreferences(APPROX_PREFS,Context.MODE_PRIVATE).edit().remove("message_"+id).apply();}
  static void notifyApproximateAlarm(Context c,long id,String address){
-  try{NotificationManager m=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);if(m==null)return;Intent open=new Intent(c,MainActivity.class).setAction(c.getPackageName()+".APPROXIMATE_ALARM."+id);
+  try{Context app=c.getApplicationContext();SharedPreferences prefs=app.getSharedPreferences(APPROX_PREFS,Context.MODE_PRIVATE);String key="message_"+id;if(prefs.getBoolean(key,false))return;NotificationManager m=(NotificationManager)app.getSystemService(Context.NOTIFICATION_SERVICE);if(m==null)return;prefs.edit().putBoolean(key,true).apply();Intent open=new Intent(c,MainActivity.class).setAction(c.getPackageName()+".APPROXIMATE_ALARM."+id);
    PendingIntent pi=PendingIntent.getActivity(c,(int)(id%100000)+300000,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
    Notification.Builder b=Build.VERSION.SDK_INT>=Build.VERSION_CODES.O?new Notification.Builder(c,CHANNEL_ID):new Notification.Builder(c);
    b.setSmallIcon(R.drawable.ic_stat_message).setContentTitle("موعد إرسال تقريبي").setContentText("لم يُمنح إذن المنبّه الدقيق؛ قد يتأخر إرسال الرسالة إلى "+address+".").setContentIntent(pi).setAutoCancel(true);m.notify(2000000+(int)(id%100000),b.build());
