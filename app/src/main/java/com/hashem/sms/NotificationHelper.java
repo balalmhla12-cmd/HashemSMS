@@ -79,7 +79,7 @@ final class NotificationHelper {
    Db db=new Db(app);
    if(db.isConversationBlocked(address)){cancelConversationNotification(app,address);return;}
    NotificationManager manager=(NotificationManager)app.getSystemService(Context.NOTIFICATION_SERVICE);if(manager==null)return;
-   ArrayList<Object[]> rows=db.notificationMessages(address,5);boolean syntheticFailure=failedReply!=null&&!failedReply.trim().isEmpty();
+   ArrayList<Object[]> rows=db.notificationMessages(address,5);boolean syntheticFailure=failedReply!=null&&!failedReply.trim().isEmpty();if(syntheticFailure&&!rows.isEmpty()){Object[] last=rows.get(rows.size()-1);String lastBody=last[0]==null?"":(String)last[0];String lastStatus=last[3]==null?"":(String)last[3];if(failedReply.equals(lastBody)&&isFailed(lastStatus))syntheticFailure=false;}
    if(rows.isEmpty()&&!syntheticFailure){cancelConversationNotification(app,address);return;}
    String name=contactName(app,address);if(name.isEmpty())name=address;
    int id=notificationId(app,address);
