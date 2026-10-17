@@ -11,32 +11,21 @@
  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
  <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
  <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
- <application android:name=".HashemSmsApp" android:theme="@style/AppTheme" android:label="هاشم SMS" android:icon="@drawable/ic_hashem_sms" android:roundIcon="@drawable/ic_hashem_sms" android:allowBackup="false" android:supportsRtl="true">
+ <application android:name=".HashemSmsApp" android:theme="@style/AppTheme" android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:allowBackup="false" android:supportsRtl="true">
   <activity android:name=".ConversationActivity" android:exported="false"/>
   <activity android:name=".MainActivity" android:exported="true">
    <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
    <intent-filter><action android:name="android.intent.action.SENDTO"/><category android:name="android.intent.category.DEFAULT"/><data android:scheme="sms"/><data android:scheme="smsto"/><data android:scheme="mms"/><data android:scheme="mmsto"/></intent-filter>
   </activity>
-  <receiver android:name=".SmsReceiver" android:exported="true" android:permission="android.permission.BROADCAST_SMS">
-   <intent-filter><action android:name="android.provider.Telephony.SMS_DELIVER"/></intent-filter>
-  </receiver>
-  <receiver android:name=".MmsReceiver" android:exported="true" android:permission="android.permission.BROADCAST_WAP_PUSH">
-   <intent-filter><action android:name="android.provider.Telephony.WAP_PUSH_DELIVER"/><data android:mimeType="application/vnd.wap.mms-message"/></intent-filter>
-  </receiver>
+  <receiver android:name=".SmsReceiver" android:exported="true" android:permission="android.permission.BROADCAST_SMS"><intent-filter><action android:name="android.provider.Telephony.SMS_DELIVER"/></intent-filter></receiver>
+  <receiver android:name=".MmsReceiver" android:exported="true" android:permission="android.permission.BROADCAST_WAP_PUSH"><intent-filter><action android:name="android.provider.Telephony.WAP_PUSH_DELIVER"/><data android:mimeType="application/vnd.wap.mms-message"/></intent-filter></receiver>
   <receiver android:name=".SentReceiver" android:exported="false"/>
   <receiver android:name=".DeliveredReceiver" android:exported="false"/>
   <receiver android:name=".ScheduleReceiver" android:exported="false"/>
   <receiver android:name=".NotificationActionReceiver" android:exported="false"/>
   <receiver android:name=".BootReceiver" android:exported="false"><intent-filter><action android:name="android.intent.action.BOOT_COMPLETED"/></intent-filter></receiver>
-  <receiver android:name=".TimeChangeReceiver" android:exported="false">
-   <intent-filter>
-    <action android:name="android.intent.action.TIME_SET"/>
-    <action android:name="android.intent.action.TIMEZONE_CHANGED"/>
-   </intent-filter>
-  </receiver>
-  <receiver android:name=".ExactAlarmPermissionReceiver" android:exported="false">
-   <intent-filter><action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED"/></intent-filter>
-  </receiver>
+  <receiver android:name=".TimeChangeReceiver" android:exported="false"><intent-filter><action android:name="android.intent.action.TIME_SET"/><action android:name="android.intent.action.TIMEZONE_CHANGED"/></intent-filter></receiver>
+  <receiver android:name=".ExactAlarmPermissionReceiver" android:exported="false"><intent-filter><action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED"/></intent-filter></receiver>
   <service android:name=".HeadlessSmsSendService" android:exported="true" android:permission="android.permission.SEND_RESPOND_VIA_MESSAGE"><intent-filter><action android:name="android.intent.action.RESPOND_VIA_MESSAGE"/><category android:name="android.intent.category.DEFAULT"/><data android:scheme="sms"/><data android:scheme="smsto"/><data android:scheme="mms"/><data android:scheme="mmsto"/></intent-filter></service>
  </application>
 </manifest>
