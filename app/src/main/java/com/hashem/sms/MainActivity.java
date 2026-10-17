@@ -70,19 +70,19 @@ public class MainActivity extends Activity{
  }
  void buildBottomNavigation(){
   bottomNavigation=new LinearLayout(this);bottomNavigation.setOrientation(LinearLayout.HORIZONTAL);bottomNavigation.setGravity(Gravity.CENTER);bottomNavigation.setPadding(4,8,4,4);bottomNavigation.setBackground(rounded(UiResources.color(this,R.color.card_surface),UiResources.color(this,R.color.card_stroke),24));
-  addNavigationItem("المحادثات","conversations",R.drawable.ic_search);
-  addNavigationItem("جهات الاتصال","contacts",R.drawable.ic_add);
+  addNavigationItem("المحادثات","conversations",R.drawable.ic_nav_messages);
+  addNavigationItem("جهات الاتصال","contacts",R.drawable.ic_nav_contacts);
   addNavigationItem("المزيد","more",R.drawable.ic_more_vert);
   LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,56);lp.topMargin=8;root.addView(bottomNavigation,lp);
  }
  void addNavigationItem(String label,String destination,int iconRes){
   LinearLayout item=new LinearLayout(this);item.setOrientation(LinearLayout.VERTICAL);item.setGravity(Gravity.CENTER);item.setPadding(4,2,4,2);
-  TextView icon=new TextView(this);icon.setText(destination.equals("conversations")?"▤":destination.equals("contacts")?"♙":"⋯");icon.setTextSize(19);icon.setGravity(Gravity.CENTER);icon.setTextColor(UiResources.color(this,R.color.primary_variant));
+  ImageView icon=new ImageView(this);icon.setImageResource(iconRes);icon.setContentDescription(label);icon.setColorFilter(UiResources.color(this,R.color.primary_variant));icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);LinearLayout.LayoutParams iconLp=new LinearLayout.LayoutParams(UiResources.dp(this,24),UiResources.dp(this,24));iconLp.bottomMargin=2;
   TextView text= new TextView(this);text.setText(label);text.setTextSize(11);text.setGravity(Gravity.CENTER);text.setTextColor(UiResources.color(this,R.color.on_surface_variant));
-  item.addView(icon);item.addView(text);item.setBackground(rounded(UiResources.color(this,R.color.card_surface),0,22));item.setOnClickListener(v->{filter=destination.equals("conversations")?"all":destination;updateBottomNavigation();render();});LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-1,1);lp.setMargins(3,0,3,0);bottomNavigation.addView(item,lp);item.setTag(destination);
+  item.addView(icon,iconLp);item.addView(text);item.setBackground(rounded(UiResources.color(this,R.color.card_surface),0,22));item.setOnClickListener(v->{filter=destination.equals("conversations")?"all":destination;updateBottomNavigation();render();});LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-1,1);lp.setMargins(3,0,3,0);bottomNavigation.addView(item,lp);item.setTag(destination);
  }
  void updateBottomNavigation(){
-  if(bottomNavigation==null)return;for(int i=0;i<bottomNavigation.getChildCount();i++){View child=bottomNavigation.getChildAt(i);Object tag=child.getTag();boolean selected=tag!=null&&((tag.equals("conversations")&&isThreadListFilter(filter)&&!"contacts".equals(filter)&&!"more".equals(filter))||tag.equals(filter));child.setBackground(rounded(UiResources.color(this,selected?R.color.primary_container:R.color.card_surface),0,22));if(child instanceof LinearLayout){LinearLayout box=(LinearLayout)child;for(int j=0;j<box.getChildCount();j++)if(box.getChildAt(j) instanceof TextView)((TextView)box.getChildAt(j)).setTextColor(UiResources.color(this,selected?R.color.primary_variant:R.color.on_surface_variant));}}
+  if(bottomNavigation==null)return;for(int i=0;i<bottomNavigation.getChildCount();i++){View child=bottomNavigation.getChildAt(i);Object tag=child.getTag();boolean selected=tag!=null&&((tag.equals("conversations")&&isThreadListFilter(filter)&&!"contacts".equals(filter)&&!"more".equals(filter))||tag.equals(filter));child.setBackground(rounded(UiResources.color(this,selected?R.color.primary_container:R.color.card_surface),0,22));if(child instanceof LinearLayout){LinearLayout box=(LinearLayout)child;for(int j=0;j<box.getChildCount();j++){View childView=box.getChildAt(j);if(childView instanceof TextView)((TextView)childView).setTextColor(UiResources.color(this,selected?R.color.primary_variant:R.color.on_surface_variant));else if(childView instanceof ImageView)((ImageView)childView).setColorFilter(UiResources.color(this,selected?R.color.primary_variant:R.color.on_surface_variant));}}}
  }
  void showContactsScreen(){
   threadHandler.removeCallbacks(threadRefreshRunnable);threadHandler.removeCallbacks(searchFilterRunnable);threadsRecycler.setVisibility(View.GONE);emptyThreadsView.setVisibility(View.GONE);otherScroll.setVisibility(View.VISIBLE);list.removeAllViews();
