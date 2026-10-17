@@ -12,7 +12,7 @@ abstract class ScheduleRestoreReceiver extends BroadcastReceiver {
         final PendingResult pending = goAsync();
         final Context app = context.getApplicationContext();
         try {
-            SmsSending.EXECUTOR.execute(() -> {
+            SmsSending.RECEIVER_EXECUTOR.execute(() -> {
                 try {
                     ScheduleRestorer.restorePendingSchedules(app, new Db(app), System.currentTimeMillis());
                 } catch (Exception e) {
