@@ -64,6 +64,7 @@ public class ScheduleLifecycleTest {
     public void claimScheduleReturnsRecordOnlyOnce() {
         long id = addScheduled("+491234567", "once", System.currentTimeMillis() + 60_000L);
         assertNotNull(db.claimSchedule(id));
+        assertEquals("جارٍ الإرسال", status(id));
         assertNull(db.claimSchedule(id));
         assertFalse(hasSchedule(id));
     }

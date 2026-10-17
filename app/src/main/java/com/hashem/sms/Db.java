@@ -95,7 +95,11 @@ public class Db extends SQLiteOpenHelper{
  public ScheduleRecord claimSchedule(long id){
   SQLiteDatabase d=getWritableDatabase();d.beginTransaction();ScheduleRecord row=null;Cursor c=null;
   try{c=d.query("schedules",new String[]{"id","address","body","at"},"id=?",new String[]{String.valueOf(id)},null,null,null,"1");if(c.moveToFirst())row=new ScheduleRecord(c.getLong(0),c.getString(1),c.getString(2),c.getLong(3));c.close();c=null;
-   if(row!=null&&d.delete("schedules","id=?",new String[]{String.valueOf(id)})==1)d.setTransactionSuccessful();else row=null;return row;
+   if(row!=null&&d.delete("schedules","id=?",new String[]{String.valueOf(id)})==1){
+    ContentValues status=new ContentValues();status.put("status","جارٍ الإرسال");
+    d.update("messages",status,"id=?",new String[]{String.valueOf(id)});
+    d.setTransactionSuccessful();
+   }else row=null;return row;
   }finally{if(c!=null)c.close();d.endTransaction();}
  }
  public boolean removeSchedule(long id){return getWritableDatabase().delete("schedules","id=?",new String[]{String.valueOf(id)})==1;}
