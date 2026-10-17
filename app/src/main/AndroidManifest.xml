@@ -15,7 +15,7 @@
   <activity android:name=".ConversationActivity" android:exported="false"/>
   <activity android:name=".MainActivity" android:exported="true">
    <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
-   <intent-filter><action android:name="android.intent.action.SENDTO"/><category android:name="android.intent.category.DEFAULT"/><data android:scheme="sms"/><data android:scheme="smsto"/></intent-filter>
+   <intent-filter><action android:name="android.intent.action.SENDTO"/><category android:name="android.intent.category.DEFAULT"/><data android:scheme="sms"/><data android:scheme="smsto"/><data android:scheme="mms"/><data android:scheme="mmsto"/></intent-filter>
   </activity>
   <receiver android:name=".SmsReceiver" android:exported="true" android:permission="android.permission.BROADCAST_SMS">
    <intent-filter><action android:name="android.provider.Telephony.SMS_DELIVER"/></intent-filter>
