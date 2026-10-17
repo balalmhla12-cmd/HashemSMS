@@ -224,10 +224,29 @@ public class ConversationActivity extends Activity {
 
     void toggleSelection(long id){ if(actionMode==null){selected.clear(); actionMode=startActionMode(new SelectionCallback());} if(selected.contains(id))selected.remove(id);else selected.add(id); if(selected.isEmpty()){actionMode.finish();return;} selectionTitle.setText(selected.size()+" محددة"); actionMode.invalidate(); }
 
+    private void selectAllMessages(boolean startMode,ActionMode mode){
+        final String currentAddress=address;
+        MESSAGE_EXECUTOR.execute(()->{
+            ArrayList<Long> ids=new ArrayList<>();
+            Cursor c=null;
+            try{c=db.thread(currentAddress);while(c.moveToNext())ids.add(c.getLong(c.getColumnIndexOrThrow("id")));}
+            catch(Exception e){android.util.Log.e("HashemSMS","Unable to select conversation messages",e);return;}
+            finally{if(c!=null)c.close();}
+            runOnUiThread(()->{
+                if(isFinishing()||isDestroyed())return;
+                selected.clear();selected.addAll(ids);
+                if(startMode&&actionMode==null)actionMode=startActionMode(new SelectionCallback());
+                if(selectionTitle!=null)selectionTitle.setText(selected.size()+" محددة");
+                ActionMode target=mode!=null?mode:actionMode;
+                if(target!=null)target.invalidate();
+            });
+        });
+    }
+
     class SelectionCallback implements ActionMode.Callback{
         public boolean onCreateActionMode(ActionMode mode,Menu menu){menu.add("نسخ");menu.add("إعادة توجيه");menu.add("★");menu.add("حذف");menu.add("تحديد الكل");return true;}
         public boolean onPrepareActionMode(ActionMode mode,Menu menu){return true;}
-        public boolean onActionItemClicked(ActionMode mode,MenuItem item){String x=item.getTitle().toString(); if(x.equals("تحديد الكل")){selected.clear();Cursor c=db.thread(address);while(c.moveToNext())selected.add(c.getLong(c.getColumnIndexOrThrow("id")));c.close();selectionTitle.setText(selected.size()+" محددة");mode.invalidate();return true;} if(x.equals("نسخ")){copySelected();mode.finish();return true;} if(x.equals("حذف")){ArrayList<Long> ids=new ArrayList<>(selected);MESSAGE_EXECUTOR.execute(()->db.deleteMessages(ids));mode.finish();loadMessages(false);return true;} if(x.equals("★")){ArrayList<Long> ids=new ArrayList<>(selected);MESSAGE_EXECUTOR.execute(()->db.starMessages(ids));mode.finish();loadMessages(false);return true;} if(x.equals("إعادة توجيه")){forwardSelected();mode.finish();return true;} return false;}
+        public boolean onActionItemClicked(ActionMode mode,MenuItem item){String x=item.getTitle().toString(); if(x.equals("تحديد الكل")){selectAllMessages(false,mode);return true;} if(x.equals("نسخ")){copySelected();mode.finish();return true;} if(x.equals("حذف")){ArrayList<Long> ids=new ArrayList<>(selected);MESSAGE_EXECUTOR.execute(()->db.deleteMessages(ids));mode.finish();loadMessages(false);return true;} if(x.equals("★")){ArrayList<Long> ids=new ArrayList<>(selected);MESSAGE_EXECUTOR.execute(()->db.starMessages(ids));mode.finish();loadMessages(false);return true;} if(x.equals("إعادة توجيه")){forwardSelected();mode.finish();return true;} return false;}
         public void onDestroyActionMode(ActionMode mode){selected.clear();actionMode=null;selectionTitle.setText(address);loadMessages(false);}
     }
 
@@ -259,6 +278,6 @@ public class ConversationActivity extends Activity {
         super.onRequestPermissionsResult(requestCode,permissions,grantResults);if(requestCode!=62)return;SubscriptionChoiceCallback callback=pendingSubscriptionAction;pendingSubscriptionAction=null;if(callback==null)return;
         if(grantResults!=null&&grantResults.length>0&&grantResults[0]==PackageManager.PERMISSION_GRANTED)showSmsSubscriptionChoices(callback);else{Toast.makeText(this,"لم يُمنح إذن قراءة حالة الهاتف؛ سيتم الإرسال بالشريحة الافتراضية.",Toast.LENGTH_SHORT).show();callback.onSelected(-1);}
     }
-    void conversationMenu(View anchor){PopupMenu p=new PopupMenu(this,anchor);p.getMenu().add("بحث في المحادثة");p.getMenu().add("تحديد الكل");p.getMenu().add("حذف المحادثة");p.setOnMenuItemClickListener(i->{String x=i.getTitle().toString();if(x.startsWith("بحث")){search.setVisibility(search.getVisibility()==View.VISIBLE?View.GONE:View.VISIBLE);if(search.getVisibility()==View.VISIBLE)search.requestFocus();else loadMessages(false);}else if(x.equals("تحديد الكل")){Cursor c=db.thread(address);selected.clear();while(c.moveToNext())selected.add(c.getLong(c.getColumnIndexOrThrow("id")));c.close();actionMode=startActionMode(new SelectionCallback());selectionTitle.setText(selected.size()+" محددة");}else{new AlertDialog.Builder(this).setMessage("حذف جميع رسائل هذه المحادثة؟").setPositiveButton("حذف",(d,w)->{MESSAGE_EXECUTOR.execute(()->db.deleteThread(address));loadMessages(false);}).setNegativeButton("إلغاء",null).show();}return true;});p.show();}
+    void conversationMenu(View anchor){PopupMenu p=new PopupMenu(this,anchor);p.getMenu().add("بحث في المحادثة");p.getMenu().add("تحديد الكل");p.getMenu().add("حذف المحادثة");p.setOnMenuItemClickListener(i->{String x=i.getTitle().toString();if(x.startsWith("بحث")){search.setVisibility(search.getVisibility()==View.VISIBLE?View.GONE:View.VISIBLE);if(search.getVisibility()==View.VISIBLE)search.requestFocus();else loadMessages(false);}else if(x.equals("تحديد الكل")){selectAllMessages(true,null);}else{new AlertDialog.Builder(this).setMessage("حذف جميع رسائل هذه المحادثة؟").setPositiveButton("حذف",(d,w)->{MESSAGE_EXECUTOR.execute(()->db.deleteThread(address));loadMessages(false);}).setNegativeButton("إلغاء",null).show();}return true;});p.show();}
 
 }
