@@ -132,10 +132,10 @@ final class NotificationHelper {
  }
  static void clearApproximateAlarmNotice(Context c,long id){c.getApplicationContext().getSharedPreferences(APPROX_PREFS,Context.MODE_PRIVATE).edit().remove("message_"+id).apply();}
  static void notifyApproximateAlarm(Context c,long id,String address){
-  try{Context app=c.getApplicationContext();SharedPreferences prefs=app.getSharedPreferences(APPROX_PREFS,Context.MODE_PRIVATE);String key="message_"+id;if(prefs.getBoolean(key,false))return;NotificationManager m=(NotificationManager)app.getSystemService(Context.NOTIFICATION_SERVICE);if(m==null)return;prefs.edit().putBoolean(key,true).apply();Intent open=new Intent(c,MainActivity.class).setAction(c.getPackageName()+".APPROXIMATE_ALARM."+id);
+  try{Context app=c.getApplicationContext();SharedPreferences prefs=app.getSharedPreferences(APPROX_PREFS,Context.MODE_PRIVATE);String key="message_"+id;if(prefs.getBoolean(key,false))return;NotificationManager m=(NotificationManager)app.getSystemService(Context.NOTIFICATION_SERVICE);if(m==null)return;Intent open=new Intent(c,MainActivity.class).setAction(c.getPackageName()+".APPROXIMATE_ALARM."+id);
    PendingIntent pi=PendingIntent.getActivity(c,(int)(id%100000)+300000,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
    Notification.Builder b=Build.VERSION.SDK_INT>=Build.VERSION_CODES.O?new Notification.Builder(c,CHANNEL_ID):new Notification.Builder(c);
-   b.setSmallIcon(R.drawable.ic_stat_message).setContentTitle("موعد إرسال تقريبي").setContentText("لم يُمنح إذن المنبّه الدقيق؛ قد يتأخر إرسال الرسالة إلى "+address+".").setContentIntent(pi).setAutoCancel(true);m.notify(2000000+(int)(id%100000),b.build());
+   b.setSmallIcon(R.drawable.ic_stat_message).setContentTitle("موعد إرسال تقريبي").setContentText("لم يُمنح إذن المنبّه الدقيق؛ قد يتأخر إرسال الرسالة إلى "+address+".").setContentIntent(pi).setAutoCancel(true);m.notify(2000000+(int)(id%100000),b.build());prefs.edit().putBoolean(key,true).apply();
   }catch(SecurityException e){Log.w(TAG,"Notification permission denied",e);}
  }
 }
