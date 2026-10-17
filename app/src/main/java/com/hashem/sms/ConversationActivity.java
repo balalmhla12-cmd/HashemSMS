@@ -51,7 +51,7 @@ public class ConversationActivity extends Activity {
     Button actionButton(String label,boolean primary){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setTextSize(14);b.setTypeface(Typeface.DEFAULT,Typeface.BOLD);b.setTextColor(primary?UiResources.color(ConversationActivity.this,R.color.on_primary):UiResources.color(ConversationActivity.this,R.color.primary_variant));b.setPadding(14,6,14,6);b.setBackground(rounded(primary?purple:UiResources.color(ConversationActivity.this,R.color.primary_container),primary?0:UiResources.color(ConversationActivity.this,R.color.outline),28));if(android.os.Build.VERSION.SDK_INT>=21)b.setStateListAnimator(null);return b;}
 
     @Override public void onCreate(Bundle b){
-        super.onCreate(b);purple=UiResources.color(ConversationActivity.this,R.color.primary);
+        super.onCreate(b);UiResources.configureSystemBars(this);purple=UiResources.color(ConversationActivity.this,R.color.primary);
         db=new Db(getApplicationContext());
         address=getIntent().getStringExtra("address");
         if(address==null)address="";
