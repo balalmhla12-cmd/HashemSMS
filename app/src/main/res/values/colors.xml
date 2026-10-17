@@ -6,6 +6,7 @@
     <color name="on_surface_variant">#44566F</color>
     <color name="primary_container">#D4ECFA</color>
     <color name="bubble_in">#E5EDF7</color>
+    <color name="bubble_outline">#006A8E</color>
     <color name="bubble_out">#C8E8FA</color>
     <color name="divider">#D6E1EE</color>
     <color name="unread_accent">#005E9E</color>
@@ -25,10 +26,10 @@
     <color name="text">#10213B</color>
     <color name="text_dark">#10213B</color>
     <color name="accent_cyan">#006A8E</color>
-    <color name="fab">#1565C0</color>
+    <color name="fab">#1E88E5</color>
     <color name="chip_selected">#1565C0</color>
     <color name="icon_gold">#9A6400</color>
-    <color name="icon_orange">#A84A00</color>
+    <color name="icon_orange">#F28C28</color>
     <color name="card_surface">#FFFFFF</color>
     <color name="card_stroke">#AFC4D9</color>
     <color name="background_top">#EAF4FC</color>
