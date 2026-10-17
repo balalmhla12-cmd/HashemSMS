@@ -20,9 +20,10 @@ public final class ScheduleReceiver extends BroadcastReceiver {
         }
         final Context app = context.getApplicationContext();
         try {
-            SmsSending.EXECUTOR.execute(() -> {
+            SmsSending.RECEIVER_EXECUTOR.execute(() -> {
                 try {
                     Db db = new Db(app);
+                    NotificationHelper.clearApproximateAlarmNotice(app, id);
                     Db.ScheduleRecord row = db.claimSchedule(id);
                     if (row == null) {
                         Log.i("HashemSMS", "Ignored duplicate or cancelled schedule alarm id=" + id);
