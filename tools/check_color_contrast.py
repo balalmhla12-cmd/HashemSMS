@@ -7,8 +7,9 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 PAIRS = [
     ("on_primary", "primary"),
-    ("on_primary", "fab"),
-    ("on_primary", "chip_selected"),
+    ("on_fab", "fab"),
+    ("on_chip_selected", "chip_selected"),
+    ("on_surface", "unread_accent"),
     ("on_surface", "surface"),
     ("on_surface_variant", "surface"),
     ("on_surface_subtle", "surface"),
