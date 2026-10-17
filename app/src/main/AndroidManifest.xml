@@ -28,6 +28,15 @@
   <receiver android:name=".ScheduleReceiver" android:exported="false"/>
   <receiver android:name=".NotificationActionReceiver" android:exported="false"/>
   <receiver android:name=".BootReceiver" android:exported="false"><intent-filter><action android:name="android.intent.action.BOOT_COMPLETED"/></intent-filter></receiver>
+  <receiver android:name=".TimeChangeReceiver" android:exported="false">
+   <intent-filter>
+    <action android:name="android.intent.action.TIME_SET"/>
+    <action android:name="android.intent.action.TIMEZONE_CHANGED"/>
+   </intent-filter>
+  </receiver>
+  <receiver android:name=".ExactAlarmPermissionReceiver" android:exported="false">
+   <intent-filter><action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED"/></intent-filter>
+  </receiver>
   <service android:name=".HeadlessSmsSendService" android:exported="true" android:permission="android.permission.SEND_RESPOND_VIA_MESSAGE"><intent-filter><action android:name="android.intent.action.RESPOND_VIA_MESSAGE"/><category android:name="android.intent.category.DEFAULT"/><data android:scheme="sms"/><data android:scheme="smsto"/><data android:scheme="mms"/><data android:scheme="mmsto"/></intent-filter></service>
  </application>
 </manifest>

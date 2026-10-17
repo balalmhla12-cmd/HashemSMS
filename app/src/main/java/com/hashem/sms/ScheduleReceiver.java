@@ -6,15 +6,18 @@ import android.content.Intent;
 import android.util.Log;
 
 public final class ScheduleReceiver extends BroadcastReceiver {
-    private static final long MAX_LATE_MILLIS = 10L * 60L * 1000L;
-
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (intent == null) return;
-        long id = intent.getLongExtra("id", -1L);
-        if (id <= 0) return;
-
         final PendingResult pending = goAsync();
+        if (intent == null) {
+            pending.finish();
+            return;
+        }
+        final long id = intent.getLongExtra("id", -1L);
+        if (id <= 0L) {
+            pending.finish();
+            return;
+        }
         final Context app = context.getApplicationContext();
         try {
             SmsSending.EXECUTOR.execute(() -> {
@@ -26,8 +29,8 @@ public final class ScheduleReceiver extends BroadcastReceiver {
                         return;
                     }
 
-                    long lateBy = System.currentTimeMillis() - row.at;
-                    if (lateBy > MAX_LATE_MILLIS) {
+                    long lateBy = Math.max(0L, System.currentTimeMillis() - row.at);
+                    if (!SchedulePolicy.isWithinLateWindow(lateBy)) {
                         db.status(id, "فاتت الجدولة");
                         NotificationHelper.notifyMissedScheduled(app, id, row.address, row.body);
                         Log.w("HashemSMS", "Skipped scheduled SMS more than 10 minutes late; id=" + id);
@@ -58,7 +61,13 @@ public final class ScheduleReceiver extends BroadcastReceiver {
             });
         } catch (RuntimeException e) {
             Log.e("HashemSMS", "Unable to queue scheduled SMS", e);
-            pending.finish();
+            try {
+                new Db(app).status(id, "لم يتم الإرسال");
+            } catch (Exception statusError) {
+                Log.e("HashemSMS", "Could not persist queue failure status", statusError);
+            } finally {
+                pending.finish();
+            }
         }
     }
 }
