@@ -10,7 +10,7 @@ public final class NotificationActionReceiver extends android.content.BroadcastR
  private static final String TAG="HashemSMS";
  @Override public void onReceive(Context context,Intent intent){
   final PendingResult pending=goAsync();final Context app=context.getApplicationContext();
-  try{SmsSending.EXECUTOR.execute(()->{try{handleAction(app,intent);}catch(Exception e){
+  try{SmsSending.RECEIVER_EXECUTOR.execute(()->{try{handleAction(app,intent);}catch(Exception e){
    Log.e(TAG,"Notification action failed",e);
    if(intent!=null){String address=intent.getStringExtra(NotificationHelper.EXTRA_ADDRESS);if(address!=null&&!address.trim().isEmpty())NotificationHelper.showConversationNotification(app,address);}
   }finally{pending.finish();}});}
