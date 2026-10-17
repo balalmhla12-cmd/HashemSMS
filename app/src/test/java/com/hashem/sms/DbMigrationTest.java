@@ -14,6 +14,8 @@ import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
 import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -195,4 +197,47 @@ public class DbMigrationTest {
         }
         for (String index : REQUIRED_INDEXES) assertTrue("missing index " + index, actual.contains(index));
     }
+    @Test
+    public void conversationDiffDetectsChangedContentAndDifferentIds() {
+        ConversationActivity.MessageDiffCallback diff = new ConversationActivity.MessageDiffCallback();
+        ConversationActivity.ConversationMessage before =
+                new ConversationActivity.ConversationMessage(10L, "hello", "in", "received", 0, null);
+        ConversationActivity.ConversationMessage changed =
+                new ConversationActivity.ConversationMessage(10L, "updated", "in", "received", 0, null);
+        ConversationActivity.ConversationMessage differentId =
+                new ConversationActivity.ConversationMessage(11L, "hello", "in", "received", 0, null);
+
+        assertTrue(diff.areItemsTheSame(before, changed));
+        assertFalse(diff.areContentsTheSame(before, changed));
+        assertFalse(diff.areItemsTheSame(before, differentId));
+    }
+
+    @Test
+    public void emptyConversationRowUsesReservedIdAndDoesNotMatchRealMessage() {
+        ConversationActivity.ConversationMessage empty =
+                ConversationActivity.ConversationMessage.empty("لا توجد رسائل");
+        ConversationActivity.ConversationMessage real =
+                new ConversationActivity.ConversationMessage(10L, "", "", "", 0, null);
+
+        assertTrue(empty.isEmpty());
+        assertEquals(Long.MIN_VALUE, empty.id);
+        assertFalse(new ConversationActivity.MessageDiffCallback().areItemsTheSame(empty, real));
+    }
+
+    @Test
+    public void conversationSelectionPruningRemovesMissingAndEmptyRowIds() {
+        ArrayList<Long> selected = new ArrayList<>(Arrays.asList(10L, 20L, 30L));
+        ConversationActivity.ConversationMessage visible =
+                new ConversationActivity.ConversationMessage(10L, "message", "in", "received", 0, null);
+        ConversationActivity.ConversationMessage empty =
+                ConversationActivity.ConversationMessage.empty("لا توجد نتائج");
+
+        ConversationActivity.pruneSelection(selected, Arrays.asList(visible, empty));
+        assertEquals(Collections.singletonList(10L), selected);
+
+        ConversationActivity.pruneSelection(selected,
+                Collections.singletonList(ConversationActivity.ConversationMessage.empty("لا توجد نتائج")));
+        assertTrue(selected.isEmpty());
+    }
+
 }
