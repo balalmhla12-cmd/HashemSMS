@@ -9,6 +9,7 @@
     <color name="bubble_out">#C8E8FA</color>
     <color name="divider">#D6E1EE</color>
     <color name="unread_accent">#005E9E</color>
+    <color name="on_unread_accent">#FFFFFF</color>
     <color name="error">#B3261E</color>
     <color name="on_error">#FFFFFF</color>
     <color name="on_primary_container">#0B2840</color>
