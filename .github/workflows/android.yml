@@ -50,6 +50,9 @@ jobs:
       - name: Reject hard-coded Java color constructors
         run: python3 scripts/check_no_hardcoded_colors.py
 
+      - name: Check WCAG contrast for light and dark palettes
+        run: python3 tools/check_color_contrast.py
+
       - name: Run database migration and lifecycle unit tests
         run: |
           chmod +x gradlew

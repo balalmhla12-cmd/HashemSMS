@@ -1,11 +1,11 @@
 <resources>
     <style name="AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:fontFamily">sans-serif</item>
-        <item name="android:textColorPrimary">@color/text_dark</item>
+        <item name="android:textColorPrimary">@color/text</item>
         <item name="colorPrimary">@color/primary</item>
         <item name="colorOnPrimary">@color/on_primary</item>
         <item name="colorSecondary">@color/accent_cyan</item>
-        <item name="colorOnSecondary">@color/on_primary_container</item>
+        <item name="colorOnSecondary">@color/on_primary</item>
         <item name="colorSurface">@color/surface</item>
         <item name="colorOnSurface">@color/on_surface</item>
         <item name="colorSurfaceVariant">@color/card_surface</item>
@@ -13,18 +13,19 @@
         <item name="colorOutline">@color/card_stroke</item>
         <item name="colorError">@color/error</item>
         <item name="colorOnError">@color/on_error</item>
-        <item name="android:colorBackground">@color/surface_dark</item>
+        <item name="android:colorBackground">@color/surface</item>
         <item name="colorOnBackground">@color/on_surface</item>
         <item name="colorSecondaryContainer">@color/chip_selected</item>
+        <item name="colorOnSecondaryContainer">@color/on_primary</item>
         <item name="colorTertiary">@color/icon_gold</item>
-        <item name="colorOnTertiary">@color/surface_dark</item>
+        <item name="colorOnTertiary">@color/on_primary</item>
         <item name="android:colorAccent">@color/primary</item>
         <item name="android:colorControlActivated">@color/primary</item>
         <item name="android:colorControlHighlight">@color/primary_container</item>
         <item name="android:colorButtonNormal">@color/primary_container</item>
-        <item name="android:windowBackground">@color/surface_dark</item>
-        <item name="android:navigationBarColor">@color/surface_dark</item>
-        <item name="android:statusBarColor">@color/surface_dark</item>
+        <item name="android:windowBackground">@color/surface</item>
+        <item name="android:navigationBarColor">@color/surface</item>
+        <item name="android:statusBarColor">@color/surface</item>
         <item name="android:windowLightStatusBar">true</item>
         
         <item name="android:windowActionModeOverlay">true</item>

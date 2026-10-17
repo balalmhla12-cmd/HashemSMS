@@ -5,7 +5,7 @@
         <item name="colorPrimary">@color/primary</item>
         <item name="colorOnPrimary">@color/on_primary</item>
         <item name="colorSecondary">@color/accent_cyan</item>
-        <item name="colorOnSecondary">@color/on_primary_container</item>
+        <item name="colorOnSecondary">@color/on_primary</item>
         <item name="colorSurface">@color/surface</item>
         <item name="colorOnSurface">@color/on_surface</item>
         <item name="colorSurfaceVariant">@color/card_surface</item>
@@ -16,8 +16,9 @@
         <item name="android:colorBackground">@color/surface_dark</item>
         <item name="colorOnBackground">@color/on_surface</item>
         <item name="colorSecondaryContainer">@color/chip_selected</item>
+        <item name="colorOnSecondaryContainer">@color/on_primary</item>
         <item name="colorTertiary">@color/icon_gold</item>
-        <item name="colorOnTertiary">@color/surface_dark</item>
+        <item name="colorOnTertiary">@color/on_primary</item>
         <item name="android:colorAccent">@color/primary</item>
         <item name="android:colorControlActivated">@color/primary</item>
         <item name="android:colorControlHighlight">@color/primary_container</item>
