@@ -39,7 +39,7 @@ jobs:
 
       - name: Run baseline Android lint
         env:
-          BASELINE_SHA: 38a6354941b9bb61d0c154a8e310a283c712c8f2
+          BASELINE_SHA: a5854817b880921f486f39385d9480239b470acd
         run: |
           git worktree add --detach "$RUNNER_TEMP/hashemsms-lint-baseline" "$BASELINE_SHA"
           chmod +x "$RUNNER_TEMP/hashemsms-lint-baseline/gradlew"
@@ -97,7 +97,7 @@ jobs:
           cw, ce = c["warning"], c["error"] + c["fatal"]
           with open(summary, "a", encoding="utf-8") as out:
               out.write("## Android Lint — baseline comparison\n\n")
-              out.write(f"- Baseline commit: `38a6354941b9bb61d0c154a8e310a283c712c8f2`\n")
+              out.write(f"- Baseline commit: `a5854817b880921f486f39385d9480239b470acd`\n")
               out.write(f"- Baseline warnings: **{bw}**; baseline errors/fatals: **{be}**\n")
               out.write(f"- Current warnings: **{cw}**; current errors/fatals: **{ce}**\n")
               out.write("- Top 3 baseline warning categories:\n")
