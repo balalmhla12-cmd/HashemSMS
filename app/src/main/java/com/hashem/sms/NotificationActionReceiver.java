@@ -26,7 +26,7 @@ public final class NotificationActionReceiver extends android.content.BroadcastR
   android.os.Bundle results=RemoteInput.getResultsFromIntent(intent);CharSequence reply=results==null?null:results.getCharSequence(NotificationHelper.REPLY_KEY);
   if(reply==null||reply.toString().trim().isEmpty())return;
   String body=reply.toString().trim();int subId=-1;
-  if(android.os.Build.VERSION.SDK_INT>=android.os.Build.VERSION_CODES.N)try{int candidate=SubscriptionManager.getDefaultSmsSubscriptionId();if(candidate>=0)subId=candidate;}catch(RuntimeException e){Log.w(TAG,"Unable to get default SMS subscription",e);}
+  try{int candidate=SubscriptionManager.getDefaultSmsSubscriptionId();if(candidate>=0)subId=candidate;}catch(RuntimeException e){Log.w(TAG,"Unable to get default SMS subscription",e);}
   boolean started=SmsSending.sendSmsInBackground(app,new Db(app),address,body,"NOTIFICATION_REPLY",9000,10000,subId,false);
   if(started)NotificationHelper.showConversationNotification(app,address);
   else NotificationHelper.showConversationNotification(app,address,body);

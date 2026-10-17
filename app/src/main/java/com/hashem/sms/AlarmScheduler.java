@@ -6,8 +6,8 @@ final class AlarmScheduler {
  static boolean scheduleBestEffort(Context c,long id,String a,String b,long when){
   AlarmManager am=(AlarmManager)c.getSystemService(Context.ALARM_SERVICE);if(am==null)return false;PendingIntent pi=pendingIntent(c,id,a,b);
   try{if(Build.VERSION.SDK_INT>=31){if(am.canScheduleExactAlarms()){am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,when,pi);return true;}am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,when,pi);return false;}
-   if(Build.VERSION.SDK_INT>=23)am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,when,pi);else am.setExact(AlarmManager.RTC_WAKEUP,when,pi);return true;
-  }catch(SecurityException e){android.util.Log.w("HashemSMS","Exact alarm permission unavailable; falling back to approximate scheduling",e);try{if(Build.VERSION.SDK_INT>=23)am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,when,pi);else am.set(AlarmManager.RTC_WAKEUP,when,pi);}catch(Exception ex){android.util.Log.e("HashemSMS","Unable to set approximate alarm",ex);}return false;}
+   am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,when,pi);return true;
+  }catch(SecurityException e){android.util.Log.w("HashemSMS","Exact alarm permission unavailable; falling back to approximate scheduling",e);try{am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,when,pi);}catch(Exception ex){android.util.Log.e("HashemSMS","Unable to set approximate alarm",ex);}return false;}
  }
  static void cancel(Context c,long id,String a,String b){NotificationHelper.clearApproximateAlarmNotice(c,id);AlarmManager am=(AlarmManager)c.getSystemService(Context.ALARM_SERVICE);if(am!=null){PendingIntent pi=pendingIntent(c,id,a,b);am.cancel(pi);pi.cancel();}android.content.SharedPreferences p=c.getSharedPreferences(PREFS,Context.MODE_PRIVATE);if(p.getLong(KEY_ID,-1L)==id)p.edit().remove(KEY_ID).apply();}
  static void rememberPendingExactRequest(Context c,long id){c.getSharedPreferences(PREFS,Context.MODE_PRIVATE).edit().putLong(KEY_ID,id).apply();}

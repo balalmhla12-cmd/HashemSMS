@@ -28,7 +28,6 @@ final class NotificationHelper {
 
  // Created once by HashemSmsApp.onCreate(), never from the incoming-message path.
  static void createChannel(Context c){
-  if(Build.VERSION.SDK_INT<Build.VERSION_CODES.O)return;
   NotificationManager m=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);
   if(m!=null)m.createNotificationChannel(new NotificationChannel(CHANNEL_ID,"الرسائل الجديدة",NotificationManager.IMPORTANCE_HIGH));
  }
@@ -66,7 +65,6 @@ final class NotificationHelper {
  static boolean isConversationNotificationActive(Context c,String address){
   if(address==null||address.trim().isEmpty())return false;
   try{NotificationManager m=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);if(m==null)return false;
-   if(Build.VERSION.SDK_INT<Build.VERSION_CODES.M)return true;
    int id=notificationId(c,address);
    for(android.service.notification.StatusBarNotification n:m.getActiveNotifications())if(n.getId()==id)return true;
   }catch(RuntimeException e){Log.w(TAG,"Unable to inspect active conversation notification",e);}
@@ -91,27 +89,21 @@ final class NotificationHelper {
    int replyFlags=PendingIntent.FLAG_UPDATE_CURRENT;if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.S)replyFlags|=PendingIntent.FLAG_MUTABLE;
    PendingIntent replyPi=PendingIntent.getBroadcast(app,id*2+2,reply,replyFlags);
    RemoteInput input=new RemoteInput.Builder(REPLY_KEY).setLabel("اكتب ردًا").build();
-   Notification.Action replyAction=new Notification.Action.Builder(R.drawable.ic_stat_message,"رد",replyPi).addRemoteInput(input).setAllowGeneratedReplies(true).build();
-   Notification.Action readAction=new Notification.Action.Builder(R.drawable.ic_stat_message,"تعليم كمقروء",readPi).build();
-   Notification.Builder b=Build.VERSION.SDK_INT>=Build.VERSION_CODES.O?new Notification.Builder(app,CHANNEL_ID):new Notification.Builder(app);
+   Notification.Action replyAction=new Notification.Action.Builder(R.drawable.ic_stat_sms,"رد",replyPi).addRemoteInput(input).setAllowGeneratedReplies(true).build();
+   Notification.Action readAction=new Notification.Action.Builder(R.drawable.ic_stat_sms,"تعليم كمقروء",readPi).build();
+   Notification.Builder b=new Notification.Builder(app,CHANNEL_ID);
    String latest="",status="",type="in";
-   if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.N){
-    Notification.MessagingStyle style=new Notification.MessagingStyle(name).setConversationTitle(name);
-    int start=syntheticFailure&&rows.size()>=5?1:0;
-    for(int i=start;i<rows.size();i++){
-     Object[] r=rows.get(i);String body=r[0]==null?"":(String)r[0],kind=r[1]==null?"in":(String)r[1],st=r[3]==null?"":(String)r[3];
-     String shown=body;if("out".equals(kind)&&isFailed(st))shown+="\nتعذّر إرسال الرد";
-     style.addMessage(shown,(Long)r[2],"out".equals(kind)?"أنت":name);latest=body;status=st;type=kind;
-    }
-    if(syntheticFailure){style.addMessage("تعذّر إرسال الرد: "+failedReply,System.currentTimeMillis(),"أنت");latest=failedReply;status="failed";type="out";}
-    b.setStyle(style);
-   }else{
-    if(!rows.isEmpty()){Object[] r=rows.get(rows.size()-1);latest=r[0]==null?"":(String)r[0];status=r[3]==null?"":(String)r[3];type=r[1]==null?"in":(String)r[1];}
-    if(syntheticFailure){latest=failedReply;status="failed";type="out";}
-    b.setStyle(new Notification.BigTextStyle().bigText(latest));
+   Notification.MessagingStyle style=new Notification.MessagingStyle(name).setConversationTitle(name);
+   int start=syntheticFailure&&rows.size()>=5?1:0;
+   for(int i=start;i<rows.size();i++){
+    Object[] r=rows.get(i);String body=r[0]==null?"":(String)r[0],kind=r[1]==null?"in":(String)r[1],st=r[3]==null?"":(String)r[3];
+    String shown=body;if("out".equals(kind)&&isFailed(st))shown+="\nتعذّر إرسال الرد";
+    style.addMessage(shown,(Long)r[2],"out".equals(kind)?"أنت":name);latest=body;status=st;type=kind;
    }
+   if(syntheticFailure){style.addMessage("تعذّر إرسال الرد: "+failedReply,System.currentTimeMillis(),"أنت");latest=failedReply;status="failed";type="out";}
+   b.setStyle(style);
    String content=latest;if(isFailed(status))content="تعذّر إرسال الرد: "+latest;else if("جارٍ الإرسال".equals(status)||"sending".equals(status))content="جارٍ إرسال الرد: "+latest;
-   b.setSmallIcon(R.drawable.ic_stat_message).setContentTitle(name).setContentText(content).setGroup(GROUP_KEY).setAutoCancel(true)
+   b.setSmallIcon(R.drawable.ic_stat_sms).setContentTitle(name).setContentText(content).setGroup(GROUP_KEY).setAutoCancel(true)
     .setOnlyAlertOnce(!"in".equals(type)).setContentIntent(openPi).addAction(readAction).addAction(replyAction).setCategory(Notification.CATEGORY_MESSAGE);
    if(!rows.isEmpty())b.setWhen((Long)rows.get(rows.size()-1)[2]);manager.notify(id,b.build());
   }catch(SecurityException e){Log.w(TAG,"Notification permission denied",e);}catch(Exception e){Log.e(TAG,"Failed to build incoming-message notification",e);}
@@ -125,8 +117,8 @@ final class NotificationHelper {
  static void notifyMissedScheduled(Context c,long id,String address,String body){
   try{NotificationManager m=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);if(m==null)return;Intent open=new Intent(c,ConversationActivity.class).putExtra(EXTRA_ADDRESS,address).setAction(c.getPackageName()+".MISSED_SCHEDULE."+id);
    PendingIntent pi=PendingIntent.getActivity(c,(int)(id%100000)+200000,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
-   Notification.Builder b=Build.VERSION.SDK_INT>=Build.VERSION_CODES.O?new Notification.Builder(c,CHANNEL_ID):new Notification.Builder(c);
-   b.setSmallIcon(R.drawable.ic_stat_message).setContentTitle("رسالة مجدولة لم تُرسل").setContentText("فات موعد إرسال الرسالة إلى "+address+"؛ افتح المحادثة لتقرر ما إذا كنت تريد إرسالها.")
+   Notification.Builder b=new Notification.Builder(c,CHANNEL_ID);
+   b.setSmallIcon(R.drawable.ic_stat_sms).setContentTitle("رسالة مجدولة لم تُرسل").setContentText("فات موعد إرسال الرسالة إلى "+address+"؛ افتح المحادثة لتقرر ما إذا كنت تريد إرسالها.")
     .setStyle(new Notification.BigTextStyle().bigText(body)).setContentIntent(pi).setAutoCancel(true).setCategory(Notification.CATEGORY_STATUS);m.notify(1000000+(int)(id%100000),b.build());
   }catch(SecurityException e){Log.w(TAG,"Notification permission denied for missed schedule",e);}catch(Exception e){Log.e(TAG,"Unable to notify about missed scheduled message",e);}
  }
@@ -134,8 +126,8 @@ final class NotificationHelper {
  static void notifyApproximateAlarm(Context c,long id,String address){
   try{Context app=c.getApplicationContext();SharedPreferences prefs=app.getSharedPreferences(APPROX_PREFS,Context.MODE_PRIVATE);String key="message_"+id;if(prefs.getBoolean(key,false))return;NotificationManager m=(NotificationManager)app.getSystemService(Context.NOTIFICATION_SERVICE);if(m==null)return;Intent open=new Intent(c,MainActivity.class).setAction(c.getPackageName()+".APPROXIMATE_ALARM."+id);
    PendingIntent pi=PendingIntent.getActivity(c,(int)(id%100000)+300000,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
-   Notification.Builder b=Build.VERSION.SDK_INT>=Build.VERSION_CODES.O?new Notification.Builder(c,CHANNEL_ID):new Notification.Builder(c);
-   b.setSmallIcon(R.drawable.ic_stat_message).setContentTitle("موعد إرسال تقريبي").setContentText("لم يُمنح إذن المنبّه الدقيق؛ قد يتأخر إرسال الرسالة إلى "+address+".").setContentIntent(pi).setAutoCancel(true);m.notify(2000000+(int)(id%100000),b.build());prefs.edit().putBoolean(key,true).apply();
+   Notification.Builder b=new Notification.Builder(c,CHANNEL_ID);
+   b.setSmallIcon(R.drawable.ic_stat_sms).setContentTitle("موعد إرسال تقريبي").setContentText("لم يُمنح إذن المنبّه الدقيق؛ قد يتأخر إرسال الرسالة إلى "+address+".").setContentIntent(pi).setAutoCancel(true);m.notify(2000000+(int)(id%100000),b.build());prefs.edit().putBoolean(key,true).apply();
   }catch(SecurityException e){Log.w(TAG,"Notification permission denied",e);}
  }
 }
