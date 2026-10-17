@@ -46,12 +46,12 @@ public class ConversationActivity extends Activity {
     
     SubscriptionChoiceCallback pendingSubscriptionAction;
 
-    TextView tv(String s,int size){ TextView t=new TextView(this); t.setText(s); t.setTextSize(size); t.setTextColor(UiResources.color(this,R.color.conversation_text)); t.setPadding(18,12,18,12); return t; }
+    TextView tv(String s,int size){ TextView t=new TextView(this); t.setText(s); t.setTextSize(size); t.setTextColor(UiResources.color(ConversationActivity.this,R.color.conversation_text)); t.setPadding(18,12,18,12); return t; }
     GradientDrawable rounded(int color,int stroke,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(radius*getResources().getDisplayMetrics().density);if(stroke!=0)d.setStroke(1,color==0?stroke:stroke);return d;}
-    Button actionButton(String label,boolean primary){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setTextSize(14);b.setTypeface(Typeface.DEFAULT,Typeface.BOLD);b.setTextColor(primary?UiResources.color(this,R.color.on_primary):UiResources.color(this,R.color.primary_variant));b.setPadding(14,6,14,6);b.setBackground(rounded(primary?purple:UiResources.color(this,R.color.primary_container),primary?0:UiResources.color(this,R.color.outline),28));if(android.os.Build.VERSION.SDK_INT>=21)b.setStateListAnimator(null);return b;}
+    Button actionButton(String label,boolean primary){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setTextSize(14);b.setTypeface(Typeface.DEFAULT,Typeface.BOLD);b.setTextColor(primary?UiResources.color(ConversationActivity.this,R.color.on_primary):UiResources.color(ConversationActivity.this,R.color.primary_variant));b.setPadding(14,6,14,6);b.setBackground(rounded(primary?purple:UiResources.color(ConversationActivity.this,R.color.primary_container),primary?0:UiResources.color(ConversationActivity.this,R.color.outline),28));if(android.os.Build.VERSION.SDK_INT>=21)b.setStateListAnimator(null);return b;}
 
     @Override public void onCreate(Bundle b){
-        super.onCreate(b);purple=UiResources.color(this,R.color.primary);
+        super.onCreate(b);purple=UiResources.color(ConversationActivity.this,R.color.primary);
         db=new Db(getApplicationContext());
         address=getIntent().getStringExtra("address");
         if(address==null)address="";
@@ -102,15 +102,15 @@ public class ConversationActivity extends Activity {
     }
 
     void build(){
-        root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setPadding(10,8,10,8); root.setBackgroundColor(UiResources.color(this,R.color.surface));
+        root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setPadding(10,8,10,8); root.setBackgroundColor(UiResources.color(ConversationActivity.this,R.color.surface));
         LinearLayout top=new LinearLayout(this); top.setGravity(Gravity.CENTER_VERTICAL);top.setPadding(0,0,0,8);
         Button back=actionButton("‹",false); back.setTextSize(25); back.setOnClickListener(v->finish()); top.addView(back,new LinearLayout.LayoutParams(52,52));
         LinearLayout identity=new LinearLayout(this);identity.setOrientation(LinearLayout.VERTICAL);
         selectionTitle=tv(address,18);selectionTitle.setTypeface(Typeface.DEFAULT,Typeface.BOLD);selectionTitle.setPadding(8,2,8,0);
-        TextView subtitle=tv("رسائل نصية · SMS",12);subtitle.setTextColor(UiResources.color(this,R.color.on_surface_variant));subtitle.setPadding(8,0,8,0);
+        TextView subtitle=tv("رسائل نصية · SMS",12);subtitle.setTextColor(UiResources.color(ConversationActivity.this,R.color.on_surface_variant));subtitle.setPadding(8,0,8,0);
         identity.addView(selectionTitle);identity.addView(subtitle);top.addView(identity,new LinearLayout.LayoutParams(0,-2,1));
         Button more=actionButton("⋮",false);more.setTextSize(22);more.setOnClickListener(v->conversationMenu(v)); top.addView(more,new LinearLayout.LayoutParams(48,52)); root.addView(top);
-        search=new EditText(this); search.setHint("بحث في هذه المحادثة"); search.setSingleLine(); search.setTextSize(14);search.setPadding(16,4,16,4);search.setBackground(rounded(UiResources.color(this,R.color.surface_variant),UiResources.color(this,R.color.search_border),26));search.setVisibility(View.GONE);
+        search=new EditText(this); search.setHint("بحث في هذه المحادثة"); search.setSingleLine(); search.setTextSize(14);search.setPadding(16,4,16,4);search.setBackground(rounded(UiResources.color(ConversationActivity.this,R.color.surface_variant),UiResources.color(ConversationActivity.this,R.color.search_border),26));search.setVisibility(View.GONE);
         search.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int d){} public void onTextChanged(CharSequence s,int a,int b,int c){mainHandler.removeCallbacks(searchDebounce);mainHandler.postDelayed(searchDebounce,275L);} public void afterTextChanged(Editable e){}}); root.addView(search);
         messages=new RecyclerView(this);
         messages.setClipToPadding(false);
@@ -119,7 +119,7 @@ public class ConversationActivity extends Activity {
         messageAdapter=new ConversationAdapter();
         messages.setAdapter(messageAdapter);
         root.addView(messages,new LinearLayout.LayoutParams(-1,0,1));
-        LinearLayout composerRow=new LinearLayout(this);composerRow.setGravity(Gravity.CENTER_VERTICAL);composerRow.setPadding(8,6,4,6);composerRow.setBackground(rounded(UiResources.color(this,R.color.surface_variant),UiResources.color(this,R.color.search_border),30));
+        LinearLayout composerRow=new LinearLayout(this);composerRow.setGravity(Gravity.CENTER_VERTICAL);composerRow.setPadding(8,6,4,6);composerRow.setBackground(rounded(UiResources.color(ConversationActivity.this,R.color.surface_variant),UiResources.color(ConversationActivity.this,R.color.search_border),30));
         composer=new EditText(this); composer.setHint("رسالة نصية"); composer.setTextSize(16);composer.setMinLines(1);composer.setMaxLines(5);composer.setPadding(12,6,12,6);composer.setBackgroundColor(Color.TRANSPARENT);composerRow.addView(composer,new LinearLayout.LayoutParams(0,-2,1));
         Button send=actionButton("إرسال",true);send.setOnClickListener(v->send());LinearLayout.LayoutParams sendLp=new LinearLayout.LayoutParams(-2,46);sendLp.setMargins(4,0,0,0);composerRow.addView(send,sendLp);LinearLayout.LayoutParams rowLp=new LinearLayout.LayoutParams(-1,-2);rowLp.topMargin=8;root.addView(composerRow,rowLp); setContentView(root);
     }
@@ -219,7 +219,7 @@ public class ConversationActivity extends Activity {
             h.line.setGravity("out".equals(item.type)?Gravity.END:Gravity.START);
             h.body.setText(item.body);
             h.meta.setText(("out".equals(item.type)?(item.status==null?"":item.status):"واردة")+(item.star==1?"  ★":""));
-            h.bubble.setBackground(rounded("out".equals(item.type)?UiResources.color(this,R.color.bubble_out):UiResources.color(this,R.color.bubble_in),0,24));
+            h.bubble.setBackground(rounded("out".equals(item.type)?UiResources.color(ConversationActivity.this,R.color.bubble_out):UiResources.color(ConversationActivity.this,R.color.bubble_in),0,24));
             h.bubble.setOnLongClickListener(v->{toggleSelection(item.id);return true;});
             h.bubble.setOnClickListener(v->{if(actionMode!=null)toggleSelection(item.id);});
         }
