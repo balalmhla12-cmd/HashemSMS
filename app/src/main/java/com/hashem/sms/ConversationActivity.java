@@ -31,6 +31,7 @@ public class ConversationActivity extends Activity {
     Db db; String address; LinearLayout root; RecyclerView messages; ConversationAdapter messageAdapter; EditText search, composer; TextView selectionTitle; ActionMode actionMode; final ArrayList<Long> selected = new ArrayList<>();
     private static final ExecutorService MESSAGE_EXECUTOR = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private boolean readMarkInFlight = false;
     private final AtomicInteger loadGeneration = new AtomicInteger();
     private boolean firstMessageLoad = true;
     private boolean smsReceiverRegistered;
@@ -63,8 +64,8 @@ public class ConversationActivity extends Activity {
         super.onResume();
         if(db!=null&&messages!=null){
             registerSmsUpdatedReceiver();
-            markConversationReadAsync();
             loadMessages(false);
+            markConversationReadAsync();
         }
     }
 
@@ -92,8 +93,13 @@ public class ConversationActivity extends Activity {
     }
 
     private void markConversationReadAsync(){
+        if(readMarkInFlight||db==null||!db.hasUnreadIncomingMessages(address))return;
+        readMarkInFlight=true;
         final String currentAddress=address;
-        MESSAGE_EXECUTOR.execute(()->NotificationHelper.markConversationRead(getApplicationContext(),currentAddress));
+        MESSAGE_EXECUTOR.execute(()->{
+            NotificationHelper.markConversationRead(getApplicationContext(),currentAddress);
+            mainHandler.post(()->readMarkInFlight=false);
+        });
     }
 
     void build(){

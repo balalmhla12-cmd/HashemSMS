@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -35,15 +37,23 @@ jobs:
       - name: Install Android SDK packages
         run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Run database migration unit tests
+      - name: Run baseline Android lint
+        env:
+          BASELINE_SHA: 227a98a381e92ed4d9f21ef5eeddc625206fa40c
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/hashemsms-lint-baseline" "$BASELINE_SHA"
+          chmod +x "$RUNNER_TEMP/hashemsms-lint-baseline/gradlew"
+          (cd "$RUNNER_TEMP/hashemsms-lint-baseline" && ./gradlew --no-daemon lintDebug)
+          cp "$RUNNER_TEMP/hashemsms-lint-baseline/app/build/reports/lint-results-debug.xml" "$RUNNER_TEMP/lint-baseline.xml"
+          cp "$RUNNER_TEMP/hashemsms-lint-baseline/app/build/reports/lint-results-debug.html" "$RUNNER_TEMP/lint-baseline.html"
+
+      - name: Run database migration and lifecycle unit tests
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon testDebugUnitTest
 
       - name: Build debug APK
-        run: |
-          chmod +x gradlew
-          ./gradlew --no-daemon assembleDebug
+        run: ./gradlew --no-daemon assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -54,3 +64,52 @@ jobs:
 
       - name: Run Android lint
         run: ./gradlew --no-daemon lintDebug
+
+      - name: Compare lint baseline and write summary
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import collections, os, sys, xml.etree.ElementTree as ET
+          baseline = os.path.join(os.environ["RUNNER_TEMP"], "lint-baseline.xml")
+          current = "app/build/reports/lint-results-debug.xml"
+          summary = os.environ["GITHUB_STEP_SUMMARY"]
+          def read(path):
+              issues = ET.parse(path).getroot().findall(".//issue")
+              counts = collections.Counter((i.get("severity") or "Unknown").lower() for i in issues)
+              warning_ids = collections.Counter(i.get("id") or "Unknown" for i in issues if (i.get("severity") or "").lower() == "warning")
+              messages = {}
+              for i in issues:
+                  if (i.get("severity") or "").lower() == "warning":
+                      messages.setdefault(i.get("id") or "Unknown", (i.get("message") or "").splitlines()[0])
+              return counts, warning_ids, messages
+          if not os.path.exists(baseline) or not os.path.exists(current):
+              with open(summary, "a", encoding="utf-8") as out:
+                  out.write("## Android Lint\n\nتعذر حساب المقارنة لأن تقرير XML الأساسي أو الحالي غير موجود.\n")
+              sys.exit(1)
+          b, bk, bm = read(baseline); c, ck, cm = read(current)
+          bw, be = b["warning"], b["error"] + b["fatal"]
+          cw, ce = c["warning"], c["error"] + c["fatal"]
+          with open(summary, "a", encoding="utf-8") as out:
+              out.write("## Android Lint — baseline comparison\n\n")
+              out.write(f"- Baseline commit: `227a98a381e92ed4d9f21ef5eeddc625206fa40c`\n")
+              out.write(f"- Baseline warnings: **{bw}**; baseline errors/fatals: **{be}**\n")
+              out.write(f"- Current warnings: **{cw}**; current errors/fatals: **{ce}**\n")
+              out.write("- Top 3 baseline warning categories:\n")
+              for issue_id, count in bk.most_common(3):
+                  out.write(f"  - `{issue_id}` ({count}): {bm.get(issue_id, '')}\n")
+              if cw > bw or ce > be:
+                  out.write("\n**FAIL:** lint count exceeds the baseline.\n")
+              else:
+                  out.write("\n**PASS:** warning/error counts do not exceed the baseline.\n")
+          if cw > bw or ce > be: sys.exit(1)
+          PY
+
+      - name: Upload Android Lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HashemSMS-android-lint-reports
+          path: |
+            app/build/reports/lint-results-debug.xml
+            app/build/reports/lint-results-debug.html
+          if-no-files-found: warn

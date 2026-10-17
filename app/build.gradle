@@ -7,6 +7,7 @@ android { namespace 'com.hashem.sms'; compileSdk 36
 
 dependencies {
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
+    implementation 'com.google.android.material:material:1.14.0'
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.robolectric:robolectric:4.14.1'
 }
