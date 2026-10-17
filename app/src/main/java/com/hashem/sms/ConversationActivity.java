@@ -127,6 +127,7 @@ public class ConversationActivity extends Activity {
         final boolean wasAtBottom=initialLoad||!messages.canScrollVertically(1);
         MESSAGE_EXECUTOR.execute(()->{
             ArrayList<ConversationMessage> rows=new ArrayList<>();
+            HashSet<Long> existingMessageIds=new HashSet<>();
             Cursor c=null;
             try{
                 c=db.thread(currentAddress);
@@ -136,6 +137,7 @@ public class ConversationActivity extends Activity {
                 int statusCol=c.getColumnIndexOrThrow("status");
                 int starCol=c.getColumnIndexOrThrow("star");
                 while(c.moveToNext()){
+                    existingMessageIds.add(c.getLong(idCol));
                     String body=c.getString(bodyCol);
                     if(body==null)body="";
                     if(!query.isEmpty()&&!body.toLowerCase(Locale.ROOT).contains(query))continue;
@@ -147,13 +149,14 @@ public class ConversationActivity extends Activity {
             }finally{if(c!=null)c.close();}
             if(rows.isEmpty())rows.add(ConversationMessage.empty(query.isEmpty()?"لا توجد رسائل":"لا توجد نتائج مطابقة"));
             final ArrayList<ConversationMessage> result=rows;
+            final HashSet<Long> loadedMessageIds=existingMessageIds;
             runOnUiThread(()->{
                 if(isFinishing()||isDestroyed()||generation!=loadGeneration.get()||messageAdapter==null)return;
                 final boolean first=firstMessageLoad;
                 firstMessageLoad=false;
                 messageAdapter.submitList(result,()->{
                     if(messages==null||generation!=loadGeneration.get())return;
-                    pruneSelection(selected,messageAdapter.getCurrentList());
+                    pruneSelection(selected,loadedMessageIds);
                     if(selected.isEmpty()&&actionMode!=null){actionMode.finish();return;}
                     if(wasAtBottom){
                         int last=messageAdapter.getItemCount()-1;
@@ -226,10 +229,9 @@ public class ConversationActivity extends Activity {
         EmptyHolder(TextView text){super(text);this.text=text;}
     }
 
-    static void pruneSelection(ArrayList<Long> selection,List<ConversationMessage> rows){
-        HashSet<Long> visibleIds=new HashSet<>();
-        for(ConversationMessage row:rows)if(!row.isEmpty())visibleIds.add(row.id);
-        selection.removeIf(id->!visibleIds.contains(id));
+    static void pruneSelection(ArrayList<Long> selection,Collection<Long> existingMessageIds){
+        HashSet<Long> existingIds=new HashSet<>(existingMessageIds);
+        selection.removeIf(id->!existingIds.contains(id));
     }
 
     void toggleSelection(long id){
