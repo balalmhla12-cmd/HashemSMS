@@ -1,7 +1,7 @@
 package com.hashem.sms;
 import android.app.PendingIntent;import android.content.Context;import android.content.Intent;import android.os.Handler;import android.os.Looper;import android.telephony.SmsManager;import android.widget.Toast;import java.util.ArrayList;import java.util.concurrent.ExecutorService;import java.util.concurrent.Executors;
 final class SmsSending {
- static final ExecutorService BULK_EXECUTOR=Executors.newSingleThreadExecutor();static final ExecutorService RECEIVER_EXECUTOR=Executors.newFixedThreadPool(3);private static final Handler MAIN_HANDLER=new Handler(Looper.getMainLooper());private SmsSending(){}
+ static final ExecutorService SEND_EXECUTOR=Executors.newSingleThreadExecutor();static final ExecutorService BULK_EXECUTOR=Executors.newSingleThreadExecutor();static final ExecutorService RECEIVER_EXECUTOR=Executors.newFixedThreadPool(3);private static final Handler MAIN_HANDLER=new Handler(Looper.getMainLooper());private SmsSending(){}
  static void postToast(Context context,String message,int duration){Context app=context.getApplicationContext();MAIN_HANDLER.post(()->Toast.makeText(app,message,duration).show());}
  static boolean sendSmsInBackground(Context context,Db db,String recipient,String body,String tag,int sentBase,int deliveredBase,int subscriptionId,boolean showProgress){
   return sendSmsInBackground(context,db,recipient,body,tag,sentBase,deliveredBase,subscriptionId,showProgress,0L);
