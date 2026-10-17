@@ -232,7 +232,9 @@ public class DbMigrationTest {
         ConversationActivity.ConversationMessage empty =
                 ConversationActivity.ConversationMessage.empty("لا توجد نتائج");
 
-        ConversationActivity.pruneSelection(selected, Arrays.asList(10L));
+        ConversationActivity.pruneSelection(selected, Arrays.asList(10L, 20L, 40L));
+        assertEquals(Arrays.asList(10L, 20L), selected);
+        ConversationActivity.pruneSelection(selected, Collections.singletonList(10L));
         assertEquals(Collections.singletonList(10L), selected);
 
         ConversationActivity.pruneSelection(selected, Collections.emptyList());
