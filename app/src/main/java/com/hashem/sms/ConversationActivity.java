@@ -4,6 +4,15 @@ import android.app.*;
 import android.content.*;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.ListAdapter;
+import androidx.recyclerview.widget.DiffUtil;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
@@ -18,7 +27,19 @@ import android.widget.*;
 import java.util.*;
 
 public class ConversationActivity extends Activity {
-    Db db; String address; LinearLayout root, messages; EditText search, composer; TextView selectionTitle; ActionMode actionMode; final ArrayList<Long> selected = new ArrayList<>();
+    Db db; String address; LinearLayout root; RecyclerView messages; ConversationAdapter messageAdapter; EditText search, composer; TextView selectionTitle; ActionMode actionMode; final ArrayList<Long> selected = new ArrayList<>();
+    private static final ExecutorService MESSAGE_EXECUTOR = Executors.newSingleThreadExecutor();
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final AtomicInteger loadGeneration = new AtomicInteger();
+    private boolean firstMessageLoad = true;
+    private boolean smsReceiverRegistered;
+    private final Runnable smsUpdateDebounce = () -> loadMessages(false);
+    private final BroadcastReceiver smsUpdatedReceiver = new BroadcastReceiver() {
+        @Override public void onReceive(Context context, Intent intent) {
+            mainHandler.removeCallbacks(smsUpdateDebounce);
+            mainHandler.postDelayed(smsUpdateDebounce, 250L);
+        }
+    };
     int purple = Color.rgb(103,80,164);
     
     SubscriptionChoiceCallback pendingSubscriptionAction;
@@ -27,9 +48,52 @@ public class ConversationActivity extends Activity {
     GradientDrawable rounded(int color,int stroke,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(radius*getResources().getDisplayMetrics().density);if(stroke!=0)d.setStroke(1,color==0?stroke:stroke);return d;}
     Button actionButton(String label,boolean primary){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setTextSize(14);b.setTypeface(Typeface.DEFAULT,Typeface.BOLD);b.setTextColor(primary?Color.WHITE:Color.rgb(56,30,114));b.setPadding(14,6,14,6);b.setBackground(rounded(primary?purple:Color.rgb(234,221,255),primary?0:Color.rgb(218,207,237),28));if(android.os.Build.VERSION.SDK_INT>=21)b.setStateListAnimator(null);return b;}
 
-    @Override public void onCreate(Bundle b){ super.onCreate(b); db=new Db(this); address=getIntent().getStringExtra("address"); if(address==null)address=""; NotificationHelper.markConversationRead(this,address); build(); render(); }
+    @Override public void onCreate(Bundle b){
+        super.onCreate(b);
+        db=new Db(getApplicationContext());
+        address=getIntent().getStringExtra("address");
+        if(address==null)address="";
+        build();
+        markConversationReadAsync();
+        loadMessages(true);
+    }
 
-    @Override protected void onResume(){super.onResume();if(db!=null&&messages!=null){NotificationHelper.markConversationRead(this,address);render();}}
+    @Override protected void onResume(){
+        super.onResume();
+        if(db!=null&&messages!=null){
+            registerSmsUpdatedReceiver();
+            markConversationReadAsync();
+            loadMessages(false);
+        }
+    }
+
+    @Override protected void onPause(){
+        mainHandler.removeCallbacks(smsUpdateDebounce);
+        if(smsReceiverRegistered){
+            try{unregisterReceiver(smsUpdatedReceiver);}catch(IllegalArgumentException ignored){}
+            smsReceiverRegistered=false;
+        }
+        super.onPause();
+    }
+
+    @Override protected void onDestroy(){
+        loadGeneration.incrementAndGet();
+        mainHandler.removeCallbacks(smsUpdateDebounce);
+        super.onDestroy();
+    }
+
+    private void registerSmsUpdatedReceiver(){
+        if(smsReceiverRegistered)return;
+        IntentFilter filter=new IntentFilter(SmsReceiver.ACTION_SMS_UPDATED);
+        if(Build.VERSION.SDK_INT>=33)registerReceiver(smsUpdatedReceiver,filter,Context.RECEIVER_NOT_EXPORTED);
+        else registerReceiver(smsUpdatedReceiver,filter);
+        smsReceiverRegistered=true;
+    }
+
+    private void markConversationReadAsync(){
+        final String currentAddress=address;
+        MESSAGE_EXECUTOR.execute(()->NotificationHelper.markConversationRead(getApplicationContext(),currentAddress));
+    }
 
     void build(){
         root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setPadding(10,8,10,8); root.setBackgroundColor(Color.rgb(255,251,254));
@@ -41,20 +105,121 @@ public class ConversationActivity extends Activity {
         identity.addView(selectionTitle);identity.addView(subtitle);top.addView(identity,new LinearLayout.LayoutParams(0,-2,1));
         Button more=actionButton("⋮",false);more.setTextSize(22);more.setOnClickListener(v->conversationMenu(v)); top.addView(more,new LinearLayout.LayoutParams(48,52)); root.addView(top);
         search=new EditText(this); search.setHint("بحث في هذه المحادثة"); search.setSingleLine(); search.setTextSize(14);search.setPadding(16,4,16,4);search.setBackground(rounded(Color.rgb(243,239,248),Color.rgb(230,224,236),26));search.setVisibility(View.GONE);
-        search.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int d){} public void onTextChanged(CharSequence s,int a,int b,int c){render();} public void afterTextChanged(Editable e){}}); root.addView(search);
-        ScrollView sv=new ScrollView(this);sv.setClipToPadding(false);sv.setPadding(0,4,0,4); messages=new LinearLayout(this); messages.setOrientation(LinearLayout.VERTICAL); sv.addView(messages); root.addView(sv,new LinearLayout.LayoutParams(-1,0,1));
+        search.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int d){} public void onTextChanged(CharSequence s,int a,int b,int c){loadMessages(false);} public void afterTextChanged(Editable e){}}); root.addView(search);
+        messages=new RecyclerView(this);
+        messages.setClipToPadding(false);
+        messages.setPadding(0,4,0,4);
+        messages.setLayoutManager(new LinearLayoutManager(this));
+        messageAdapter=new ConversationAdapter();
+        messages.setAdapter(messageAdapter);
+        root.addView(messages,new LinearLayout.LayoutParams(-1,0,1));
         LinearLayout composerRow=new LinearLayout(this);composerRow.setGravity(Gravity.CENTER_VERTICAL);composerRow.setPadding(8,6,4,6);composerRow.setBackground(rounded(Color.rgb(243,239,248),Color.rgb(230,224,236),30));
         composer=new EditText(this); composer.setHint("رسالة نصية"); composer.setTextSize(16);composer.setMinLines(1);composer.setMaxLines(5);composer.setPadding(12,6,12,6);composer.setBackgroundColor(Color.TRANSPARENT);composerRow.addView(composer,new LinearLayout.LayoutParams(0,-2,1));
         Button send=actionButton("إرسال",true);send.setOnClickListener(v->send());LinearLayout.LayoutParams sendLp=new LinearLayout.LayoutParams(-2,46);sendLp.setMargins(4,0,0,0);composerRow.addView(send,sendLp);LinearLayout.LayoutParams rowLp=new LinearLayout.LayoutParams(-1,-2);rowLp.topMargin=8;root.addView(composerRow,rowLp); setContentView(root);
     }
 
-    void render(){ if(messages==null)return; messages.removeAllViews(); String q=search==null?"":search.getText().toString().trim().toLowerCase(Locale.ROOT); Cursor c=db.thread(address); int count=0;
-        while(c.moveToNext()){ long id=c.getLong(c.getColumnIndexOrThrow("id")); String body=c.getString(c.getColumnIndexOrThrow("body")); String type=c.getString(c.getColumnIndexOrThrow("type")); String status=c.getString(c.getColumnIndexOrThrow("status")); int star=c.getInt(c.getColumnIndexOrThrow("star")); if(!q.isEmpty()&&!body.toLowerCase(Locale.ROOT).contains(q))continue;
-            LinearLayout line = new LinearLayout(this); line.setGravity("out".equals(type)?Gravity.END:Gravity.START); line.setPadding(8,3,8,3);
-            LinearLayout bubble=new LinearLayout(this); bubble.setOrientation(LinearLayout.VERTICAL); bubble.setPadding(16,8,16,8); TextView b=tv(body,17); b.setMaxWidth((int)(getResources().getDisplayMetrics().widthPixels-80*getResources().getDisplayMetrics().density)); TextView meta=tv(("out".equals(type)?status:"واردة")+(star==1?"  ★":""),12); bubble.addView(b); bubble.addView(meta);
-            GradientDrawable shape=new GradientDrawable();shape.setColor("out".equals(type)?Color.rgb(232,221,255):Color.rgb(241,240,244));shape.setCornerRadius(24*getResources().getDisplayMetrics().density);bubble.setBackground(shape);
-            LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-2,-2); lp.setMargins(8,4,8,4); line.addView(bubble,lp); final long fid=id; bubble.setOnLongClickListener(v->{toggleSelection(fid);return true;}); bubble.setOnClickListener(v->{if(actionMode!=null)toggleSelection(fid);}); messages.addView(line); count++; }
-        c.close(); if(count==0)messages.addView(tv(q.isEmpty()?"لا توجد رسائل":"لا توجد نتائج مطابقة",16));
+    private void loadMessages(boolean initialLoad){
+        if(messages==null||db==null)return;
+        final int generation=loadGeneration.incrementAndGet();
+        final String currentAddress=address;
+        final String query=search==null?"":search.getText().toString().trim().toLowerCase(Locale.ROOT);
+        final boolean wasAtBottom=initialLoad||!messages.canScrollVertically(1);
+        MESSAGE_EXECUTOR.execute(()->{
+            ArrayList<ConversationMessage> rows=new ArrayList<>();
+            Cursor c=null;
+            try{
+                c=db.thread(currentAddress);
+                int idCol=c.getColumnIndexOrThrow("id");
+                int bodyCol=c.getColumnIndexOrThrow("body");
+                int typeCol=c.getColumnIndexOrThrow("type");
+                int statusCol=c.getColumnIndexOrThrow("status");
+                int starCol=c.getColumnIndexOrThrow("star");
+                while(c.moveToNext()){
+                    String body=c.getString(bodyCol);
+                    if(body==null)body="";
+                    if(!query.isEmpty()&&!body.toLowerCase(Locale.ROOT).contains(query))continue;
+                    rows.add(new ConversationMessage(c.getLong(idCol),body,c.getString(typeCol),c.getString(statusCol),c.getInt(starCol),null));
+                }
+            }catch(Exception e){
+                android.util.Log.e("HashemSMS","Unable to load conversation messages",e);
+                return;
+            }finally{if(c!=null)c.close();}
+            if(rows.isEmpty())rows.add(ConversationMessage.empty(query.isEmpty()?"لا توجد رسائل":"لا توجد نتائج مطابقة"));
+            final ArrayList<ConversationMessage> result=rows;
+            runOnUiThread(()->{
+                if(isFinishing()||isDestroyed()||generation!=loadGeneration.get()||messageAdapter==null)return;
+                final boolean first=firstMessageLoad;
+                firstMessageLoad=false;
+                messageAdapter.submitList(result,()->{
+                    if(messages==null||generation!=loadGeneration.get())return;
+                    if(first||wasAtBottom){
+                        int last=messageAdapter.getItemCount()-1;
+                        if(last>=0){
+                            if(first)messages.scrollToPosition(last);
+                            else messages.post(()->{if(generation==loadGeneration.get()&&messages!=null)messages.smoothScrollToPosition(messageAdapter.getItemCount()-1);});
+                        }
+                    }
+                });
+            });
+        });
+    }
+
+    private static final class ConversationMessage {
+        final long id;
+        final String body,type,status,emptyText;
+        final int star;
+        ConversationMessage(long id,String body,String type,String status,int star,String emptyText){
+            this.id=id;this.body=body;this.type=type;this.status=status;this.star=star;this.emptyText=emptyText;
+        }
+        static ConversationMessage empty(String text){return new ConversationMessage(Long.MIN_VALUE,"","","",0,text);}
+        boolean isEmpty(){return emptyText!=null;}
+    }
+
+    private final class ConversationAdapter extends ListAdapter<ConversationMessage,RecyclerView.ViewHolder>{
+        private static final int TYPE_MESSAGE=1,TYPE_EMPTY=2;
+        ConversationAdapter(){super(new DiffUtil.ItemCallback<ConversationMessage>(){
+            @Override public boolean areItemsTheSame(ConversationMessage a,ConversationMessage b){return a.id==b.id;}
+            @Override public boolean areContentsTheSame(ConversationMessage a,ConversationMessage b){
+                return a.id==b.id&&Objects.equals(a.body,b.body)&&Objects.equals(a.type,b.type)&&Objects.equals(a.status,b.status)&&a.star==b.star&&Objects.equals(a.emptyText,b.emptyText);
+            }
+        });}
+        @Override public int getItemViewType(int position){return getItem(position).isEmpty()?TYPE_EMPTY:TYPE_MESSAGE;}
+        @Override public RecyclerView.ViewHolder onCreateViewHolder(android.view.ViewGroup parent,int viewType){
+            if(viewType==TYPE_EMPTY){
+                TextView empty=tv("",16);empty.setGravity(Gravity.CENTER);
+                return new EmptyHolder(empty);
+            }
+            LinearLayout line=new LinearLayout(ConversationActivity.this);line.setGravity(Gravity.START);line.setPadding(8,3,8,3);
+            LinearLayout bubble=new LinearLayout(ConversationActivity.this);bubble.setOrientation(LinearLayout.VERTICAL);bubble.setPadding(16,8,16,8);
+            TextView body=tv("",17);
+            body.setMaxWidth((int)(getResources().getDisplayMetrics().widthPixels-80*getResources().getDisplayMetrics().density));
+            TextView meta=tv("",12);
+            bubble.addView(body);bubble.addView(meta);
+            GradientDrawable shape=new GradientDrawable();shape.setCornerRadius(24*getResources().getDisplayMetrics().density);
+            bubble.setBackground(shape);
+            LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-2,-2);lp.setMargins(8,4,8,4);line.addView(bubble,lp);
+            return new MessageHolder(line,bubble,body,meta);
+        }
+        @Override public void onBindViewHolder(RecyclerView.ViewHolder holder,int position){
+            ConversationMessage item=getItem(position);
+            if(holder instanceof EmptyHolder){((EmptyHolder)holder).text.setText(item.emptyText);return;}
+            MessageHolder h=(MessageHolder)holder;
+            h.line.setGravity("out".equals(item.type)?Gravity.END:Gravity.START);
+            h.body.setText(item.body);
+            h.meta.setText(("out".equals(item.type)?(item.status==null?"":item.status):"واردة")+(item.star==1?"  ★":""));
+            h.bubble.setBackground(rounded("out".equals(item.type)?Color.rgb(232,221,255):Color.rgb(241,240,244),0,24));
+            h.bubble.setOnLongClickListener(v->{toggleSelection(item.id);return true;});
+            h.bubble.setOnClickListener(v->{if(actionMode!=null)toggleSelection(item.id);});
+        }
+    }
+
+    private static final class MessageHolder extends RecyclerView.ViewHolder{
+        final LinearLayout line,bubble;final TextView body,meta;
+        MessageHolder(LinearLayout line,LinearLayout bubble,TextView body,TextView meta){super(line);this.line=line;this.bubble=bubble;this.body=body;this.meta=meta;}
+    }
+    private static final class EmptyHolder extends RecyclerView.ViewHolder{
+        final TextView text;
+        EmptyHolder(TextView text){super(text);this.text=text;}
     }
 
     void toggleSelection(long id){ if(actionMode==null){selected.clear(); actionMode=startActionMode(new SelectionCallback());} if(selected.contains(id))selected.remove(id);else selected.add(id); if(selected.isEmpty()){actionMode.finish();return;} selectionTitle.setText(selected.size()+" محددة"); actionMode.invalidate(); }
@@ -62,12 +227,12 @@ public class ConversationActivity extends Activity {
     class SelectionCallback implements ActionMode.Callback{
         public boolean onCreateActionMode(ActionMode mode,Menu menu){menu.add("نسخ");menu.add("إعادة توجيه");menu.add("★");menu.add("حذف");menu.add("تحديد الكل");return true;}
         public boolean onPrepareActionMode(ActionMode mode,Menu menu){return true;}
-        public boolean onActionItemClicked(ActionMode mode,MenuItem item){String x=item.getTitle().toString(); if(x.equals("تحديد الكل")){selected.clear();Cursor c=db.thread(address);while(c.moveToNext())selected.add(c.getLong(c.getColumnIndexOrThrow("id")));c.close();selectionTitle.setText(selected.size()+" محددة");mode.invalidate();return true;} if(x.equals("نسخ")){copySelected();mode.finish();return true;} if(x.equals("حذف")){db.deleteMessages(selected);mode.finish();return true;} if(x.equals("★")){db.starMessages(selected);mode.finish();return true;} if(x.equals("إعادة توجيه")){forwardSelected();mode.finish();return true;} return false;}
-        public void onDestroyActionMode(ActionMode mode){selected.clear();actionMode=null;selectionTitle.setText(address);render();}
+        public boolean onActionItemClicked(ActionMode mode,MenuItem item){String x=item.getTitle().toString(); if(x.equals("تحديد الكل")){selected.clear();Cursor c=db.thread(address);while(c.moveToNext())selected.add(c.getLong(c.getColumnIndexOrThrow("id")));c.close();selectionTitle.setText(selected.size()+" محددة");mode.invalidate();return true;} if(x.equals("نسخ")){copySelected();mode.finish();return true;} if(x.equals("حذف")){ArrayList<Long> ids=new ArrayList<>(selected);MESSAGE_EXECUTOR.execute(()->db.deleteMessages(ids));mode.finish();loadMessages(false);return true;} if(x.equals("★")){ArrayList<Long> ids=new ArrayList<>(selected);MESSAGE_EXECUTOR.execute(()->db.starMessages(ids));mode.finish();loadMessages(false);return true;} if(x.equals("إعادة توجيه")){forwardSelected();mode.finish();return true;} return false;}
+        public void onDestroyActionMode(ActionMode mode){selected.clear();actionMode=null;selectionTitle.setText(address);loadMessages(false);}
     }
 
-    void copySelected(){StringBuilder s=new StringBuilder();Cursor c=db.messagesByIds(selected);while(c.moveToNext())s.append(c.getString(c.getColumnIndexOrThrow("body"))).append("\n");c.close();((android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(android.content.ClipData.newPlainText("SMS",s.toString()));Toast.makeText(this,"تم نسخ الرسائل",Toast.LENGTH_SHORT).show();}
-    void forwardSelected(){Cursor c=db.messagesByIds(selected);StringBuilder s=new StringBuilder();while(c.moveToNext())s.append(c.getString(c.getColumnIndexOrThrow("body"))).append("\n");c.close();final String forwardedBody=s.toString().trim();final EditText to=new EditText(this);to.setHint("رقم المستلم");new AlertDialog.Builder(this).setTitle("إعادة توجيه").setMessage(forwardedBody).setView(to).setPositiveButton("إرسال",(d,w)->sendForwarded(to.getText().toString().trim(),forwardedBody)).setNegativeButton("إلغاء",null).show();}
+    void copySelected(){ArrayList<Long> ids=new ArrayList<>(selected);MESSAGE_EXECUTOR.execute(()->{StringBuilder copied=new StringBuilder();Cursor c=null;try{c=db.messagesByIds(ids);while(c.moveToNext())copied.append(c.getString(c.getColumnIndexOrThrow("body"))).append("\n");}finally{if(c!=null)c.close();}String text=copied.toString();runOnUiThread(()->{((android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(android.content.ClipData.newPlainText("SMS",text));Toast.makeText(this,"تم نسخ الرسائل",Toast.LENGTH_SHORT).show();});});}
+    void forwardSelected(){ArrayList<Long> ids=new ArrayList<>(selected);MESSAGE_EXECUTOR.execute(()->{StringBuilder body=new StringBuilder();Cursor c=null;try{c=db.messagesByIds(ids);while(c.moveToNext())body.append(c.getString(c.getColumnIndexOrThrow("body"))).append("\n");}finally{if(c!=null)c.close();}final String forwardedBody=body.toString().trim();runOnUiThread(()->{final EditText to=new EditText(this);to.setHint("رقم المستلم");new AlertDialog.Builder(this).setTitle("إعادة توجيه").setMessage(forwardedBody).setView(to).setPositiveButton("إرسال",(d,w)->sendForwarded(to.getText().toString().trim(),forwardedBody)).setNegativeButton("إلغاء",null).show();});});}
 
     void sendForwarded(String recipient,String body){if(recipient.isEmpty()||body.trim().isEmpty()){Toast.makeText(this,"أدخل رقم المستلم",Toast.LENGTH_SHORT).show();return;}dispatchSms(recipient,body,"FORWARD",7000,8000);}
     void send(){String body=composer.getText().toString().trim();if(body.isEmpty())return;dispatchSms(address,body,"CONVERSATION",3000,4000,()->composer.setText(""));}
@@ -94,6 +259,6 @@ public class ConversationActivity extends Activity {
         super.onRequestPermissionsResult(requestCode,permissions,grantResults);if(requestCode!=62)return;SubscriptionChoiceCallback callback=pendingSubscriptionAction;pendingSubscriptionAction=null;if(callback==null)return;
         if(grantResults!=null&&grantResults.length>0&&grantResults[0]==PackageManager.PERMISSION_GRANTED)showSmsSubscriptionChoices(callback);else{Toast.makeText(this,"لم يُمنح إذن قراءة حالة الهاتف؛ سيتم الإرسال بالشريحة الافتراضية.",Toast.LENGTH_SHORT).show();callback.onSelected(-1);}
     }
-    void conversationMenu(View anchor){PopupMenu p=new PopupMenu(this,anchor);p.getMenu().add("بحث في المحادثة");p.getMenu().add("تحديد الكل");p.getMenu().add("حذف المحادثة");p.setOnMenuItemClickListener(i->{String x=i.getTitle().toString();if(x.startsWith("بحث")){search.setVisibility(search.getVisibility()==View.VISIBLE?View.GONE:View.VISIBLE);if(search.getVisibility()==View.VISIBLE)search.requestFocus();}else if(x.equals("تحديد الكل")){Cursor c=db.thread(address);selected.clear();while(c.moveToNext())selected.add(c.getLong(c.getColumnIndexOrThrow("id")));c.close();actionMode=startActionMode(new SelectionCallback());selectionTitle.setText(selected.size()+" محددة");}else{new AlertDialog.Builder(this).setMessage("حذف جميع رسائل هذه المحادثة؟").setPositiveButton("حذف",(d,w)->{db.deleteThread(address);render();}).setNegativeButton("إلغاء",null).show();}return true;});p.show();}
+    void conversationMenu(View anchor){PopupMenu p=new PopupMenu(this,anchor);p.getMenu().add("بحث في المحادثة");p.getMenu().add("تحديد الكل");p.getMenu().add("حذف المحادثة");p.setOnMenuItemClickListener(i->{String x=i.getTitle().toString();if(x.startsWith("بحث")){search.setVisibility(search.getVisibility()==View.VISIBLE?View.GONE:View.VISIBLE);if(search.getVisibility()==View.VISIBLE)search.requestFocus();else loadMessages(false);}else if(x.equals("تحديد الكل")){Cursor c=db.thread(address);selected.clear();while(c.moveToNext())selected.add(c.getLong(c.getColumnIndexOrThrow("id")));c.close();actionMode=startActionMode(new SelectionCallback());selectionTitle.setText(selected.size()+" محددة");}else{new AlertDialog.Builder(this).setMessage("حذف جميع رسائل هذه المحادثة؟").setPositiveButton("حذف",(d,w)->{MESSAGE_EXECUTOR.execute(()->db.deleteThread(address));loadMessages(false);}).setNegativeButton("إلغاء",null).show();}return true;});p.show();}
 
 }
