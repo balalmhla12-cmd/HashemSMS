@@ -2,11 +2,53 @@ package com.hashem.sms;
 import android.content.*;import android.database.sqlite.*;import android.database.*;import android.net.Uri;import android.provider.Telephony;import android.util.Log;import java.util.*;import java.util.concurrent.locks.ReentrantLock;
 public class Db extends SQLiteOpenHelper{
  public static final ReentrantLock PROVIDER_SYNC_LOCK = new ReentrantLock();
- public Db(Context c){super(c,"hashem.db",null,8);} 
- public void onCreate(SQLiteDatabase d){d.execSQL("CREATE TABLE messages(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,type TEXT,status TEXT,ts INTEGER,provider_id INTEGER,read INTEGER DEFAULT 0,star INTEGER DEFAULT 0,trash INTEGER NOT NULL DEFAULT 0)");d.execSQL("CREATE TABLE groups(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE)");d.execSQL("CREATE TABLE group_members(gid INTEGER,address TEXT,name TEXT,PRIMARY KEY(gid,address))");d.execSQL("CREATE TABLE schedules(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,at INTEGER)");d.execSQL("CREATE TABLE forward_rules(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL UNIQUE,destination TEXT NOT NULL)");d.execSQL("CREATE TABLE conversation_flags(address TEXT PRIMARY KEY,archived INTEGER NOT NULL DEFAULT 0,blocked INTEGER NOT NULL DEFAULT 0)");createPerformanceIndexes(d);d.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_provider_id ON messages(provider_id)");}
+ public Db(Context c){super(c,"hashem.db",null,9);} 
+ public void onCreate(SQLiteDatabase d){
+  d.execSQL("CREATE TABLE messages(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,type TEXT,status TEXT,ts INTEGER,provider_id INTEGER,read INTEGER DEFAULT 0,star INTEGER DEFAULT 0,trash INTEGER NOT NULL DEFAULT 0)");
+  d.execSQL("CREATE TABLE groups(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE)");
+  d.execSQL("CREATE TABLE group_members(gid INTEGER,address TEXT,name TEXT,PRIMARY KEY(gid,address))");
+  d.execSQL("CREATE TABLE schedules(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,at INTEGER)");
+  d.execSQL("CREATE TABLE forward_rules(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL UNIQUE,destination TEXT NOT NULL)");
+  d.execSQL("CREATE TABLE conversation_flags(address TEXT PRIMARY KEY,archived INTEGER NOT NULL DEFAULT 0,blocked INTEGER NOT NULL DEFAULT 0)");
+  createPerformanceIndexes(d);d.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_provider_id ON messages(provider_id)");
+ }
  private boolean hasColumn(SQLiteDatabase d,String table,String column){Cursor c=null;try{c=d.rawQuery("PRAGMA table_info("+table+")",null);while(c.moveToNext())if(column.equalsIgnoreCase(c.getString(c.getColumnIndexOrThrow("name"))))return true;return false;}finally{if(c!=null)c.close();}}
  private void createPerformanceIndexes(SQLiteDatabase d){d.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_address_ts ON messages(address,ts DESC)");d.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_trash_type_ts ON messages(trash,type,ts DESC)");d.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_type_read_trash_address ON messages(type,read,trash,address)");d.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_star_ts ON messages(star,ts DESC)");}
- public void onUpgrade(SQLiteDatabase d,int a,int b){if(a<2){d.execSQL("ALTER TABLE messages ADD COLUMN star INTEGER DEFAULT 0");}if(a<3){d.execSQL("CREATE TABLE IF NOT EXISTS forward_rules(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL UNIQUE,destination TEXT NOT NULL)");}if(a<4){d.execSQL("CREATE TABLE IF NOT EXISTS conversation_flags(address TEXT PRIMARY KEY,archived INTEGER NOT NULL DEFAULT 0,blocked INTEGER NOT NULL DEFAULT 0)");}if(a<5){d.execSQL("ALTER TABLE messages ADD COLUMN trash INTEGER NOT NULL DEFAULT 0");d.execSQL("UPDATE messages SET trash=1 WHERE type='trash'");}if(a<6){createPerformanceIndexes(d);}if(a<7){if(!hasColumn(d,"messages","provider_id"))d.execSQL("ALTER TABLE messages ADD COLUMN provider_id INTEGER");d.execSQL("UPDATE messages SET provider_id=thread WHERE (provider_id IS NULL OR provider_id<=0) AND thread>0");d.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_provider_id ON messages(provider_id)");}if(a<8){d.execSQL("DROP INDEX IF EXISTS idx_messages_thread");}}
+ public void onUpgrade(SQLiteDatabase d,int oldVersion,int newVersion){
+  if(oldVersion<2&&!hasColumn(d,"messages","star"))d.execSQL("ALTER TABLE messages ADD COLUMN star INTEGER DEFAULT 0");
+  if(oldVersion<3)d.execSQL("CREATE TABLE IF NOT EXISTS forward_rules(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL UNIQUE,destination TEXT NOT NULL)");
+  if(oldVersion<4)d.execSQL("CREATE TABLE IF NOT EXISTS conversation_flags(address TEXT PRIMARY KEY,archived INTEGER NOT NULL DEFAULT 0,blocked INTEGER NOT NULL DEFAULT 0)");
+  if(oldVersion<5){if(!hasColumn(d,"messages","trash"))d.execSQL("ALTER TABLE messages ADD COLUMN trash INTEGER NOT NULL DEFAULT 0");d.execSQL("UPDATE messages SET trash=1 WHERE type='trash'");}
+  if(oldVersion<6)createPerformanceIndexes(d);
+  if(oldVersion<7&&!hasColumn(d,"messages","provider_id"))d.execSQL("ALTER TABLE messages ADD COLUMN provider_id INTEGER");
+  if(oldVersion<9)rebuildMessagesWithoutThread(d);
+ }
+ private void rebuildMessagesWithoutThread(SQLiteDatabase d){
+  java.util.ArrayList<String> indexes=new java.util.ArrayList<>();Cursor ix=null;
+  try{ix=d.rawQuery("SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name='messages' AND sql IS NOT NULL",null);while(ix.moveToNext()){String sql=ix.getString(0);if(sql!=null&&!sql.toLowerCase(java.util.Locale.ROOT).contains("thread"))indexes.add(sql);}}
+  finally{if(ix!=null)ix.close();}
+  d.execSQL("DROP TABLE IF EXISTS messages_v9");
+  d.execSQL("CREATE TABLE messages_v9(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,type TEXT,status TEXT,ts INTEGER,provider_id INTEGER,read INTEGER DEFAULT 0,star INTEGER DEFAULT 0,trash INTEGER NOT NULL DEFAULT 0)");
+  Cursor oldRows=null;
+  try{
+   oldRows=d.query("messages",null,null,null,null,null,null);int legacyThread=oldRows.getColumnIndex("thread"),oldProvider=oldRows.getColumnIndex("provider_id");
+   while(oldRows.moveToNext()){
+    ContentValues row=new ContentValues();
+    copyColumn(oldRows,row,"id");copyColumn(oldRows,row,"address");copyColumn(oldRows,row,"body");copyColumn(oldRows,row,"type");copyColumn(oldRows,row,"status");copyColumn(oldRows,row,"ts");
+    long provider=oldProvider>=0&&!oldRows.isNull(oldProvider)?oldRows.getLong(oldProvider):0L;
+    if(provider<=0&&legacyThread>=0&&!oldRows.isNull(legacyThread))provider=oldRows.getLong(legacyThread);
+    if(provider>0)row.put("provider_id",provider);else row.putNull("provider_id");
+    copyColumnOrDefault(oldRows,row,"read",0);copyColumnOrDefault(oldRows,row,"star",0);copyColumnOrDefault(oldRows,row,"trash",0);
+    if(!row.containsKey("type"))row.put("type","out");if(!row.containsKey("status"))row.put("status","");if(!row.containsKey("ts"))row.put("ts",0L);
+    d.insertOrThrow("messages_v9",null,row);
+   }
+  }finally{if(oldRows!=null)oldRows.close();}
+  d.execSQL("DROP TABLE messages");d.execSQL("ALTER TABLE messages_v9 RENAME TO messages");
+  for(String sql:indexes)try{d.execSQL(sql);}catch(android.database.SQLException e){Log.w("HashemSMS","Skipped legacy messages index incompatible with schema v9: "+sql,e);}
+  createPerformanceIndexes(d);d.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_provider_id ON messages(provider_id)");
+ }
+ private void copyColumn(Cursor c,ContentValues v,String column){int i=c.getColumnIndex(column);if(i<0)return;switch(c.getType(i)){case Cursor.FIELD_TYPE_NULL:v.putNull(column);break;case Cursor.FIELD_TYPE_INTEGER:v.put(column,c.getLong(i));break;case Cursor.FIELD_TYPE_FLOAT:v.put(column,c.getDouble(i));break;case Cursor.FIELD_TYPE_BLOB:v.put(column,c.getBlob(i));break;default:v.put(column,c.getString(i));}}
+ private void copyColumnOrDefault(Cursor c,ContentValues v,String column,int fallback){int i=c.getColumnIndex(column);if(i<0)v.put(column,fallback);else copyColumn(c,v,column);}
  public long addMessage(String a,String b,String t,String s){ContentValues v=cv(a,b,t,s);return getWritableDatabase().insert("messages",null,v);}
  public void status(long id,String s){ContentValues v=new ContentValues();v.put("status",s);getWritableDatabase().update("messages",v,"id=?",new String[]{""+id});}
  public void saveOutgoingToSystemProvider(Context context,long id){

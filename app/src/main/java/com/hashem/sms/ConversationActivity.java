@@ -21,15 +21,15 @@ public class ConversationActivity extends Activity {
     Db db; String address; LinearLayout root, messages; EditText search, composer; TextView selectionTitle; ActionMode actionMode; final ArrayList<Long> selected = new ArrayList<>();
     int purple = Color.rgb(103,80,164);
     
-    java.util.function.IntConsumer pendingSubscriptionAction;
+    SubscriptionChoiceCallback pendingSubscriptionAction;
 
     TextView tv(String s,int size){ TextView t=new TextView(this); t.setText(s); t.setTextSize(size); t.setTextColor(Color.rgb(35,35,35)); t.setPadding(18,12,18,12); return t; }
     GradientDrawable rounded(int color,int stroke,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(radius*getResources().getDisplayMetrics().density);if(stroke!=0)d.setStroke(1,color==0?stroke:stroke);return d;}
     Button actionButton(String label,boolean primary){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setTextSize(14);b.setTypeface(Typeface.DEFAULT,Typeface.BOLD);b.setTextColor(primary?Color.WHITE:Color.rgb(56,30,114));b.setPadding(14,6,14,6);b.setBackground(rounded(primary?purple:Color.rgb(234,221,255),primary?0:Color.rgb(218,207,237),28));if(android.os.Build.VERSION.SDK_INT>=21)b.setStateListAnimator(null);return b;}
 
-    @Override public void onCreate(Bundle b){ super.onCreate(b); db=new Db(this); address=getIntent().getStringExtra("address"); if(address==null)address=""; db.markThreadRead(address); build(); render(); }
+    @Override public void onCreate(Bundle b){ super.onCreate(b); db=new Db(this); address=getIntent().getStringExtra("address"); if(address==null)address=""; db.markThreadRead(address);NotificationHelper.cancelConversationNotification(this,address); build(); render(); }
 
-    @Override protected void onResume(){super.onResume();if(db!=null&&messages!=null)render();}
+    @Override protected void onResume(){super.onResume();if(db!=null&&messages!=null){db.markThreadRead(address);NotificationHelper.cancelConversationNotification(this,address);render();}}
 
     void build(){
         root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setPadding(10,8,10,8); root.setBackgroundColor(Color.rgb(255,251,254));
@@ -74,17 +74,24 @@ public class ConversationActivity extends Activity {
     void dispatchSms(String recipient,String body,String tag,int sentBase,int deliveredBase){
         final android.content.Context appContext=getApplicationContext();final Db appDb=new Db(appContext);chooseSmsSubscription(subId->SmsSending.EXECUTOR.execute(()->SmsSending.sendSmsInBackground(appContext,appDb,recipient,body,tag,sentBase,deliveredBase,subId,true)));
     }
-    void chooseSmsSubscription(java.util.function.IntConsumer action){android.telephony.TelephonyManager tm;try{tm=(android.telephony.TelephonyManager)getSystemService(TELEPHONY_SERVICE);if(Build.VERSION.SDK_INT<23||tm==null||tm.getPhoneCount()<=1){action.accept(-1);return;}}catch(SecurityException e){action.accept(-1);return;}if(checkSelfPermission("android.permission.READ_PHONE_STATE")!=PackageManager.PERMISSION_GRANTED){pendingSubscriptionAction=action;requestPermissions(new String[]{"android.permission.READ_PHONE_STATE"},62);return;}showSmsSubscriptionChoices(action);}
-
-    @android.annotation.SuppressLint("MissingPermission") void showSmsSubscriptionChoices(java.util.function.IntConsumer action){
-        final java.util.concurrent.atomic.AtomicBoolean resolved=new java.util.concurrent.atomic.AtomicBoolean(false);java.util.function.IntConsumer once=subId->{if(resolved.compareAndSet(false,true))action.accept(subId);};
-        try{java.util.List<android.telephony.SubscriptionInfo> infos=android.telephony.SubscriptionManager.from(this).getActiveSubscriptionInfoList();if(infos==null||infos.isEmpty()){android.util.Log.w("HashemSMS","Active SIM list unavailable; using default SMS subscription");once.accept(-1);return;}if(infos.size()==1){once.accept(infos.get(0).getSubscriptionId());return;}
-            String[] labels=new String[infos.size()];for(int i=0;i<infos.size();i++){android.telephony.SubscriptionInfo info=infos.get(i);String name;try{CharSequence display=info.getDisplayName();name=display==null||display.toString().trim().isEmpty()?"SIM "+(info.getSimSlotIndex()+1):display.toString();}catch(RuntimeException e){name="SIM "+(info.getSimSlotIndex()+1);}String number="";try{String value=info.getNumber();if(value!=null)number=value.trim();}catch(RuntimeException e){android.util.Log.w("HashemSMS","Could not read SIM phone number for slot "+(info.getSimSlotIndex()+1),e);}labels[i]=name+(number.isEmpty()?"":" · "+number);}
-            new AlertDialog.Builder(this).setTitle("اختر شريحة الإرسال").setItems(labels,(dialog,which)->{if(which>=0&&which<infos.size())once.accept(infos.get(which).getSubscriptionId());else once.accept(-1);}).setNegativeButton("إرسال بالشريحة الافتراضية",(dialog,which)->once.accept(-1)).setOnCancelListener(dialog->once.accept(-1)).show();
-        }catch(SecurityException e){android.util.Log.w("HashemSMS","SIM list permission denied; using default SMS subscription",e);once.accept(-1);}catch(RuntimeException e){android.util.Log.w("HashemSMS","SIM list could not be fetched; using default SMS subscription",e);once.accept(-1);}
+    void chooseSmsSubscription(SubscriptionChoiceCallback callback){
+        android.telephony.TelephonyManager tm;try{tm=(android.telephony.TelephonyManager)getSystemService(TELEPHONY_SERVICE);if(Build.VERSION.SDK_INT<23||tm==null||tm.getPhoneCount()<=1){callback.onSelected(-1);return;}}catch(SecurityException e){callback.onCancelled();return;}
+        if(checkSelfPermission("android.permission.READ_PHONE_STATE")!=PackageManager.PERMISSION_GRANTED){pendingSubscriptionAction=callback;requestPermissions(new String[]{"android.permission.READ_PHONE_STATE"},62);return;}showSmsSubscriptionChoices(callback);
+    }
+    @android.annotation.SuppressLint("MissingPermission") void showSmsSubscriptionChoices(SubscriptionChoiceCallback callback){
+        final java.util.concurrent.atomic.AtomicBoolean resolved=new java.util.concurrent.atomic.AtomicBoolean(false);
+        java.util.function.IntConsumer onceSelected=id->{if(resolved.compareAndSet(false,true))callback.onSelected(id);};Runnable onceCancelled=()->{if(resolved.compareAndSet(false,true))callback.onCancelled();};
+        try{java.util.List<android.telephony.SubscriptionInfo> infos=android.telephony.SubscriptionManager.from(this).getActiveSubscriptionInfoList();
+            if(infos==null||infos.isEmpty()){android.util.Log.w("HashemSMS","No active SIM list; cancelling send rather than silently using default");onceCancelled.run();return;}
+            if(infos.size()==1){onceSelected.accept(infos.get(0).getSubscriptionId());return;}String[] labels=new String[infos.size()];
+            for(int i=0;i<infos.size();i++){android.telephony.SubscriptionInfo info=infos.get(i);String name;try{CharSequence display=info.getDisplayName();name=display==null||display.toString().trim().isEmpty()?"SIM "+(info.getSimSlotIndex()+1):display.toString();}catch(RuntimeException e){name="SIM "+(info.getSimSlotIndex()+1);}
+                String number="";try{String value=info.getNumber();if(value!=null)number=value.trim();}catch(RuntimeException e){android.util.Log.w("HashemSMS","Could not read SIM phone number for slot "+(info.getSimSlotIndex()+1),e);}labels[i]=name+(number.isEmpty()?"":" · "+number);}
+            new AlertDialog.Builder(this).setTitle("اختر شريحة الإرسال").setItems(labels,(dialog,which)->{if(which>=0&&which<infos.size())onceSelected.accept(infos.get(which).getSubscriptionId());else onceCancelled.run();}).setNegativeButton("إرسال بالشريحة الافتراضية",(dialog,which)->onceSelected.accept(-1)).setOnCancelListener(dialog->onceCancelled.run()).show();
+        }catch(SecurityException e){android.util.Log.w("HashemSMS","SIM list permission denied; cancelling send",e);onceCancelled.run();}catch(RuntimeException e){android.util.Log.w("HashemSMS","SIM list could not be fetched; cancelling send",e);onceCancelled.run();}
     }
     @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] grantResults){
-        super.onRequestPermissionsResult(requestCode,permissions,grantResults);if(requestCode!=62)return;java.util.function.IntConsumer action=pendingSubscriptionAction;pendingSubscriptionAction=null;if(action==null)return;if(grantResults!=null&&grantResults.length>0&&grantResults[0]==PackageManager.PERMISSION_GRANTED)showSmsSubscriptionChoices(action);else action.accept(-1);
+        super.onRequestPermissionsResult(requestCode,permissions,grantResults);if(requestCode!=62)return;SubscriptionChoiceCallback callback=pendingSubscriptionAction;pendingSubscriptionAction=null;if(callback==null)return;
+        if(grantResults!=null&&grantResults.length>0&&grantResults[0]==PackageManager.PERMISSION_GRANTED)showSmsSubscriptionChoices(callback);else callback.onCancelled();
     }
     void conversationMenu(View anchor){PopupMenu p=new PopupMenu(this,anchor);p.getMenu().add("بحث في المحادثة");p.getMenu().add("تحديد الكل");p.getMenu().add("حذف المحادثة");p.setOnMenuItemClickListener(i->{String x=i.getTitle().toString();if(x.startsWith("بحث")){search.setVisibility(search.getVisibility()==View.VISIBLE?View.GONE:View.VISIBLE);if(search.getVisibility()==View.VISIBLE)search.requestFocus();}else if(x.equals("تحديد الكل")){Cursor c=db.thread(address);selected.clear();while(c.moveToNext())selected.add(c.getLong(c.getColumnIndexOrThrow("id")));c.close();actionMode=startActionMode(new SelectionCallback());selectionTitle.setText(selected.size()+" محددة");}else{new AlertDialog.Builder(this).setMessage("حذف جميع رسائل هذه المحادثة؟").setPositiveButton("حذف",(d,w)->{db.deleteThread(address);render();}).setNegativeButton("إلغاء",null).show();}return true;});p.show();}
 

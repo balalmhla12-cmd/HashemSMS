@@ -115,37 +115,11 @@ public class SmsReceiver extends BroadcastReceiver {
         }
 
         try {
-            if (!db.isConversationBlocked(address)) notifyUser(context, address, body);
+            if (!db.isConversationBlocked(address)) NotificationHelper.showConversationNotification(context, address);
         } catch (Exception e) {
             Log.e(TAG, "Failed to check conversation block state or notify user", e);
         }
         context.sendBroadcast(new Intent(ACTION_SMS_UPDATED).setPackage(context.getPackageName()));
     }
 
-    private void notifyUser(Context context, String address, String body) {
-        try {
-            NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-            if (manager == null) {
-                Log.e(TAG, "NotificationManager is unavailable");
-                return;
-            }
-            String channel = "sms_messages";
-            if (Build.VERSION.SDK_INT >= 26) {
-                manager.createNotificationChannel(new NotificationChannel(channel, "الرسائل الجديدة", NotificationManager.IMPORTANCE_HIGH));
-            }
-            Intent open = new Intent(context, ConversationActivity.class);
-            open.putExtra("address", address);
-            PendingIntent pending = PendingIntent.getActivity(context, Math.abs(address.hashCode()), open,
-                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-            Notification.Builder notice = Build.VERSION.SDK_INT >= 26
-                    ? new Notification.Builder(context, channel) : new Notification.Builder(context);
-            notice.setSmallIcon(android.R.drawable.sym_action_chat).setContentTitle(address).setContentText(body)
-                    .setAutoCancel(true).setContentIntent(pending);
-            manager.notify(Math.abs(address.hashCode()), notice.build());
-        } catch (SecurityException e) {
-            Log.e(TAG, "Notifications are unavailable or permission was denied", e);
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to display incoming SMS notification", e);
-        }
-    }
 }
