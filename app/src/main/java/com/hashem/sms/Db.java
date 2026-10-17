@@ -91,6 +91,19 @@ public class Db extends SQLiteOpenHelper{
  public void permanentlyDeleteTrashMessage(long id){getWritableDatabase().delete("messages","id=? AND (trash=1 OR type='trash')",new String[]{String.valueOf(id)});}
  public void saveSchedule(long id,String address,String body,long at){ContentValues v=new ContentValues();v.put("id",id);v.put("address",address);v.put("body",body);v.put("at",at);getWritableDatabase().insertWithOnConflict("schedules",null,v,SQLiteDatabase.CONFLICT_REPLACE);}
  public Cursor listSchedules(){return getReadableDatabase().query("schedules",new String[]{"id","address","body","at"},null,null,null,null,"at ASC");}
+ public static final class ScheduleRecord{public final long id,at;public final String address,body;public ScheduleRecord(long i,String a,String b,long t){id=i;address=a;body=b;at=t;}}
+ public ScheduleRecord claimSchedule(long id){
+  SQLiteDatabase d=getWritableDatabase();d.beginTransaction();ScheduleRecord row=null;Cursor c=null;
+  try{c=d.query("schedules",new String[]{"id","address","body","at"},"id=?",new String[]{String.valueOf(id)},null,null,null,"1");if(c.moveToFirst())row=new ScheduleRecord(c.getLong(0),c.getString(1),c.getString(2),c.getLong(3));c.close();c=null;
+   if(row!=null&&d.delete("schedules","id=?",new String[]{String.valueOf(id)})==1)d.setTransactionSuccessful();else row=null;return row;
+  }finally{if(c!=null)c.close();d.endTransaction();}
+ }
+ public boolean removeSchedule(long id){return getWritableDatabase().delete("schedules","id=?",new String[]{String.valueOf(id)})==1;}
+ public java.util.ArrayList<Object[]> notificationMessages(String address,int limit){
+  java.util.ArrayList<Object[]> rows=new java.util.ArrayList<>();Cursor c=null;
+  try{c=getReadableDatabase().query("messages",new String[]{"body","type","ts"},"address=? AND trash=0 AND type!='trash'",new String[]{address},null,null,"ts DESC",String.valueOf(Math.max(1,limit)));while(c.moveToNext())rows.add(new Object[]{c.getString(0),c.getString(1),c.getLong(2)});}
+  finally{if(c!=null)c.close();}java.util.Collections.reverse(rows);return rows;
+ }
  public void deleteSchedule(long id){getWritableDatabase().delete("schedules","id=?",new String[]{String.valueOf(id)});}
  public long createForwardRule(String name,String destination){ContentValues v=new ContentValues();v.put("name",name.trim());v.put("destination",destination.trim());return getWritableDatabase().insertWithOnConflict("forward_rules",null,v,SQLiteDatabase.CONFLICT_IGNORE);}
  public Cursor listForwardRules(){return getReadableDatabase().query("forward_rules",new String[]{"id","name","destination"},null,null,null,null,"name COLLATE NOCASE ASC");}
