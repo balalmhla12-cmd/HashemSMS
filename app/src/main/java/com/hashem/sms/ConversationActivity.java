@@ -35,6 +35,7 @@ public class ConversationActivity extends Activity {
     private boolean firstMessageLoad = true;
     private boolean smsReceiverRegistered;
     private final Runnable smsUpdateDebounce = () -> loadMessages(false);
+    private final Runnable searchDebounce = () -> loadMessages(false);
     private final BroadcastReceiver smsUpdatedReceiver = new BroadcastReceiver() {
         @Override public void onReceive(Context context, Intent intent) {
             mainHandler.removeCallbacks(smsUpdateDebounce);
@@ -55,7 +56,6 @@ public class ConversationActivity extends Activity {
         address=getIntent().getStringExtra("address");
         if(address==null)address="";
         build();
-        markConversationReadAsync();
         loadMessages(true);
     }
 
@@ -80,6 +80,7 @@ public class ConversationActivity extends Activity {
     @Override protected void onDestroy(){
         loadGeneration.incrementAndGet();
         mainHandler.removeCallbacks(smsUpdateDebounce);
+        mainHandler.removeCallbacks(searchDebounce);
         super.onDestroy();
     }
 
@@ -105,7 +106,7 @@ public class ConversationActivity extends Activity {
         identity.addView(selectionTitle);identity.addView(subtitle);top.addView(identity,new LinearLayout.LayoutParams(0,-2,1));
         Button more=actionButton("⋮",false);more.setTextSize(22);more.setOnClickListener(v->conversationMenu(v)); top.addView(more,new LinearLayout.LayoutParams(48,52)); root.addView(top);
         search=new EditText(this); search.setHint("بحث في هذه المحادثة"); search.setSingleLine(); search.setTextSize(14);search.setPadding(16,4,16,4);search.setBackground(rounded(Color.rgb(243,239,248),Color.rgb(230,224,236),26));search.setVisibility(View.GONE);
-        search.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int d){} public void onTextChanged(CharSequence s,int a,int b,int c){loadMessages(false);} public void afterTextChanged(Editable e){}}); root.addView(search);
+        search.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int d){} public void onTextChanged(CharSequence s,int a,int b,int c){mainHandler.removeCallbacks(searchDebounce);mainHandler.postDelayed(searchDebounce,275L);} public void afterTextChanged(Editable e){}}); root.addView(search);
         messages=new RecyclerView(this);
         messages.setClipToPadding(false);
         messages.setPadding(0,4,0,4);
@@ -152,7 +153,9 @@ public class ConversationActivity extends Activity {
                 firstMessageLoad=false;
                 messageAdapter.submitList(result,()->{
                     if(messages==null||generation!=loadGeneration.get())return;
-                    if(first||wasAtBottom){
+                    pruneSelection(selected,messageAdapter.getCurrentList());
+                    if(selected.isEmpty()&&actionMode!=null){actionMode.finish();return;}
+                    if(wasAtBottom){
                         int last=messageAdapter.getItemCount()-1;
                         if(last>=0){
                             if(first)messages.scrollToPosition(last);
@@ -164,25 +167,28 @@ public class ConversationActivity extends Activity {
         });
     }
 
-    private static final class ConversationMessage {
+    static final class ConversationMessage {
         final long id;
         final String body,type,status,emptyText;
         final int star;
         ConversationMessage(long id,String body,String type,String status,int star,String emptyText){
             this.id=id;this.body=body;this.type=type;this.status=status;this.star=star;this.emptyText=emptyText;
         }
-        static ConversationMessage empty(String text){return new ConversationMessage(Long.MIN_VALUE,"","","",0,text);}
+        static final long EMPTY_ID=Long.MIN_VALUE;
+        static ConversationMessage empty(String text){return new ConversationMessage(EMPTY_ID,"","","",0,text);}
         boolean isEmpty(){return emptyText!=null;}
     }
 
-    private final class ConversationAdapter extends ListAdapter<ConversationMessage,RecyclerView.ViewHolder>{
-        private static final int TYPE_MESSAGE=1,TYPE_EMPTY=2;
-        ConversationAdapter(){super(new DiffUtil.ItemCallback<ConversationMessage>(){
+    static final class MessageDiffCallback extends DiffUtil.ItemCallback<ConversationMessage>{
             @Override public boolean areItemsTheSame(ConversationMessage a,ConversationMessage b){return a.id==b.id;}
             @Override public boolean areContentsTheSame(ConversationMessage a,ConversationMessage b){
                 return a.id==b.id&&Objects.equals(a.body,b.body)&&Objects.equals(a.type,b.type)&&Objects.equals(a.status,b.status)&&a.star==b.star&&Objects.equals(a.emptyText,b.emptyText);
             }
-        });}
+        }
+
+    private final class ConversationAdapter extends ListAdapter<ConversationMessage,RecyclerView.ViewHolder>{
+        private static final int TYPE_MESSAGE=1,TYPE_EMPTY=2;
+        ConversationAdapter(){super(new MessageDiffCallback());}
         @Override public int getItemViewType(int position){return getItem(position).isEmpty()?TYPE_EMPTY:TYPE_MESSAGE;}
         @Override public RecyclerView.ViewHolder onCreateViewHolder(android.view.ViewGroup parent,int viewType){
             if(viewType==TYPE_EMPTY){
@@ -195,8 +201,6 @@ public class ConversationActivity extends Activity {
             body.setMaxWidth((int)(getResources().getDisplayMetrics().widthPixels-80*getResources().getDisplayMetrics().density));
             TextView meta=tv("",12);
             bubble.addView(body);bubble.addView(meta);
-            GradientDrawable shape=new GradientDrawable();shape.setCornerRadius(24*getResources().getDisplayMetrics().density);
-            bubble.setBackground(shape);
             LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-2,-2);lp.setMargins(8,4,8,4);line.addView(bubble,lp);
             return new MessageHolder(line,bubble,body,meta);
         }
@@ -222,7 +226,20 @@ public class ConversationActivity extends Activity {
         EmptyHolder(TextView text){super(text);this.text=text;}
     }
 
-    void toggleSelection(long id){ if(actionMode==null){selected.clear(); actionMode=startActionMode(new SelectionCallback());} if(selected.contains(id))selected.remove(id);else selected.add(id); if(selected.isEmpty()){actionMode.finish();return;} selectionTitle.setText(selected.size()+" محددة"); actionMode.invalidate(); }
+    static void pruneSelection(ArrayList<Long> selection,List<ConversationMessage> rows){
+        HashSet<Long> visibleIds=new HashSet<>();
+        for(ConversationMessage row:rows)if(!row.isEmpty())visibleIds.add(row.id);
+        selection.removeIf(id->!visibleIds.contains(id));
+    }
+
+    void toggleSelection(long id){
+        if(id==ConversationMessage.EMPTY_ID)return;
+        if(actionMode==null){selected.clear();actionMode=startActionMode(new SelectionCallback());}
+        if(selected.contains(id))selected.remove(id);else selected.add(id);
+        if(selected.isEmpty()){if(actionMode!=null)actionMode.finish();return;}
+        selectionTitle.setText(selected.size()+" محددة");
+        if(actionMode!=null)actionMode.invalidate();
+    }
 
     private void selectAllMessages(boolean startMode,ActionMode mode){
         final String currentAddress=address;
