@@ -9,7 +9,7 @@ PAIRS = [
     ("on_primary", "primary"),
     ("on_fab", "fab"),
     ("on_chip_selected", "chip_selected"),
-    ("on_primary", "unread_accent"),
+    ("on_unread_accent", "unread_accent"),
     ("on_surface", "surface"),
     ("on_surface_variant", "surface"),
     ("on_surface_subtle", "surface"),
