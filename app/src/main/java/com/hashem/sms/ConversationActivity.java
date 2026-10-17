@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.DiffUtil;
+import androidx.core.content.ContextCompat;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -85,8 +86,7 @@ public class ConversationActivity extends Activity {
     private void registerSmsUpdatedReceiver(){
         if(smsReceiverRegistered)return;
         IntentFilter filter=new IntentFilter(SmsReceiver.ACTION_SMS_UPDATED);
-        if(Build.VERSION.SDK_INT>=33)registerReceiver(smsUpdatedReceiver,filter,Context.RECEIVER_NOT_EXPORTED);
-        else registerReceiver(smsUpdatedReceiver,filter);
+        ContextCompat.registerReceiver(this,smsUpdatedReceiver,filter,ContextCompat.RECEIVER_NOT_EXPORTED);
         smsReceiverRegistered=true;
     }
 
