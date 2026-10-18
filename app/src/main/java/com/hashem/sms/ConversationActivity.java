@@ -106,7 +106,7 @@ public class ConversationActivity extends Activity {
 
     void build(){
         root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setPadding(10,8,10,8); root.setBackgroundColor(UiResources.color(ConversationActivity.this,R.color.surface));
-        LinearLayout top=new LinearLayout(this); top.setGravity(Gravity.CENTER_VERTICAL);top.setPadding(0,0,0,8);
+        LinearLayout top=new LinearLayout(this); top.setGravity(Gravity.CENTER_VERTICAL);top.setPadding(6,4,6,10);top.setBackground(rounded(UiResources.color(ConversationActivity.this,R.color.card_surface),UiResources.color(ConversationActivity.this,R.color.card_stroke),20));
         ImageButton back=iconActionButton(R.drawable.ic_arrow_back,"رجوع",false); back.setOnClickListener(v->finish()); top.addView(back,new LinearLayout.LayoutParams(52,52));
         LinearLayout identity=new LinearLayout(this);identity.setOrientation(LinearLayout.VERTICAL);
         selectionTitle=tv(address,18);selectionTitle.setTypeface(Typeface.DEFAULT,Typeface.BOLD);selectionTitle.setPadding(8,2,8,0);
@@ -221,7 +221,7 @@ public class ConversationActivity extends Activity {
             MessageHolder h=(MessageHolder)holder;
             h.line.setGravity("out".equals(item.type)?Gravity.END:Gravity.START);
             h.body.setText(item.body);
-            h.meta.setText("out".equals(item.type)?(item.status==null?"":item.status):"واردة");h.meta.setCompoundDrawablesRelativeWithIntrinsicBounds(0,0,item.star==1?R.drawable.ic_star:0,0);h.meta.setCompoundDrawablePadding(UiResources.dp(ConversationActivity.this,4));
+            boolean outgoing="out".equals(item.type);h.meta.setText(outgoing?(item.status==null?"":item.status):"واردة");h.meta.setGravity(outgoing?Gravity.END:Gravity.START);h.meta.setTextColor(UiResources.color(ConversationActivity.this,outgoing?R.color.on_primary_container:R.color.on_surface_variant));h.meta.setCompoundDrawablesRelativeWithIntrinsicBounds(0,0,item.star==1?R.drawable.ic_star:0,0);h.meta.setCompoundDrawablePadding(UiResources.dp(ConversationActivity.this,4));
             h.bubble.setBackground(rounded("out".equals(item.type)?UiResources.color(ConversationActivity.this,R.color.bubble_out):UiResources.color(ConversationActivity.this,R.color.bubble_in),0,24));
             h.bubble.setOnLongClickListener(v->{toggleSelection(item.id);return true;});
             h.bubble.setOnClickListener(v->{if(actionMode!=null)toggleSelection(item.id);});
