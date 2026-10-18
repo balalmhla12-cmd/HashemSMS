@@ -1,14 +1,14 @@
 <resources>
-    <color name="primary">#007EA8</color>
+    <color name="primary">#006B91</color>
     <color name="on_primary">#FFFFFF</color>
-    <color name="surface">#F3F8FC</color>
+    <color name="surface">#F4F9FD</color>
     <color name="on_surface">#10243B</color>
     <color name="on_surface_variant">#405A73</color>
-    <color name="primary_container">#D4ECFA</color>
-    <color name="bubble_in">#DCEAF6</color>
-    <color name="bubble_out">#BDEAFF</color>
-    <color name="divider">#D1E1ED</color>
-    <color name="unread_accent">#006BA6</color>
+    <color name="primary_container">#D8EFFB</color>
+    <color name="bubble_in">#E5F0F8</color>
+    <color name="bubble_out">#B9E7FA</color>
+    <color name="divider">#D5E4EE</color>
+    <color name="unread_accent">#006B91</color>
     <color name="on_unread_accent">#FFFFFF</color>
     <color name="error">#B3261E</color>
     <color name="on_error">#FFFFFF</color>
@@ -21,19 +21,19 @@
     <color name="on_surface_subtle">#405A73</color>
     <color name="timestamp">#526A80</color>
     <color name="conversation_text">#10243B</color>
-    <color name="search_border">#A8BED4</color>
+    <color name="search_border">#B4CADB</color>
     <color name="surface_dark">#F3F8FC</color>
     <color name="text">#10243B</color>
     <color name="text_dark">#10243B</color>
     <color name="accent_cyan">#007EA8</color>
-    <color name="fab">#0078D4</color>
+    <color name="fab">#006B91</color>
     <color name="on_fab">#FFFFFF</color>
-    <color name="chip_selected">#007EA8</color>
+    <color name="chip_selected">#006B91</color>
     <color name="on_chip_selected">#FFFFFF</color>
     <color name="icon_gold">#9A6400</color>
     <color name="icon_orange">#E58A22</color>
     <color name="card_surface">#FFFFFF</color>
-    <color name="card_stroke">#A7C7DE</color>
-    <color name="background_top">#E8F6FF</color>
-    <color name="background_bottom">#F3F8FC</color>
+    <color name="card_stroke">#D5E4EE</color>
+    <color name="background_top">#EAF6FD</color>
+    <color name="background_bottom">#F4F9FD</color>
 </resources>
