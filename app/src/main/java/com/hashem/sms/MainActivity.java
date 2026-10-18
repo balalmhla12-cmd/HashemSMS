@@ -54,7 +54,7 @@ public class MainActivity extends androidx.appcompat.app.AppCompatActivity{
   root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(16,12,16,8);root.setBackgroundResource(R.drawable.bg_hashem_gradient);
   LinearLayout bar=new LinearLayout(this);bar.setOrientation(LinearLayout.HORIZONTAL);bar.setGravity(Gravity.CENTER_VERTICAL);bar.setPadding(2,6,2,10);
   LinearLayout brand=new LinearLayout(this);brand.setOrientation(LinearLayout.VERTICAL);
-  title=tv("هاشم SMS",27);title.setTypeface(Typeface.DEFAULT,Typeface.BOLD);title.setTextColor(UiResources.color(MainActivity.this,R.color.primary_variant));title.setPadding(2,0,2,0);
+  title=tv("هاشم SMS",23);title.setTypeface(Typeface.create("sans-serif",Typeface.EXTRA_BOLD));title.setTextColor(UiResources.color(MainActivity.this,R.color.primary_variant));title.setPadding(2,0,2,0);
   TextView subtitle=tv("رسائلك في مكان واحد",13);subtitle.setTextColor(UiResources.color(MainActivity.this,R.color.on_surface_variant));subtitle.setPadding(2,1,2,0);
   brand.addView(title);brand.addView(subtitle);bar.addView(brand,new LinearLayout.LayoutParams(0,-2,1));
   LinearLayout headerActions=new LinearLayout(this);headerActions.setOrientation(LinearLayout.HORIZONTAL);headerActions.setGravity(Gravity.CENTER_VERTICAL);
