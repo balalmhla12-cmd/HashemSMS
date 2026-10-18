@@ -6,9 +6,9 @@
     <color name="on_surface_variant">#B8CEE2</color>
     <color name="primary_container">#0C3464</color>
     <color name="bubble_in">#183860</color>
-    <color name="bubble_out">#007EDB</color>
+    <color name="bubble_out">#0065B8</color>
     <color name="divider">#082848</color>
-    <color name="unread_accent">#008DEB</color>
+    <color name="unread_accent">#0068B5</color>
     <color name="on_unread_accent">#FFFFFF</color>
     <color name="error">#FF6B7C</color>
     <color name="on_error">#081B3A</color>
