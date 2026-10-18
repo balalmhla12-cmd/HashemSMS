@@ -174,37 +174,46 @@ public class MainActivity extends androidx.appcompat.app.AppCompatActivity{
  void scheduledScreen(){list.addView(tv("الرسائل المجدولة",22));list.addView(tv("راجع الرسائل التي تنتظر الإرسال أو ألغِ جدولتها قبل موعدها.",14));android.database.Cursor c=db.listSchedules();int n=0;while(c.moveToNext()){long id=c.getLong(c.getColumnIndexOrThrow("id"));String a=c.getString(c.getColumnIndexOrThrow("address"));String body=c.getString(c.getColumnIndexOrThrow("body"));long at=c.getLong(c.getColumnIndexOrThrow("at"));LinearLayout card=new LinearLayout(this);card.setOrientation(LinearLayout.VERTICAL);card.setPadding(8,8,8,8);card.addView(tv("إلى: "+a,16));card.addView(tv(body,16));card.addView(tv("الموعد: "+new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm",Locale.getDefault()).format(new Date(at)),13));Button cancel=button("إلغاء الجدولة");cancel.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("إلغاء الرسالة المجدولة").setMessage("لن تُرسل هذه الرسالة في الموعد المحدد.").setNegativeButton("العودة",null).setPositiveButton("إلغاء الجدولة",(d,w)->{if(db.cancelSchedule(id)){AlarmScheduler.cancel(this,id,a,body);render();Toast.makeText(this,"تم إلغاء الجدولة",Toast.LENGTH_SHORT).show();}else Toast.makeText(this,"تم تنفيذ الرسالة أو إلغاء جدولتها بالفعل",Toast.LENGTH_LONG).show();}).show());card.addView(cancel);list.addView(card);View line=new View(this);line.setBackgroundColor(UiResources.color(MainActivity.this,R.color.divider));list.addView(line,new LinearLayout.LayoutParams(-1,1));n++;}c.close();if(n==0)list.addView(tv("لا توجد رسائل مجدولة حاليًا.",16));}
  void bulkScreen(){list.addView(tv("الرسائل الجماعية",22));list.addView(tv("اكتب رقمًا في كل سطر، ويمكن إضافة الاسم بعد فاصلة: 777123456, أحمد. استخدم {name} داخل نص الرسالة للتخصيص.",14));Button imp=button("استيراد ملف نصي أو CSV");imp.setOnClickListener(v->importFile());list.addView(imp);Button contacts=button("اختيار من جهات الاتصال · بحث وتحديد الكل");contacts.setOnClickListener(v->pickContactsForBulk());list.addView(contacts);bulkNumbers=new EditText(this);bulkNumbers.setHint("الرقم أو الرقم, الاسم — سطر لكل مستلم");bulkNumbers.setMinLines(5);bulkNumbers.setGravity(Gravity.TOP);list.addView(bulkNumbers);bulkBody=new EditText(this);bulkBody.setHint("نص الرسالة. مثال: مرحبًا {name}");bulkBody.setMinLines(4);bulkBody.setGravity(Gravity.TOP);list.addView(bulkBody);Button send=button("مراجعة ثم إرسال");send.setOnClickListener(v->confirmBulk());list.addView(send);}
  void pickContactsForBulk(){
-  ArrayList<String[]> all=new ArrayList<>();
-  try{
-   android.database.Cursor c=getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,new String[]{ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,ContactsContract.CommonDataKinds.Phone.NUMBER},null,null,ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME+" COLLATE NOCASE ASC");
-   if(c!=null){while(c.moveToNext()){String name=c.getString(0),number=c.getString(1);if(number==null)continue;number=number.trim();if(number.isEmpty())continue;all.add(new String[]{name==null?"":name,number});}c.close();}
-  }catch(Exception e){Toast.makeText(this,"تعذّر قراءة جهات الاتصال. تحقق من الإذن.",Toast.LENGTH_LONG).show();return;}
-  if(all.isEmpty()){Toast.makeText(this,"لا توجد أرقام في جهات الاتصال.",Toast.LENGTH_LONG).show();return;}
-  LinkedHashMap<String,String[]> selected=new LinkedHashMap<>();
-  LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(4,4,4,4);
-  EditText query=new EditText(this);query.setSingleLine(true);query.setHint("ابحث باسم أو جزء من الرقم");panel.addView(query,new LinearLayout.LayoutParams(-1,-2));
-  TextView count=tv("المحدد: 0",14);panel.addView(count);
-  LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.HORIZONTAL);
-  Button selectAll=button("تحديد كل النتائج");Button clear=button("إلغاء التحديد");
-  actions.addView(selectAll,new LinearLayout.LayoutParams(0,-2,1));actions.addView(clear,new LinearLayout.LayoutParams(0,-2,1));panel.addView(actions);
-  LinearLayout rows=new LinearLayout(this);rows.setOrientation(LinearLayout.VERTICAL);ScrollView scroll=new ScrollView(this);scroll.setFillViewport(false);scroll.addView(rows);int pickerHeight=(int)(getResources().getDisplayMetrics().density*360);panel.addView(scroll,new LinearLayout.LayoutParams(-1,pickerHeight));
-  final String[] currentQuery={""};
-  Runnable refresh=()->{
-   rows.removeAllViews();currentQuery[0]=query.getText().toString().trim().toLowerCase(Locale.ROOT);int shown=0;
-   for(String[] person:all){String name=person[0],number=person[1];if(!currentQuery[0].isEmpty()&&!name.toLowerCase(Locale.ROOT).contains(currentQuery[0])&&!number.toLowerCase(Locale.ROOT).contains(currentQuery[0]))continue;
-    String key=number.replaceAll("[\\s()\\-]","");CheckBox cb=new CheckBox(this);cb.setText((name.isEmpty()?number:name+"  ·  "+number));cb.setTextSize(14);cb.setPadding(8,5,8,5);cb.setChecked(selected.containsKey(key));cb.setOnCheckedChangeListener((v,checked)->{if(checked)selected.put(key,new String[]{name,key});else selected.remove(key);count.setText("المحدد: "+selected.size());});rows.addView(cb);View line=new View(this);line.setBackgroundColor(UiResources.color(MainActivity.this,R.color.divider));rows.addView(line,new LinearLayout.LayoutParams(-1,1));shown++;
+   ArrayList<String[]> all=new ArrayList<>();
+   if(checkSelfPermission("android.permission.READ_CONTACTS")!=PackageManager.PERMISSION_GRANTED){
+    android.database.Cursor known=null;
+    try{known=db.listThreads("all");while(known.moveToNext()){String number=known.getString(known.getColumnIndexOrThrow("address"));if(number!=null&&!number.trim().isEmpty())all.add(new String[]{"",number.trim()});}}
+    catch(Exception e){android.util.Log.w("HashemSMS","Unable to load known conversation numbers for bulk picker",e);}
+    finally{if(known!=null)try{known.close();}catch(Exception ignored){}}
+    if(all.isEmpty()){Toast.makeText(this,"إذن جهات الاتصال غير ممنوح ولا توجد أرقام محادثات محفوظة. يمكنك إدخال الأرقام يدويًا.",Toast.LENGTH_LONG).show();return;}
+    Toast.makeText(this,"إذن جهات الاتصال غير ممنوح؛ يعرض المنتقي أرقام المحادثات المحفوظة فقط.",Toast.LENGTH_LONG).show();
+   }else{
+    android.database.Cursor c=null;
+    try{c=getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,new String[]{ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,ContactsContract.CommonDataKinds.Phone.NUMBER},null,null,ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME+" COLLATE NOCASE ASC");if(c!=null)while(c.moveToNext()){String name=c.getString(0),number=c.getString(1);if(number==null)continue;number=number.trim();if(number.isEmpty())continue;all.add(new String[]{name==null?"":name,number});}}
+    catch(Exception e){android.util.Log.e("HashemSMS","Unable to read contacts for bulk picker",e);Toast.makeText(this,"تعذّر قراءة جهات الاتصال. تحقق من الإذن.",Toast.LENGTH_LONG).show();return;}
+    finally{if(c!=null)try{c.close();}catch(Exception ignored){}}
    }
-   if(shown==0)rows.addView(tv("لا توجد نتائج مطابقة",15));count.setText("المحدد: "+selected.size()+" · النتائج الظاهرة: "+shown);
-  };
-  query.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int st,int c,int a){}public void onTextChanged(CharSequence s,int st,int before,int count){refresh.run();}public void afterTextChanged(android.text.Editable e){}});
-  selectAll.setOnClickListener(v->{String q=currentQuery[0];for(String[] person:all){String name=person[0],number=person[1];if(!q.isEmpty()&&!name.toLowerCase(Locale.ROOT).contains(q)&&!number.toLowerCase(Locale.ROOT).contains(q))continue;String key=number.replaceAll("[\\s()\\-]","");selected.put(key,new String[]{name,key});}refresh.run();});
-  clear.setOnClickListener(v->{selected.clear();refresh.run();});
-  refresh.run();
-  AlertDialog dialog=new AlertDialog.Builder(this).setTitle("اختيار المستلمين").setView(panel).setNegativeButton("إلغاء",null).setPositiveButton("إضافة المحددين",null).create();
-  dialog.setOnShowListener(v->{dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(btn->{if(selected.isEmpty()){Toast.makeText(this,"حدد مستلمًا واحدًا على الأقل",Toast.LENGTH_SHORT).show();return;}StringBuilder text=new StringBuilder(bulkNumbers==null?"":bulkNumbers.getText().toString().trim());for(String[] person:selected.values()){String number=person[1];if(bulkContainsNumber(text.toString(),number))continue;if(text.length()>0)text.append('\n');text.append(number);if(!person[0].trim().isEmpty())text.append(", ").append(person[0].trim());}if(bulkNumbers!=null)bulkNumbers.setText(text.toString());Toast.makeText(this,"أُضيف "+selected.size()+" جهة محددة إلى القائمة؛ راجع التكرار قبل الإرسال.",Toast.LENGTH_LONG).show();dialog.dismiss();});});
-  dialog.show();
- }
- boolean bulkContainsNumber(String current,String number){String target=number.replaceAll("[\\s()\\-]","");for(String line:current.split("\\r?\\n")){String first=line.trim().split(",",2)[0].replaceAll("[\\s()\\-]","");if(first.equals(target))return true;}return false;}
+   if(all.isEmpty()){Toast.makeText(this,"لا توجد أرقام في جهات الاتصال.",Toast.LENGTH_LONG).show();return;}
+   LinkedHashMap<String,String[]> selected=new LinkedHashMap<>();
+   LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(4,4,4,4);
+   EditText query=new EditText(this);query.setSingleLine(true);query.setHint("ابحث باسم أو جزء من الرقم");panel.addView(query,new LinearLayout.LayoutParams(-1,-2));
+   TextView count=tv("المحدد: 0",14);panel.addView(count);
+   LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.HORIZONTAL);
+   Button selectAll=button("تحديد كل النتائج");Button clear=button("إلغاء التحديد");
+   actions.addView(selectAll,new LinearLayout.LayoutParams(0,-2,1));actions.addView(clear,new LinearLayout.LayoutParams(0,-2,1));panel.addView(actions);
+   LinearLayout rows=new LinearLayout(this);rows.setOrientation(LinearLayout.VERTICAL);ScrollView scroll=new ScrollView(this);scroll.setFillViewport(false);scroll.addView(rows);int pickerHeight=(int)(getResources().getDisplayMetrics().density*360);panel.addView(scroll,new LinearLayout.LayoutParams(-1,pickerHeight));
+   final String[] currentQuery={""};
+   Runnable refresh=()->{
+    rows.removeAllViews();currentQuery[0]=query.getText().toString().trim().toLowerCase(Locale.ROOT);int shown=0;
+    for(String[] person:all){String name=person[0],number=person[1];if(!currentQuery[0].isEmpty()&&!name.toLowerCase(Locale.ROOT).contains(currentQuery[0])&&!number.toLowerCase(Locale.ROOT).contains(currentQuery[0]))continue;
+     String key=number.replaceAll("[\\s()\\-]","");CheckBox cb=new CheckBox(this);cb.setText((name.isEmpty()?number:name+"  ·  "+number));cb.setTextSize(14);cb.setPadding(8,5,8,5);cb.setChecked(selected.containsKey(key));cb.setOnCheckedChangeListener((v,checked)->{if(checked)selected.put(key,new String[]{name,key});else selected.remove(key);count.setText("المحدد: "+selected.size());});rows.addView(cb);View line=new View(this);line.setBackgroundColor(UiResources.color(MainActivity.this,R.color.divider));rows.addView(line,new LinearLayout.LayoutParams(-1,1));shown++;
+    }
+    if(shown==0)rows.addView(tv("لا توجد نتائج مطابقة",15));count.setText("المحدد: "+selected.size()+" · النتائج الظاهرة: "+shown);
+   };
+   query.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int st,int c,int a){}public void onTextChanged(CharSequence s,int st,int before,int count){refresh.run();}public void afterTextChanged(android.text.Editable e){}});
+   selectAll.setOnClickListener(v->{String q=currentQuery[0];for(String[] person:all){String name=person[0],number=person[1];if(!q.isEmpty()&&!name.toLowerCase(Locale.ROOT).contains(q)&&!number.toLowerCase(Locale.ROOT).contains(q))continue;String key=number.replaceAll("[\\s()\\-]","");selected.put(key,new String[]{name,key});}refresh.run();});
+   clear.setOnClickListener(v->{selected.clear();refresh.run();});
+   refresh.run();
+   AlertDialog dialog=new AlertDialog.Builder(this).setTitle("اختيار المستلمين").setView(panel).setNegativeButton("إلغاء",null).setPositiveButton("إضافة المحددين",null).create();
+   dialog.setOnShowListener(v->{dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(btn->{if(selected.isEmpty()){Toast.makeText(this,"حدد مستلمًا واحدًا على الأقل",Toast.LENGTH_SHORT).show();return;}StringBuilder text=new StringBuilder(bulkNumbers==null?"":bulkNumbers.getText().toString().trim());for(String[] person:selected.values()){String number=person[1];if(bulkContainsNumber(text.toString(),number))continue;if(text.length()>0)text.append('\n');text.append(number);if(!person[0].trim().isEmpty())text.append(", ").append(person[0].trim());}if(bulkNumbers!=null)bulkNumbers.setText(text.toString());Toast.makeText(this,"أُضيف "+selected.size()+" جهة محددة إلى القائمة؛ راجع التكرار قبل الإرسال.",Toast.LENGTH_LONG).show();dialog.dismiss();});});
+   dialog.show();
+  }
+  boolean bulkContainsNumber(String current,String number){String target=number.replaceAll("[\\s()\\-]","");for(String line:current.split("\\r?\\n")){String first=line.trim().split(",",2)[0].replaceAll("[\\s()\\-]","");if(first.equals(target))return true;}return false;}
  void confirmBulk(){
   String raw=bulkNumbers.getText().toString().trim(),body=bulkBody.getText().toString().trim();if(raw.isEmpty()||body.isEmpty()){Toast.makeText(this,"أدخل المستلمين ونص الرسالة أولًا",Toast.LENGTH_SHORT).show();return;}
   ArrayList<String[]> recipients=new ArrayList<>();HashSet<String> seenNumbers=new HashSet<>();int invalid=0;boolean firstLine=true;
