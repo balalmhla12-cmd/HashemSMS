@@ -81,7 +81,7 @@ final class ContactsLogic {
             }
             for (String number : contact.numbers) {
                 if (number.toLowerCase(Locale.ROOT).contains(q)
-                        || normalizeDigits(number).contains(normalizeDigits(q))) {
+                        || (!normalizeDigits(q).isEmpty() && normalizeDigits(number).contains(normalizeDigits(q)))) {
                     filtered.add(contact);
                     break;
                 }
