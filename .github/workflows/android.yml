@@ -2,7 +2,7 @@ name: Build HashemSMS APK
 
 on:
   push:
-    branches: [main]
+    branches: [main, phase1-ui]
   pull_request:
     branches: [main]
   workflow_dispatch:
