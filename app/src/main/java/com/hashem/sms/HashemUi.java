@@ -59,9 +59,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
 
     static final class Overlay {
         static final int[] PALETTE = {0xFF29C5F6, 0xFFB39DFF, 0xFF4DD0B1, 0xFFE6C15A, 0xFFF48FB1, 0xFF9CCC65, 0xFFE0A070};
-        static final SimpleDateFormat HM = new SimpleDateFormat("HH:mm", Locale.getDefault());
         static final SimpleDateFormat DAY = new SimpleDateFormat("EEEE", new Locale("ar"));
-        static final SimpleDateFormat DM = new SimpleDateFormat("dd/MM", Locale.getDefault());
 
         final MainActivity m;
         final String[] filters = {"all", "unread", "failed"};
@@ -419,11 +417,11 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             t.setTimeInMillis(ts);
             Calendar y = (Calendar) now.clone();
             y.add(Calendar.DAY_OF_YEAR, -1);
-            if (sameDay(now, t)) return HM.format(new Date(ts));
+            if (sameDay(now, t)) return new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date(ts));
             if (sameDay(y, t)) return "أمس";
             long days = (now.getTimeInMillis() - ts) / 86400000L;
             if (days < 6) return DAY.format(new Date(ts));
-            return DM.format(new Date(ts));
+            return new SimpleDateFormat("dd/MM", Locale.getDefault()).format(new Date(ts));
         }
     }
 }
