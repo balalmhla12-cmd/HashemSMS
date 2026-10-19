@@ -8,4 +8,7 @@
     <string name="chip_all">الكل</string>
     <string name="chip_unread">غير مقروءة</string>
     <string name="chip_failed">لم يتم الإرسال</string>
+    <string name="chip_bulk">الجماعية</string>
+    <string name="chip_groups">المجموعات</string>
+    <string name="chip_starred">المميزة</string>
 </resources>
