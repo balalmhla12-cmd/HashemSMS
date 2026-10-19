@@ -9,7 +9,7 @@
     <color name="bubble_out">#0065B8</color>
     <color name="divider">#082848</color>
     <color name="unread_accent">#18BDF2</color>
-    <color name="on_unread_accent">#FFFFFF</color>
+    <color name="on_unread_accent">#001028</color>
     <color name="error">#FF6B7C</color>
     <color name="on_error">#081B3A</color>
     <color name="on_primary_container">#FFFFFF</color>
@@ -26,7 +26,7 @@
     <color name="text">#F5FAFF</color>
     <color name="text_dark">#F5FAFF</color>
     <color name="accent_cyan">#00C8F9</color>
-    <color name="fab">#087BE8</color>
+    <color name="fab">#0065C8</color>
     <color name="on_fab">#FFFFFF</color>
     <color name="chip_selected">#007EA8</color>
     <color name="on_chip_selected">#FFFFFF</color>
