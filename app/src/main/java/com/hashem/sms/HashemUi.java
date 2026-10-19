@@ -1,5 +1,6 @@
 package com.hashem.sms;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
@@ -57,6 +58,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
     @Override public void onActivitySaveInstanceState(Activity a, Bundle b) {}
     @Override public void onActivityDestroyed(Activity a) {}
 
+    @SuppressLint("SetTextI18n")
     static final class Overlay {
         static final int[] PALETTE = {0xFF29C5F6, 0xFFB39DFF, 0xFF4DD0B1, 0xFFE6C15A, 0xFFF48FB1, 0xFF9CCC65, 0xFFE0A070};
         static final SimpleDateFormat DAY = new SimpleDateFormat("EEEE", new Locale("ar"));
