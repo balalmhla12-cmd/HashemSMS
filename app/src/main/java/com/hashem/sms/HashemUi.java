@@ -103,6 +103,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             safe(this::header);
             safe(this::search);
             safe(this::buildChips);
+            safe(this::adjustBottomNav);
             safe(this::compose);
             listener = () -> {
                 try { tick(); }
@@ -193,6 +194,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             });
             box.addView(circle, new LinearLayout.LayoutParams(dp(46), dp(46)));
             m.search.setBackground(null);
+            m.search.setHint("ابحث في المحادثات أو الأرقام");
             m.search.setPaddingRelative(dp(14), 0, dp(10), 0);
             box.addView(m.search, new LinearLayout.LayoutParams(0, -1, 1));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(58));
@@ -245,6 +247,8 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                 tabs.addView(chip, clp);
                 chips[i] = chip; chipTexts[i] = tx; chipIcons[i] = ic;
             }
+            // ensure smooth horizontal scrolling and no overlap
+            try { m.filtersScroll.setHorizontalScrollBarEnabled(false); m.filtersScroll.setClipToPadding(false); } catch (Throwable ignored) {}
         }
 
         void styleChip(int i, boolean sel) {
@@ -283,6 +287,19 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                     setBadge(failedBadge, ff);
                 });
             });
+        }
+
+        // ---------- Ensure bottom navigation shows only two items ----------
+        void adjustBottomNav() {
+            try {
+                LinearLayout nav = m.bottomNavigation;
+                if (nav == null) return;
+                // keep first two items visible, hide the rest to avoid changing MainActivity source
+                for (int i = 0; i < nav.getChildCount(); i++) {
+                    View c = nav.getChildAt(i);
+                    if (i < 2) c.setVisibility(View.VISIBLE); else c.setVisibility(View.GONE);
+                }
+            } catch (Throwable t) { android.util.Log.w("HashemUi", "adjustBottomNav failed", t); }
         }
 
         // ---------- Floating compose button ----------
