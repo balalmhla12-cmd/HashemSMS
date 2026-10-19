@@ -97,7 +97,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
         }
 
         void install() {
-            try { bold = ResourcesCompat.getFont(m, R.font.almarai_bold); } catch (Throwable ignored) {}
+            try { bold = Typeface.create(ResourcesCompat.getFont(m, R.font.almarai_family), Typeface.BOLD); } catch (Throwable ignored) {}
             safe(this::header);
             safe(this::search);
             safe(this::buildChips);
@@ -191,6 +191,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             });
             box.addView(circle, new LinearLayout.LayoutParams(dp(46), dp(46)));
             m.search.setBackground(null);
+            m.search.setHint(R.string.search_hint);
             m.search.setPaddingRelative(dp(14), 0, dp(10), 0);
             box.addView(m.search, new LinearLayout.LayoutParams(0, -1, 1));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(58));
