@@ -1,6 +1,5 @@
 package com.hashem.sms;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
@@ -58,16 +57,15 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
     @Override public void onActivitySaveInstanceState(Activity a, Bundle b) {}
     @Override public void onActivityDestroyed(Activity a) {}
 
-    @SuppressLint("SetTextI18n")
     static final class Overlay {
         static final int[] PALETTE = {0xFF29C5F6, 0xFFB39DFF, 0xFF4DD0B1, 0xFFE6C15A, 0xFFF48FB1, 0xFF9CCC65, 0xFFE0A070};
         static final SimpleDateFormat DAY = new SimpleDateFormat("EEEE", new Locale("ar"));
 
         final MainActivity m;
-        final String[] filters = {"all", "unread", "failed", "bulk", "groups", "starred"};
-        final LinearLayout[] chips = new LinearLayout[6];
-        final TextView[] chipTexts = new TextView[6];
-        final ImageView[] chipIcons = new ImageView[6];
+        final String[] filters = {"all", "unread", "failed"};
+        final LinearLayout[] chips = new LinearLayout[3];
+        final TextView[] chipTexts = new TextView[3];
+        final ImageView[] chipIcons = new ImageView[3];
         TextView unreadBadge, failedBadge;
         Typeface bold;
         String lastKey = "";
@@ -103,7 +101,6 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             safe(this::header);
             safe(this::search);
             safe(this::buildChips);
-            safe(this::adjustBottomNav);
             safe(this::compose);
             listener = () -> {
                 try { tick(); }
@@ -165,7 +162,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             ImageView v = new ImageView(m);
             v.setImageResource(res);
             v.setScaleType(ImageView.ScaleType.CENTER);
-            v.setContentDescription(res == R.drawable.ic_moon ? "الوضع الداكن" : "الوضع الفاتح");
+            v.setContentDescription(res == R.drawable.ic_moon ? m.getString(R.string.dark_mode) : m.getString(R.string.light_mode));
             v.setColorFilter(active ? col(R.color.on_primary) : col(R.color.on_surface_variant));
             if (active) v.setBackground(oval(col(R.color.accent_cyan), 0, 0));
             return v;
@@ -186,7 +183,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             circle.setColorFilter(col(R.color.on_primary));
             circle.setScaleType(ImageView.ScaleType.CENTER);
             circle.setBackground(oval(col(R.color.accent_cyan), 0, 0));
-            circle.setContentDescription("بحث");
+            circle.setContentDescription(m.getString(R.string.search_cd));
             circle.setOnClickListener(v -> {
                 m.search.requestFocus();
                 InputMethodManager imm = (InputMethodManager) m.getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -194,8 +191,8 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             });
             box.addView(circle, new LinearLayout.LayoutParams(dp(46), dp(46)));
             m.search.setBackground(null);
-            m.search.setHint("ابحث في المحادثات أو الأرقام");
             m.search.setPaddingRelative(dp(14), 0, dp(10), 0);
+            m.search.setHint(m.getString(R.string.search_hint));
             box.addView(m.search, new LinearLayout.LayoutParams(0, -1, 1));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(58));
             lp.bottomMargin = dp(10);
@@ -206,11 +203,11 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
         void buildChips() {
             LinearLayout tabs = (LinearLayout) m.filtersScroll.getChildAt(0);
             tabs.removeAllViews();
-            String[] labels = {"الكل", "غير مقروءة", "لم يتم الإرسال", "الجماعية", "المجموعات", "المميزة"};
-            int[] icons = {R.drawable.ic_chip_all, R.drawable.ic_chip_eye, R.drawable.ic_chip_warning, R.drawable.ic_nav_messages, R.drawable.ic_nav_messages, R.drawable.ic_star};
+            String[] labels = { m.getString(R.string.chip_all), m.getString(R.string.chip_unread), m.getString(R.string.chip_failed) };
+            int[] icons = {R.drawable.ic_chip_all, R.drawable.ic_chip_eye, R.drawable.ic_chip_warning};
             ViewGroup.LayoutParams old = m.filtersScroll.getLayoutParams();
             if (old != null) { old.height = dp(52); m.filtersScroll.setLayoutParams(old); }
-            for (int i = 0; i < filters.length; i++) {
+            for (int i = 0; i < 3; i++) {
                 final String f = filters[i];
                 LinearLayout chip = new LinearLayout(m);
                 chip.setOrientation(LinearLayout.HORIZONTAL);
@@ -226,7 +223,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                 tx.setTextSize(14);
                 if (bold != null) tx.setTypeface(bold);
                 chip.addView(tx);
-                if (i == 1 || i == 2) {
+                if (i > 0) {
                     TextView badge = new TextView(m);
                     badge.setTextSize(12);
                     badge.setTextColor(Color.WHITE);
@@ -239,7 +236,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                     LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(-2, dp(22));
                     blp.setMarginStart(dp(8));
                     chip.addView(badge, blp);
-                    if (i == 1) unreadBadge = badge; else if (i == 2) failedBadge = badge;
+                    if (i == 1) unreadBadge = badge; else failedBadge = badge;
                 }
                 chip.setOnClickListener(v -> { m.filter = f; m.selectedBottomTab = "conversations"; m.render(); });
                 LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(-2, dp(44));
@@ -247,8 +244,6 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                 tabs.addView(chip, clp);
                 chips[i] = chip; chipTexts[i] = tx; chipIcons[i] = ic;
             }
-            // ensure smooth horizontal scrolling and no overlap
-            try { m.filtersScroll.setHorizontalScrollBarEnabled(false); m.filtersScroll.setClipToPadding(false); } catch (Throwable ignored) {}
         }
 
         void styleChip(int i, boolean sel) {
@@ -289,26 +284,13 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             });
         }
 
-        // ---------- Ensure bottom navigation shows only two items ----------
-        void adjustBottomNav() {
-            try {
-                LinearLayout nav = m.bottomNavigation;
-                if (nav == null) return;
-                // keep first two items visible, hide the rest to avoid changing MainActivity source
-                for (int i = 0; i < nav.getChildCount(); i++) {
-                    View c = nav.getChildAt(i);
-                    if (i < 2) c.setVisibility(View.VISIBLE); else c.setVisibility(View.GONE);
-                }
-            } catch (Throwable t) { android.util.Log.w("HashemUi", "adjustBottomNav failed", t); }
-        }
-
         // ---------- Floating compose button ----------
         void compose() {
             Button b = m.composeButton;
             if (b == null || m.contentHost == null) return;
             ViewGroup p = (ViewGroup) b.getParent();
             if (p != null) p.removeView(b);
-            b.setText("بدء محادثة");
+            b.setText(m.getString(R.string.compose_start));
             b.setTextSize(15);
             b.setTextColor(Color.WHITE);
             if (bold != null) b.setTypeface(bold);
@@ -341,7 +323,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             String key = m.filter + "|" + m.selectedBottomTab + "|" + isNight();
             if (!key.equals(lastKey)) {
                 lastKey = key;
-                for (int i = 0; i < chips.length; i++) {
+                for (int i = 0; i < 3; i++) {
                     if (chips[i] == null) continue;
                     boolean sel = filters[i].equals(m.filter) && "conversations".equals(m.selectedBottomTab);
                     styleChip(i, sel);
