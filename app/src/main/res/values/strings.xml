@@ -1,1 +1,5 @@
-<resources><string name="app_name">هاشم SMS</string></resources>
+<resources>
+    <string name="app_name">هاشم SMS</string>
+    <string name="compose_start">بدء محادثة</string>
+    <string name="search_hint">ابحث في المحادثات أو الأرقام</string>
+</resources>
