@@ -2,4 +2,10 @@
     <string name="app_name">هاشم SMS</string>
     <string name="compose_start">بدء محادثة</string>
     <string name="search_hint">ابحث في المحادثات أو الأرقام</string>
+    <string name="search_cd">بحث</string>
+    <string name="dark_mode">الوضع الداكن</string>
+    <string name="light_mode">الوضع الفاتح</string>
+    <string name="chip_all">الكل</string>
+    <string name="chip_unread">غير مقروءة</string>
+    <string name="chip_failed">لم يتم الإرسال</string>
 </resources>
