@@ -1,0 +1,60 @@
+name: Add Almarai fonts
+
+on:
+  push:
+    branches: [phase1-ui]
+    paths:
+      - '.github/workflows/add-fonts.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  add-fonts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout phase1-ui
+        uses: actions/checkout@v4
+        with:
+          ref: phase1-ui
+
+      - name: Download Almarai fonts (pinned commit)
+        run: |
+          set -euo pipefail
+          BASE="https://raw.githubusercontent.com/google/fonts/47d54ca1ebb14fd864695f1d39dc734f39017c33/ofl/almarai"
+          DIR="app/src/main/res/font"
+          mkdir -p "$DIR"
+          curl -fsSL --retry 3 "$BASE/Almarai-Regular.ttf"   -o "$DIR/almarai_regular.ttf"
+          curl -fsSL --retry 3 "$BASE/Almarai-Bold.ttf"      -o "$DIR/almarai_bold.ttf"
+          curl -fsSL --retry 3 "$BASE/Almarai-ExtraBold.ttf" -o "$DIR/almarai_extrabold.ttf"
+
+      - name: Validate fonts and print SHA-256
+        run: |
+          set -euo pipefail
+          for f in app/src/main/res/font/almarai_regular.ttf                    app/src/main/res/font/almarai_bold.ttf                    app/src/main/res/font/almarai_extrabold.ttf; do
+            size=$(stat -c%s "$f")
+            magic=$(head -c4 "$f" | od -An -tx1 | tr -d ' \n')
+            echo "$f size=$size magic=$magic"
+            if [ "$size" -lt 10000 ]; then echo "ERROR: file too small: $f"; exit 1; fi
+            case "$magic" in
+              00010000|74727565|4f54544f) ;;
+              *) echo "ERROR: not a valid font file: $f"; exit 1 ;;
+            esac
+            sha256sum "$f"
+          done
+
+      - name: Commit fonts to phase1-ui
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/res/font/almarai_regular.ttf \
+                  app/src/main/res/font/almarai_bold.ttf \
+                  app/src/main/res/font/almarai_extrabold.ttf
+          if git diff --cached --quiet; then
+            echo "Fonts already up to date. Nothing to commit."
+          else
+            git commit -m "Add Almarai TTF fonts (400/700/800)"
+            git push origin HEAD:phase1-ui
+          fi
