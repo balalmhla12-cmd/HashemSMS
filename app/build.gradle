@@ -46,9 +46,9 @@ tasks.register('prepareAlmaraiFonts') {
         def fontDir = file('src/main/res/font')
         fontDir.mkdirs()
         def fonts = [
-            'almarai_regular.ttf': 'https://raw.githubusercontent.com/google/fonts/main/ofl/almarai/Almarai-Regular.ttf',
-            'almarai_bold.ttf': 'https://raw.githubusercontent.com/google/fonts/main/ofl/almarai/Almarai-Bold.ttf',
-            'almarai_extrabold.ttf': 'https://raw.githubusercontent.com/google/fonts/main/ofl/almarai/Almarai-ExtraBold.ttf'
+            'almarai_regular.ttf': 'https://raw.githubusercontent.com/google/fonts/47d54ca1ebb14fd864695f1d39dc734f39017c33/ofl/almarai/Almarai-Regular.ttf',
+            'almarai_bold.ttf': 'https://raw.githubusercontent.com/google/fonts/47d54ca1ebb14fd864695f1d39dc734f39017c33/ofl/almarai/Almarai-Bold.ttf',
+            'almarai_extrabold.ttf': 'https://raw.githubusercontent.com/google/fonts/47d54ca1ebb14fd864695f1d39dc734f39017c33/ofl/almarai/Almarai-ExtraBold.ttf'
         ]
         fonts.each { name, address ->
             def target = new File(fontDir, name)
