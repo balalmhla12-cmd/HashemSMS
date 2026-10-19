@@ -40,23 +40,3 @@ dependencies {
 }
 
 
-tasks.register('prepareAlmaraiFonts') {
-    outputs.dir(layout.projectDirectory.dir('src/main/res/font'))
-    doLast {
-        def fontDir = file('src/main/res/font')
-        fontDir.mkdirs()
-        def fonts = [
-            'almarai_regular.ttf': 'https://raw.githubusercontent.com/google/fonts/47d54ca1ebb14fd864695f1d39dc734f39017c33/ofl/almarai/Almarai-Regular.ttf',
-            'almarai_bold.ttf': 'https://raw.githubusercontent.com/google/fonts/47d54ca1ebb14fd864695f1d39dc734f39017c33/ofl/almarai/Almarai-Bold.ttf',
-            'almarai_extrabold.ttf': 'https://raw.githubusercontent.com/google/fonts/47d54ca1ebb14fd864695f1d39dc734f39017c33/ofl/almarai/Almarai-ExtraBold.ttf'
-        ]
-        fonts.each { name, address ->
-            def target = new File(fontDir, name)
-            if (!target.exists() || target.length() < 10000) {
-                new URL(address).withInputStream { stream -> target.withOutputStream { out -> out << stream } }
-            }
-            if (target.length() < 10000) throw new GradleException('Almarai font download failed: ' + name)
-        }
-    }
-}
-tasks.named('preBuild').configure { dependsOn('prepareAlmaraiFonts') }
