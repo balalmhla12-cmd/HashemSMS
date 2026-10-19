@@ -32,7 +32,9 @@ jobs:
       - name: Validate fonts and print SHA-256
         run: |
           set -euo pipefail
-          for f in app/src/main/res/font/almarai_regular.ttf                    app/src/main/res/font/almarai_bold.ttf                    app/src/main/res/font/almarai_extrabold.ttf; do
+          for f in app/src/main/res/font/almarai_regular.ttf \
+                   app/src/main/res/font/almarai_bold.ttf \
+                   app/src/main/res/font/almarai_extrabold.ttf; do
             size=$(stat -c%s "$f")
             magic=$(head -c4 "$f" | od -An -tx1 | tr -d ' \n')
             echo "$f size=$size magic=$magic"
