@@ -62,10 +62,10 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
         static final SimpleDateFormat DAY = new SimpleDateFormat("EEEE", new Locale("ar"));
 
         final MainActivity m;
-        final String[] filters = {"all", "unread", "failed"};
-        final LinearLayout[] chips = new LinearLayout[3];
-        final TextView[] chipTexts = new TextView[3];
-        final ImageView[] chipIcons = new ImageView[3];
+        final String[] filters = {"all", "unread", "failed", "bulk", "groups", "starred"};
+        final LinearLayout[] chips = new LinearLayout[6];
+        final TextView[] chipTexts = new TextView[6];
+        final ImageView[] chipIcons = new ImageView[6];
         TextView unreadBadge, failedBadge;
         Typeface bold;
         String lastKey = "";
@@ -147,8 +147,8 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             pill.setGravity(Gravity.CENTER_VERTICAL);
             pill.setPadding(dp(3), dp(3), dp(3), dp(3));
             pill.setBackground(round(col(R.color.surface_variant), col(R.color.search_border), dp(24), dp(1)));
-            ImageView moon = toggleIcon(R.drawable.ic_moon, night);
-            ImageView sun = toggleIcon(R.drawable.ic_sun, !night);
+            ImageView moon = toggleIcon(R.drawable.ic_moon, night, R.string.dark_mode);
+            ImageView sun = toggleIcon(R.drawable.ic_sun, !night, R.string.light_mode);
             moon.setOnClickListener(v -> setNight(true));
             sun.setOnClickListener(v -> setNight(false));
             pill.addView(moon, new LinearLayout.LayoutParams(dp(40), dp(40)));
@@ -158,11 +158,11 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             actions.addView(pill, 0, plp);
         }
 
-        ImageView toggleIcon(int res, boolean active) {
+        ImageView toggleIcon(int res, boolean active, int contentDescRes) {
             ImageView v = new ImageView(m);
             v.setImageResource(res);
             v.setScaleType(ImageView.ScaleType.CENTER);
-            v.setContentDescription(res == R.drawable.ic_moon ? m.getString(R.string.dark_mode) : m.getString(R.string.light_mode));
+            try { v.setContentDescription(m.getString(contentDescRes)); } catch (Throwable ignored) {}
             v.setColorFilter(active ? col(R.color.on_primary) : col(R.color.on_surface_variant));
             if (active) v.setBackground(oval(col(R.color.accent_cyan), 0, 0));
             return v;
@@ -183,7 +183,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             circle.setColorFilter(col(R.color.on_primary));
             circle.setScaleType(ImageView.ScaleType.CENTER);
             circle.setBackground(oval(col(R.color.accent_cyan), 0, 0));
-            circle.setContentDescription(m.getString(R.string.search_cd));
+            try { circle.setContentDescription(m.getString(R.string.search_cd)); } catch (Throwable ignored) {}
             circle.setOnClickListener(v -> {
                 m.search.requestFocus();
                 InputMethodManager imm = (InputMethodManager) m.getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -192,7 +192,6 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             box.addView(circle, new LinearLayout.LayoutParams(dp(46), dp(46)));
             m.search.setBackground(null);
             m.search.setPaddingRelative(dp(14), 0, dp(10), 0);
-            m.search.setHint(m.getString(R.string.search_hint));
             box.addView(m.search, new LinearLayout.LayoutParams(0, -1, 1));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(58));
             lp.bottomMargin = dp(10);
@@ -203,11 +202,11 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
         void buildChips() {
             LinearLayout tabs = (LinearLayout) m.filtersScroll.getChildAt(0);
             tabs.removeAllViews();
-            String[] labels = { m.getString(R.string.chip_all), m.getString(R.string.chip_unread), m.getString(R.string.chip_failed) };
-            int[] icons = {R.drawable.ic_chip_all, R.drawable.ic_chip_eye, R.drawable.ic_chip_warning};
+            String[] labels = { m.getString(R.string.chip_all), m.getString(R.string.chip_unread), m.getString(R.string.chip_failed), m.getString(R.string.chip_bulk), m.getString(R.string.chip_groups), m.getString(R.string.chip_starred) };
+            int[] icons = {R.drawable.ic_chip_all, R.drawable.ic_chip_eye, R.drawable.ic_chip_warning, R.drawable.ic_nav_messages, R.drawable.ic_nav_messages, R.drawable.ic_star};
             ViewGroup.LayoutParams old = m.filtersScroll.getLayoutParams();
             if (old != null) { old.height = dp(52); m.filtersScroll.setLayoutParams(old); }
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < filters.length; i++) {
                 final String f = filters[i];
                 LinearLayout chip = new LinearLayout(m);
                 chip.setOrientation(LinearLayout.HORIZONTAL);
@@ -236,7 +235,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                     LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(-2, dp(22));
                     blp.setMarginStart(dp(8));
                     chip.addView(badge, blp);
-                    if (i == 1) unreadBadge = badge; else failedBadge = badge;
+                    if (i == 1) unreadBadge = badge; else if (i == 2) failedBadge = badge;
                 }
                 chip.setOnClickListener(v -> { m.filter = f; m.selectedBottomTab = "conversations"; m.render(); });
                 LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(-2, dp(44));
@@ -290,7 +289,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             if (b == null || m.contentHost == null) return;
             ViewGroup p = (ViewGroup) b.getParent();
             if (p != null) p.removeView(b);
-            b.setText(m.getString(R.string.compose_start));
+            try { b.setText(m.getString(R.string.compose_start)); } catch (Throwable ignored) { b.setText("بدء محادثة"); }
             b.setTextSize(15);
             b.setTextColor(Color.WHITE);
             if (bold != null) b.setTypeface(bold);
@@ -323,7 +322,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             String key = m.filter + "|" + m.selectedBottomTab + "|" + isNight();
             if (!key.equals(lastKey)) {
                 lastKey = key;
-                for (int i = 0; i < 3; i++) {
+                for (int i = 0; i < chips.length; i++) {
                     if (chips[i] == null) continue;
                     boolean sel = filters[i].equals(m.filter) && "conversations".equals(m.selectedBottomTab);
                     styleChip(i, sel);
