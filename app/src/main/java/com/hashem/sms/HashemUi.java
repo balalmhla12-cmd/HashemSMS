@@ -64,10 +64,10 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
         static final SimpleDateFormat DAY = new SimpleDateFormat("EEEE", new Locale("ar"));
 
         final MainActivity m;
-        final String[] filters = {"all", "unread", "failed"};
-        final LinearLayout[] chips = new LinearLayout[3];
-        final TextView[] chipTexts = new TextView[3];
-        final ImageView[] chipIcons = new ImageView[3];
+        final String[] filters = {"all", "unread", "failed", "bulk", "groups", "starred"};
+        final LinearLayout[] chips = new LinearLayout[6];
+        final TextView[] chipTexts = new TextView[6];
+        final ImageView[] chipIcons = new ImageView[6];
         TextView unreadBadge, failedBadge;
         Typeface bold;
         String lastKey = "";
@@ -204,11 +204,11 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
         void buildChips() {
             LinearLayout tabs = (LinearLayout) m.filtersScroll.getChildAt(0);
             tabs.removeAllViews();
-            String[] labels = {"الكل", "غير مقروءة", "لم يتم الإرسال"};
-            int[] icons = {R.drawable.ic_chip_all, R.drawable.ic_chip_eye, R.drawable.ic_chip_warning};
+            String[] labels = {"الكل", "غير مقروءة", "لم يتم الإرسال", "الجماعية", "المجموعات", "المميزة"};
+            int[] icons = {R.drawable.ic_chip_all, R.drawable.ic_chip_eye, R.drawable.ic_chip_warning, R.drawable.ic_nav_messages, R.drawable.ic_nav_messages, R.drawable.ic_star};
             ViewGroup.LayoutParams old = m.filtersScroll.getLayoutParams();
             if (old != null) { old.height = dp(52); m.filtersScroll.setLayoutParams(old); }
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < filters.length; i++) {
                 final String f = filters[i];
                 LinearLayout chip = new LinearLayout(m);
                 chip.setOrientation(LinearLayout.HORIZONTAL);
@@ -224,7 +224,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                 tx.setTextSize(14);
                 if (bold != null) tx.setTypeface(bold);
                 chip.addView(tx);
-                if (i > 0) {
+                if (i == 1 || i == 2) {
                     TextView badge = new TextView(m);
                     badge.setTextSize(12);
                     badge.setTextColor(Color.WHITE);
@@ -237,7 +237,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                     LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(-2, dp(22));
                     blp.setMarginStart(dp(8));
                     chip.addView(badge, blp);
-                    if (i == 1) unreadBadge = badge; else failedBadge = badge;
+                    if (i == 1) unreadBadge = badge; else if (i == 2) failedBadge = badge;
                 }
                 chip.setOnClickListener(v -> { m.filter = f; m.selectedBottomTab = "conversations"; m.render(); });
                 LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(-2, dp(44));
@@ -324,7 +324,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             String key = m.filter + "|" + m.selectedBottomTab + "|" + isNight();
             if (!key.equals(lastKey)) {
                 lastKey = key;
-                for (int i = 0; i < 3; i++) {
+                for (int i = 0; i < chips.length; i++) {
                     if (chips[i] == null) continue;
                     boolean sel = filters[i].equals(m.filter) && "conversations".equals(m.selectedBottomTab);
                     styleChip(i, sel);
