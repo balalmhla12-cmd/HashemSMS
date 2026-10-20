@@ -71,6 +71,35 @@ jobs:
       - name: Run Android lint
         run: ./gradlew --no-daemon lintDebug
 
+      - name: Print Android lint warnings (diagnostic only)
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import os, xml.etree.ElementTree as ET
+          from collections import Counter
+          def rows(p):
+              if not os.path.exists(p): return None
+              out = []
+              for i in ET.parse(p).getroot().findall('.//issue'):
+                  if (i.get('severity') or '').lower() != 'warning': continue
+                  loc = i.find('location')
+                  f = (loc.get('file') if loc is not None else '') or ''
+                  ln = (loc.get('line') if loc is not None else '') or ''
+                  out.append((i.get('id') or '', f.split('/app/')[-1], ln, (i.get('message') or '').splitlines()[0]))
+              return out
+          base = rows(os.path.join(os.environ['RUNNER_TEMP'], 'lint-baseline.xml'))
+          cur = rows('app/build/reports/lint-results-debug.xml')
+          for name, r in (('BASELINE', base), ('CURRENT', cur)):
+              print('=== ' + name + ' ===')
+              if r is None:
+                  print('missing')
+                  continue
+              for x in sorted(r): print(' | '.join(x))
+          if base is not None and cur is not None:
+              d = Counter(x[0] for x in cur) - Counter(x[0] for x in base)
+              print('=== EXTRA IDS (current minus baseline) ===')
+              for k, v in d.items(): print(k, v)
+          PY
       - name: Compare lint baseline and write summary
         if: always()
         run: |
