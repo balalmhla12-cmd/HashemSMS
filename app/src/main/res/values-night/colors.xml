@@ -7,6 +7,12 @@
     <color name="primary_container">#0C3464</color>
     <color name="bubble_in">#183860</color>
     <color name="bubble_out">#0065B8</color>
+    <color name="bubble_out_start">#00549A</color>
+    <color name="bubble_out_end">#007BC3</color>
+    <color name="on_bubble_out">#FFFFFF</color>
+    <color name="bubble_in_start">#183860</color>
+    <color name="bubble_in_end">#244D78</color>
+    <color name="on_bubble_in">#FFFFFF</color>
     <color name="divider">#082848</color>
     <color name="unread_accent">#18BDF2</color>
     <color name="on_unread_accent">#001028</color>
