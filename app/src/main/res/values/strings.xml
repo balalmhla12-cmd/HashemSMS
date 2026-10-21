@@ -11,4 +11,10 @@
     <string name="chip_bulk">الجماعية</string>
     <string name="chip_groups">المجموعات</string>
     <string name="chip_starred">المميزة</string>
+    <string name="thread_status_received">تم الاستلام</string>
+    <string name="thread_status_sent">تم الإرسال</string>
+    <string name="thread_status_failed">لم يتم الإرسال</string>
+    <string name="thread_status_pending">قيد الانتظار</string>
+    <string name="thread_status_queued">في قائمة الانتظار</string>
+    <string name="thread_status_sending">جارٍ الإرسال</string>
 </resources>
