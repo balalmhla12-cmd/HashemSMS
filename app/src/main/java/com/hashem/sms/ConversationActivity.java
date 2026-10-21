@@ -19,6 +19,8 @@ import android.graphics.drawable.GradientDrawable;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.provider.ContactsContract;
+import android.net.Uri;
 import android.telephony.SmsManager;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -43,6 +45,7 @@ public class ConversationActivity extends Activity {
         }
     };
     int purple;
+    private String conversationDisplayName = "";
     
     SubscriptionChoiceCallback pendingSubscriptionAction;
 
@@ -58,6 +61,7 @@ public class ConversationActivity extends Activity {
         address=getIntent().getStringExtra("address");
         if(address==null)address="";
         build();
+        resolveConversationTitle();
         loadMessages(true);
     }
 
@@ -65,6 +69,7 @@ public class ConversationActivity extends Activity {
         super.onResume();
         if(db!=null&&messages!=null){
             registerSmsUpdatedReceiver();
+            resolveConversationTitle();
             loadMessages(false);
             if(!readMarkInFlight&&db.hasUnreadIncomingMessages(address)){
                 markConversationReadAsync();
@@ -102,6 +107,30 @@ public class ConversationActivity extends Activity {
         MESSAGE_EXECUTOR.execute(()->{
             NotificationHelper.markConversationRead(getApplicationContext(),currentAddress);
             mainHandler.post(()->readMarkInFlight=false);
+        });
+    }
+
+    private String conversationTitle(){return conversationDisplayName==null||conversationDisplayName.trim().isEmpty()?address:conversationDisplayName;}
+    private void resolveConversationTitle(){
+        if(selectionTitle==null||actionMode!=null)return;
+        selectionTitle.setText(conversationTitle());
+        if(address==null||address.trim().isEmpty()||checkSelfPermission("android.permission.READ_CONTACTS")!=PackageManager.PERMISSION_GRANTED)return;
+        final String currentAddress=address;
+        MESSAGE_EXECUTOR.execute(()->{
+            String found="";
+            Cursor cursor=null;
+            try{
+                Uri lookup=Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI,Uri.encode(currentAddress));
+                cursor=getContentResolver().query(lookup,new String[]{ContactsContract.PhoneLookup.DISPLAY_NAME},null,null,null);
+                if(cursor!=null&&cursor.moveToFirst()){String value=cursor.getString(0);if(value!=null)found=value.trim();}
+            }catch(Exception e){android.util.Log.w("HashemSMS","Unable to resolve conversation contact name",e);}
+            finally{if(cursor!=null)try{cursor.close();}catch(Exception e){android.util.Log.w("HashemSMS","Unable to close contact lookup cursor",e);}}
+            final String displayName=found;
+            runOnUiThread(()->{
+                if(isFinishing()||isDestroyed()||!Objects.equals(address,currentAddress))return;
+                conversationDisplayName=displayName;
+                if(actionMode==null&&selectionTitle!=null)selectionTitle.setText(conversationTitle());
+            });
         });
     }
 
@@ -205,6 +234,7 @@ public class ConversationActivity extends Activity {
         private static final int TYPE_MESSAGE=1,TYPE_EMPTY=2;
         private long activeActionMessageId=Long.MIN_VALUE;
         ConversationAdapter(){super(new MessageDiffCallback());}
+        void refreshSelection(long id){int position=findPosition(id);if(position>=0)notifyItemChanged(position);}
         void showActions(long id){
             long previous=activeActionMessageId;
             activeActionMessageId=previous==id?Long.MIN_VALUE:id;
@@ -228,7 +258,7 @@ public class ConversationActivity extends Activity {
             LinearLayout.LayoutParams bubbleLp=new LinearLayout.LayoutParams(-2,-2);bubbleLp.setMargins(8,4,8,2);column.addView(bubble,bubbleLp);
             LinearLayout actions=new LinearLayout(ConversationActivity.this);actions.setOrientation(LinearLayout.HORIZONTAL);actions.setGravity(Gravity.CENTER_VERTICAL);actions.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);actions.setVisibility(View.GONE);
             ImageButton copy=messageActionIcon(R.drawable.ic_content_copy,"نسخ الرسالة"),forward=messageActionIcon(R.drawable.ic_forward,"إعادة توجيه الرسالة"),reply=messageActionIcon(R.drawable.ic_reply,"الرد على الرسالة"),star=messageActionIcon(R.drawable.ic_star,"تمييز الرسالة بنجمة"),more=messageActionIcon(R.drawable.ic_more_vert,"مزيد من إجراءات الرسالة");
-            int actionSize=UiResources.dp(ConversationActivity.this,38);
+            int actionSize=UiResources.dp(ConversationActivity.this,34);
             for(ImageButton button:new ImageButton[]{copy,forward,reply,star,more}){LinearLayout.LayoutParams actionLp=new LinearLayout.LayoutParams(actionSize,actionSize);actionLp.setMargins(2,0,2,0);actions.addView(button,actionLp);}
             column.addView(actions,new LinearLayout.LayoutParams(-2,-2));line.addView(column,new LinearLayout.LayoutParams(-2,-2));
             return new MessageHolder(line,column,bubble,body,meta,actions,copy,forward,reply,star,more);
@@ -243,9 +273,15 @@ public class ConversationActivity extends Activity {
             h.meta.setText(outgoing?(item.status==null?"":item.status):"واردة");h.meta.setGravity(outgoing?Gravity.END:Gravity.START);
             h.meta.setTextColor(UiResources.color(ConversationActivity.this,outgoing?R.color.on_bubble_out:R.color.on_bubble_in));
             h.meta.setCompoundDrawablesRelativeWithIntrinsicBounds(0,0,item.star==1?R.drawable.ic_star:0,0);h.meta.setCompoundDrawablePadding(UiResources.dp(ConversationActivity.this,4));
-            h.bubble.setBackground(messageGradient(outgoing));h.actions.setVisibility(item.id==activeActionMessageId?View.VISIBLE:View.GONE);
-            h.bubble.setOnLongClickListener(v->{toggleSelection(item.id);return true;});
-            h.bubble.setOnClickListener(v->{if(actionMode!=null)toggleSelection(item.id);else showActions(item.id);});
+            GradientDrawable bubbleBackground=messageGradient(outgoing);
+            boolean isSelected=selected.contains(item.id);
+            if(isSelected)bubbleBackground.setStroke(UiResources.dp(ConversationActivity.this,2),UiResources.color(ConversationActivity.this,R.color.primary_variant));
+            h.bubble.setBackground(bubbleBackground);
+            h.actions.setVisibility(item.id==activeActionMessageId&&actionMode==null?View.VISIBLE:View.GONE);
+            View.OnLongClickListener longPress=v->{toggleSelection(item.id);return true;};
+            View.OnClickListener tap=v->{if(actionMode!=null)toggleSelection(item.id);else showActions(item.id);};
+            h.bubble.setOnLongClickListener(longPress);h.body.setOnLongClickListener(longPress);h.meta.setOnLongClickListener(longPress);
+            h.bubble.setOnClickListener(tap);h.body.setOnClickListener(tap);h.meta.setOnClickListener(tap);
             h.copy.setOnClickListener(v->copyMessage(item));h.forward.setOnClickListener(v->forwardMessage(item));
             h.reply.setOnClickListener(v->{composer.setText("رد على الرسالة:\n");composer.setSelection(composer.length());composer.requestFocus();});
             h.star.setOnClickListener(v->{MESSAGE_EXECUTOR.execute(()->db.starMessages(new ArrayList<>(Collections.singletonList(item.id))));loadMessages(false);});
@@ -310,6 +346,7 @@ public class ConversationActivity extends Activity {
         if(selected.contains(id))selected.remove(id);else selected.add(id);
         if(selected.isEmpty()){if(actionMode!=null)actionMode.finish();return;}
         selectionTitle.setText(selected.size()+" محددة");
+        if(messageAdapter!=null)messageAdapter.refreshSelection(id);
         if(actionMode!=null)actionMode.invalidate();
     }
 
@@ -326,6 +363,7 @@ public class ConversationActivity extends Activity {
                 selected.clear();selected.addAll(ids);
                 if(startMode&&actionMode==null)actionMode=startActionMode(new SelectionCallback());
                 if(selectionTitle!=null)selectionTitle.setText(selected.size()+" محددة");
+                if(messageAdapter!=null)messageAdapter.notifyDataSetChanged();
                 ActionMode target=mode!=null?mode:actionMode;
                 if(target!=null)target.invalidate();
             });
@@ -336,7 +374,7 @@ public class ConversationActivity extends Activity {
         public boolean onCreateActionMode(ActionMode mode,Menu menu){MenuItem copy=menu.add("نسخ");copy.setIcon(R.drawable.ic_content_copy);copy.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);MenuItem forward=menu.add("إعادة توجيه");forward.setIcon(R.drawable.ic_forward);forward.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);MenuItem star=menu.add("تمييز بنجمة");star.setIcon(R.drawable.ic_star);star.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);MenuItem delete=menu.add("حذف");delete.setIcon(R.drawable.ic_delete);delete.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);menu.add("تحديد الكل");return true;}
         public boolean onPrepareActionMode(ActionMode mode,Menu menu){return true;}
         public boolean onActionItemClicked(ActionMode mode,MenuItem item){String x=item.getTitle().toString(); if(x.equals("تحديد الكل")){selectAllMessages(false,mode);return true;} if(x.equals("نسخ")){copySelected();mode.finish();return true;} if(x.equals("حذف")){ArrayList<Long> ids=new ArrayList<>(selected);MESSAGE_EXECUTOR.execute(()->db.deleteMessages(ids));mode.finish();loadMessages(false);return true;} if(x.equals("تمييز بنجمة")){ArrayList<Long> ids=new ArrayList<>(selected);MESSAGE_EXECUTOR.execute(()->db.starMessages(ids));mode.finish();loadMessages(false);return true;} if(x.equals("إعادة توجيه")){forwardSelected();mode.finish();return true;} return false;}
-        public void onDestroyActionMode(ActionMode mode){selected.clear();actionMode=null;selectionTitle.setText(address);loadMessages(false);}
+        public void onDestroyActionMode(ActionMode mode){ArrayList<Long> old=new ArrayList<>(selected);selected.clear();actionMode=null;selectionTitle.setText(conversationTitle());if(messageAdapter!=null)for(Long id:old)messageAdapter.refreshSelection(id);loadMessages(false);}
     }
 
     void copySelected(){ArrayList<Long> ids=new ArrayList<>(selected);MESSAGE_EXECUTOR.execute(()->{StringBuilder copied=new StringBuilder();Cursor c=null;try{c=db.messagesByIds(ids);while(c.moveToNext())copied.append(c.getString(c.getColumnIndexOrThrow("body"))).append("\n");}finally{if(c!=null)c.close();}String text=copied.toString();runOnUiThread(()->{((android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(android.content.ClipData.newPlainText("SMS",text));Toast.makeText(this,"تم نسخ الرسائل",Toast.LENGTH_SHORT).show();});});}
