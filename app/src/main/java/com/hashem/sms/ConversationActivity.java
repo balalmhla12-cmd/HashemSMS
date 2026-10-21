@@ -46,13 +46,14 @@ public class ConversationActivity extends Activity {
     };
     int purple;
     private String conversationDisplayName = "";
+    private TextView contactAvatar;
     
     SubscriptionChoiceCallback pendingSubscriptionAction;
 
-    TextView tv(String s,int size){ TextView t=new TextView(this); t.setText(s); t.setTextSize(size); t.setTextColor(UiResources.color(ConversationActivity.this,R.color.conversation_text)); t.setPadding(18,12,18,12); return t; }
+    TextView tv(String s,int size){ TextView t=new TextView(this); t.setText(s); t.setTextSize(size); t.setTextColor(UiResources.color(ConversationActivity.this,R.color.conversation_text)); t.setPadding(UiResources.dp(this,18),UiResources.dp(this,12),UiResources.dp(this,18),UiResources.dp(this,12)); return t; }
     GradientDrawable rounded(int color,int stroke,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(radius*getResources().getDisplayMetrics().density);if(stroke!=0)d.setStroke(1,color==0?stroke:stroke);return d;}
     GradientDrawable messageGradient(boolean outgoing){GradientDrawable d=new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,new int[]{UiResources.color(this,outgoing?R.color.bubble_out_start:R.color.bubble_in_start),UiResources.color(this,outgoing?R.color.bubble_out_end:R.color.bubble_in_end)});d.setCornerRadius(UiResources.dp(this,20));return d;}
-    Button actionButton(String label,boolean primary){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setTextSize(14);b.setTypeface(Typeface.DEFAULT,Typeface.BOLD);b.setTextColor(primary?UiResources.color(ConversationActivity.this,R.color.on_primary):UiResources.color(ConversationActivity.this,R.color.primary_variant));b.setPadding(14,6,14,6);b.setBackground(rounded(primary?purple:UiResources.color(ConversationActivity.this,R.color.primary_container),primary?0:UiResources.color(ConversationActivity.this,R.color.outline),28));b.setStateListAnimator(null);return b;}
+    Button actionButton(String label,boolean primary){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setTextSize(14);b.setTypeface(Typeface.DEFAULT,Typeface.BOLD);b.setTextColor(primary?UiResources.color(ConversationActivity.this,R.color.on_primary):UiResources.color(ConversationActivity.this,R.color.primary_variant));b.setPadding(UiResources.dp(this,12),UiResources.dp(this,4),UiResources.dp(this,12),UiResources.dp(this,4));b.setMinHeight(UiResources.dp(this,44));b.setBackground(rounded(primary?purple:UiResources.color(ConversationActivity.this,R.color.primary_container),primary?0:UiResources.color(ConversationActivity.this,R.color.outline),28));b.setStateListAnimator(null);return b;}
     ImageButton iconActionButton(int iconRes,String description,boolean primary){ImageButton b=new ImageButton(this);b.setImageResource(iconRes);b.setContentDescription(description);b.setScaleType(ImageView.ScaleType.CENTER);b.setColorFilter(primary?UiResources.color(ConversationActivity.this,R.color.on_primary):UiResources.color(ConversationActivity.this,R.color.primary_variant));b.setPadding(0,0,0,0);b.setBackground(rounded(primary?purple:UiResources.color(ConversationActivity.this,R.color.primary_container),primary?0:UiResources.color(ConversationActivity.this,R.color.outline),28));b.setStateListAnimator(null);return b;}
 
     @Override public void onCreate(Bundle b){
@@ -111,6 +112,7 @@ public class ConversationActivity extends Activity {
     }
 
     private String conversationTitle(){return conversationDisplayName==null||conversationDisplayName.trim().isEmpty()?address:conversationDisplayName;}
+    private String initialFor(String value){if(value==null||value.trim().isEmpty())return "?";String trimmed=value.trim();return trimmed.substring(0,1).toUpperCase(Locale.ROOT);}
     private void resolveConversationTitle(){
         if(selectionTitle==null||actionMode!=null)return;
         selectionTitle.setText(conversationTitle());
@@ -129,21 +131,22 @@ public class ConversationActivity extends Activity {
             runOnUiThread(()->{
                 if(isFinishing()||isDestroyed()||!Objects.equals(address,currentAddress))return;
                 conversationDisplayName=displayName;
-                if(actionMode==null&&selectionTitle!=null)selectionTitle.setText(conversationTitle());
+                if(actionMode==null&&selectionTitle!=null){selectionTitle.setText(conversationTitle());if(contactAvatar!=null)contactAvatar.setText(initialFor(conversationTitle()));}
             });
         });
     }
 
     void build(){
-        root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setPadding(10,8,10,8); root.setBackgroundColor(UiResources.color(ConversationActivity.this,R.color.surface));
-        LinearLayout top=new LinearLayout(this); top.setGravity(Gravity.CENTER_VERTICAL);top.setPadding(6,4,6,10);top.setBackground(rounded(UiResources.color(ConversationActivity.this,R.color.card_surface),UiResources.color(ConversationActivity.this,R.color.card_stroke),20));
-        ImageButton back=iconActionButton(R.drawable.ic_arrow_back,"رجوع",false); back.setOnClickListener(v->finish()); top.addView(back,new LinearLayout.LayoutParams(52,52));
-        LinearLayout identity=new LinearLayout(this);identity.setOrientation(LinearLayout.VERTICAL);
-        selectionTitle=tv(address,18);selectionTitle.setTypeface(Typeface.DEFAULT,Typeface.BOLD);selectionTitle.setPadding(8,2,8,0);
+        root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL); root.setPadding(UiResources.dp(this,10),UiResources.dp(this,8),UiResources.dp(this,10),UiResources.dp(this,8)); root.setBackgroundColor(UiResources.color(ConversationActivity.this,R.color.surface));
+        LinearLayout top=new LinearLayout(this); top.setGravity(Gravity.CENTER_VERTICAL);top.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);top.setPadding(UiResources.dp(this,6),UiResources.dp(this,4),UiResources.dp(this,6),UiResources.dp(this,10));top.setBackground(rounded(UiResources.color(ConversationActivity.this,R.color.card_surface),UiResources.color(ConversationActivity.this,R.color.card_stroke),20));
+        ImageButton back=iconActionButton(R.drawable.ic_arrow_back,"رجوع",false); back.setOnClickListener(v->finish()); top.addView(back,new LinearLayout.LayoutParams(UiResources.dp(this,44),UiResources.dp(this,44)));
+        contactAvatar=new TextView(this);contactAvatar.setGravity(Gravity.CENTER);contactAvatar.setTextSize(18);contactAvatar.setTypeface(Typeface.DEFAULT,Typeface.BOLD);contactAvatar.setTextColor(UiResources.color(this,R.color.on_primary_container));contactAvatar.setBackground(rounded(UiResources.color(this,R.color.primary_container),0,28));contactAvatar.setText(initialFor(conversationTitle()));LinearLayout.LayoutParams avatarLp=new LinearLayout.LayoutParams(UiResources.dp(this,42),UiResources.dp(this,42));avatarLp.setMargins(UiResources.dp(this,8),0,UiResources.dp(this,8),0);top.addView(contactAvatar,avatarLp);
+        LinearLayout identity=new LinearLayout(this);identity.setOrientation(LinearLayout.VERTICAL);identity.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        selectionTitle=tv(address,18);selectionTitle.setTypeface(Typeface.DEFAULT,Typeface.BOLD);selectionTitle.setPadding(UiResources.dp(this,4),UiResources.dp(this,2),UiResources.dp(this,4),0);selectionTitle.setSingleLine(true);selectionTitle.setEllipsize(android.text.TextUtils.TruncateAt.END);
         TextView subtitle=tv("رسائل نصية · SMS",12);subtitle.setTextColor(UiResources.color(ConversationActivity.this,R.color.on_surface_variant));subtitle.setPadding(8,0,8,0);
         identity.addView(selectionTitle);identity.addView(subtitle);top.addView(identity,new LinearLayout.LayoutParams(0,-2,1));
         ImageButton more=iconActionButton(R.drawable.ic_more_vert,"المزيد",false);more.setOnClickListener(v->conversationMenu(v)); top.addView(more,new LinearLayout.LayoutParams(48,52)); root.addView(top);
-        search=new EditText(this); search.setHint("بحث في هذه المحادثة"); search.setSingleLine(); search.setTextSize(14);search.setPadding(16,4,16,4);search.setBackground(rounded(UiResources.color(ConversationActivity.this,R.color.surface_variant),UiResources.color(ConversationActivity.this,R.color.search_border),26));search.setVisibility(View.GONE);
+        search=new EditText(this); search.setHint("بحث في هذه المحادثة"); search.setSingleLine(); search.setTextSize(14);search.setPadding(UiResources.dp(this,16),UiResources.dp(this,4),UiResources.dp(this,16),UiResources.dp(this,4));search.setMinHeight(UiResources.dp(this,48));search.setTextColor(UiResources.color(this,R.color.on_surface));search.setHintTextColor(UiResources.color(this,R.color.on_surface_variant));search.setBackground(rounded(UiResources.color(ConversationActivity.this,R.color.surface_variant),UiResources.color(ConversationActivity.this,R.color.search_border),26));search.setVisibility(View.GONE);
         search.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int d){} public void onTextChanged(CharSequence s,int a,int b,int c){mainHandler.removeCallbacks(searchDebounce);mainHandler.postDelayed(searchDebounce,275L);} public void afterTextChanged(Editable e){}}); root.addView(search);
         messages=new RecyclerView(this);
         messages.setClipToPadding(false);
@@ -152,12 +155,12 @@ public class ConversationActivity extends Activity {
         messageAdapter=new ConversationAdapter();
         messages.setAdapter(messageAdapter);
         root.addView(messages,new LinearLayout.LayoutParams(-1,0,1));
-        LinearLayout composerRow=new LinearLayout(this);composerRow.setGravity(Gravity.CENTER_VERTICAL);composerRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);composerRow.setPadding(8,6,4,6);composerRow.setBackground(rounded(UiResources.color(ConversationActivity.this,R.color.surface_variant),UiResources.color(ConversationActivity.this,R.color.search_border),30));
-        Button send=actionButton("إرسال",true);send.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_send,0,0,0);send.setCompoundDrawablePadding(UiResources.dp(ConversationActivity.this,6));send.setOnClickListener(v->send());LinearLayout.LayoutParams sendLp=new LinearLayout.LayoutParams(-2,46);sendLp.setMargins(4,0,0,0);composerRow.addView(send,sendLp);
-        composer=new EditText(this);composer.setHint("رسالة نصية");composer.setTextSize(16);composer.setMinLines(1);composer.setMaxLines(5);composer.setPadding(12,6,12,6);composer.setBackgroundColor(UiResources.color(ConversationActivity.this,android.R.color.transparent));composerRow.addView(composer,new LinearLayout.LayoutParams(0,-2,1));
-        ImageButton emoji=iconActionButton(R.drawable.ic_emoji,"إدراج رمز تعبيري",false);emoji.setOnClickListener(v->showEmojiPicker());composerRow.addView(emoji,new LinearLayout.LayoutParams(40,40));
-        ImageButton attachment=iconActionButton(R.drawable.ic_attachment,"إرفاق وسائط",false);attachment.setOnClickListener(v->Toast.makeText(this,"إرسال الصور والفيديو عبر MMS غير متاح بعد",Toast.LENGTH_LONG).show());composerRow.addView(attachment,new LinearLayout.LayoutParams(40,40));
-        LinearLayout.LayoutParams rowLp=new LinearLayout.LayoutParams(-1,-2);rowLp.topMargin=8;root.addView(composerRow,rowLp);setContentView(root);
+        LinearLayout composerRow=new LinearLayout(this);composerRow.setGravity(Gravity.CENTER_VERTICAL);composerRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);composerRow.setPadding(UiResources.dp(this,6),UiResources.dp(this,5),UiResources.dp(this,4),UiResources.dp(this,5));composerRow.setBackground(rounded(UiResources.color(ConversationActivity.this,R.color.surface_variant),UiResources.color(ConversationActivity.this,R.color.search_border),30));
+        Button send=actionButton("إرسال",true);send.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_send,0,0,0);send.setCompoundDrawablePadding(UiResources.dp(ConversationActivity.this,6));send.setOnClickListener(v->send());LinearLayout.LayoutParams sendLp=new LinearLayout.LayoutParams(-2,UiResources.dp(this,44));sendLp.setMargins(4,0,0,0);composerRow.addView(send,sendLp);
+        composer=new EditText(this);composer.setHint("رسالة نصية");composer.setTextSize(16);composer.setMinLines(1);composer.setMaxLines(5);composer.setPadding(UiResources.dp(this,12),UiResources.dp(this,6),UiResources.dp(this,12),UiResources.dp(this,6));composer.setTextColor(UiResources.color(this,R.color.on_surface));composer.setHintTextColor(UiResources.color(this,R.color.on_surface_variant));composer.setBackgroundColor(UiResources.color(ConversationActivity.this,android.R.color.transparent));composerRow.addView(composer,new LinearLayout.LayoutParams(0,-2,1));
+        ImageButton emoji=iconActionButton(R.drawable.ic_emoji,"إدراج رمز تعبيري",false);emoji.setOnClickListener(v->showEmojiPicker());composerRow.addView(emoji,new LinearLayout.LayoutParams(UiResources.dp(this,40),UiResources.dp(this,40)));
+        ImageButton attachment=iconActionButton(R.drawable.ic_attachment,"إرفاق وسائط",false);attachment.setOnClickListener(v->Toast.makeText(this,"إرسال الصور والفيديو عبر MMS غير متاح بعد",Toast.LENGTH_LONG).show());composerRow.addView(attachment,new LinearLayout.LayoutParams(UiResources.dp(this,40),UiResources.dp(this,40)));
+        LinearLayout.LayoutParams rowLp=new LinearLayout.LayoutParams(-1,-2);rowLp.topMargin=UiResources.dp(this,8);root.addView(composerRow,rowLp);setContentView(root);
     }
 
     private void loadMessages(boolean initialLoad){
@@ -268,7 +271,7 @@ public class ConversationActivity extends Activity {
             if(holder instanceof EmptyHolder){((EmptyHolder)holder).text.setText(item.emptyText);return;}
             MessageHolder h=(MessageHolder)holder;boolean outgoing="out".equals(item.type);
             h.line.setGravity(outgoing?Gravity.END:Gravity.START);h.column.setGravity(outgoing?Gravity.END:Gravity.START);
-            h.body.setText(item.body);h.body.setGravity(outgoing?Gravity.END:Gravity.START);
+            h.body.setText(item.body);h.body.setGravity(outgoing?Gravity.END:Gravity.START);h.body.setTextIsSelectable(false);
             h.body.setTextColor(UiResources.color(ConversationActivity.this,outgoing?R.color.on_bubble_out:R.color.on_bubble_in));
             h.meta.setText(outgoing?(item.status==null?"":item.status):"واردة");h.meta.setGravity(outgoing?Gravity.END:Gravity.START);
             h.meta.setTextColor(UiResources.color(ConversationActivity.this,outgoing?R.color.on_bubble_out:R.color.on_bubble_in));
@@ -277,7 +280,7 @@ public class ConversationActivity extends Activity {
             boolean isSelected=selected.contains(item.id);
             if(isSelected)bubbleBackground.setStroke(UiResources.dp(ConversationActivity.this,2),UiResources.color(ConversationActivity.this,R.color.primary_variant));
             h.bubble.setBackground(bubbleBackground);
-            h.actions.setVisibility(item.id==activeActionMessageId&&actionMode==null?View.VISIBLE:View.GONE);
+            h.actions.setVisibility(item.id==activeActionMessageId&&actionMode==null?View.VISIBLE:View.GONE);h.actions.setContentDescription("إجراءات الرسالة");
             View.OnLongClickListener longPress=v->{toggleSelection(item.id);return true;};
             View.OnClickListener tap=v->{if(actionMode!=null)toggleSelection(item.id);else showActions(item.id);};
             h.bubble.setOnLongClickListener(longPress);h.body.setOnLongClickListener(longPress);h.meta.setOnLongClickListener(longPress);
@@ -345,7 +348,7 @@ public class ConversationActivity extends Activity {
         if(actionMode==null){selected.clear();actionMode=startActionMode(new SelectionCallback());}
         if(selected.contains(id))selected.remove(id);else selected.add(id);
         if(selected.isEmpty()){if(actionMode!=null)actionMode.finish();return;}
-        selectionTitle.setText(selected.size()+" محددة");
+        selectionTitle.setText(selected.size()+" محددة");if(contactAvatar!=null)contactAvatar.setText(String.valueOf(selected.size()));
         if(messageAdapter!=null)messageAdapter.refreshSelection(id);
         if(actionMode!=null)actionMode.invalidate();
     }
@@ -371,10 +374,10 @@ public class ConversationActivity extends Activity {
     }
 
     class SelectionCallback implements ActionMode.Callback{
-        public boolean onCreateActionMode(ActionMode mode,Menu menu){MenuItem copy=menu.add("نسخ");copy.setIcon(R.drawable.ic_content_copy);copy.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);MenuItem forward=menu.add("إعادة توجيه");forward.setIcon(R.drawable.ic_forward);forward.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);MenuItem star=menu.add("تمييز بنجمة");star.setIcon(R.drawable.ic_star);star.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);MenuItem delete=menu.add("حذف");delete.setIcon(R.drawable.ic_delete);delete.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);menu.add("تحديد الكل");return true;}
+        public boolean onCreateActionMode(ActionMode mode,Menu menu){MenuItem copy=menu.add(0,1,0,"نسخ");copy.setIcon(R.drawable.ic_content_copy);copy.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);copy.setContentDescription("نسخ الرسائل المحددة");MenuItem forward=menu.add(0,2,1,"إعادة توجيه");forward.setIcon(R.drawable.ic_forward);forward.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);forward.setContentDescription("إعادة توجيه الرسائل المحددة");MenuItem star=menu.add(0,3,2,"تمييز بنجمة");star.setIcon(R.drawable.ic_star);star.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);star.setContentDescription("تمييز الرسائل المحددة بنجمة");MenuItem delete=menu.add(0,4,3,"حذف");delete.setIcon(R.drawable.ic_delete);delete.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);delete.setContentDescription("حذف الرسائل المحددة");menu.add(0,5,4,"تحديد الكل");return true;}
         public boolean onPrepareActionMode(ActionMode mode,Menu menu){return true;}
-        public boolean onActionItemClicked(ActionMode mode,MenuItem item){String x=item.getTitle().toString(); if(x.equals("تحديد الكل")){selectAllMessages(false,mode);return true;} if(x.equals("نسخ")){copySelected();mode.finish();return true;} if(x.equals("حذف")){ArrayList<Long> ids=new ArrayList<>(selected);MESSAGE_EXECUTOR.execute(()->db.deleteMessages(ids));mode.finish();loadMessages(false);return true;} if(x.equals("تمييز بنجمة")){ArrayList<Long> ids=new ArrayList<>(selected);MESSAGE_EXECUTOR.execute(()->db.starMessages(ids));mode.finish();loadMessages(false);return true;} if(x.equals("إعادة توجيه")){forwardSelected();mode.finish();return true;} return false;}
-        public void onDestroyActionMode(ActionMode mode){ArrayList<Long> old=new ArrayList<>(selected);selected.clear();actionMode=null;selectionTitle.setText(conversationTitle());if(messageAdapter!=null)for(Long id:old)messageAdapter.refreshSelection(id);loadMessages(false);}
+        public boolean onActionItemClicked(ActionMode mode,MenuItem item){int id=item.getItemId(); if(id==5){selectAllMessages(false,mode);return true;} if(id==1){copySelected();mode.finish();return true;} if(id==4){ArrayList<Long> ids=new ArrayList<>(selected);new AlertDialog.Builder(ConversationActivity.this).setMessage("هل تريد حذف "+ids.size()+" رسالة محددة؟").setNegativeButton("إلغاء",null).setPositiveButton("حذف",(dialog,which)->MESSAGE_EXECUTOR.execute(()->{db.deleteMessages(ids);mainHandler.post(()->loadMessages(false));})).show();mode.finish();return true;} if(id==3){ArrayList<Long> ids=new ArrayList<>(selected);MESSAGE_EXECUTOR.execute(()->{db.starMessages(ids);mainHandler.post(()->loadMessages(false));});mode.finish();return true;} if(id==2){forwardSelected();mode.finish();return true;} return false;}
+        public void onDestroyActionMode(ActionMode mode){ArrayList<Long> old=new ArrayList<>(selected);selected.clear();actionMode=null;selectionTitle.setText(conversationTitle());if(contactAvatar!=null)contactAvatar.setText(initialFor(conversationTitle()));if(messageAdapter!=null)for(Long id:old)messageAdapter.refreshSelection(id);loadMessages(false);}
     }
 
     void copySelected(){ArrayList<Long> ids=new ArrayList<>(selected);MESSAGE_EXECUTOR.execute(()->{StringBuilder copied=new StringBuilder();Cursor c=null;try{c=db.messagesByIds(ids);while(c.moveToNext())copied.append(c.getString(c.getColumnIndexOrThrow("body"))).append("\n");}finally{if(c!=null)c.close();}String text=copied.toString();runOnUiThread(()->{((android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(android.content.ClipData.newPlainText("SMS",text));Toast.makeText(this,"تم نسخ الرسائل",Toast.LENGTH_SHORT).show();});});}
