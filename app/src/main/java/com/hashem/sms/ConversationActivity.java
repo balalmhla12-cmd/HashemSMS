@@ -47,6 +47,8 @@ public class ConversationActivity extends Activity {
     int purple;
     private String conversationDisplayName = "";
     private TextView contactAvatar;
+    private ImageView contactPhoto;
+    private android.graphics.Bitmap contactPhotoBitmap;
     
     SubscriptionChoiceCallback pendingSubscriptionAction;
 
@@ -113,6 +115,7 @@ public class ConversationActivity extends Activity {
 
     private String conversationTitle(){return conversationDisplayName==null||conversationDisplayName.trim().isEmpty()?address:conversationDisplayName;}
     private String initialFor(String value){if(value==null||value.trim().isEmpty())return "?";String trimmed=value.trim();return trimmed.substring(0,1).toUpperCase(Locale.ROOT);}
+    private void updateContactAvatar(){if(contactAvatar==null)return;boolean selecting=actionMode!=null&&!selected.isEmpty();if(selecting){contactAvatar.setText(String.valueOf(selected.size()));contactAvatar.setVisibility(View.VISIBLE);if(contactPhoto!=null)contactPhoto.setVisibility(View.GONE);return;}contactAvatar.setText(initialFor(conversationTitle()));if(contactPhoto!=null&&contactPhotoBitmap!=null){contactPhoto.setImageBitmap(contactPhotoBitmap);contactPhoto.setVisibility(View.VISIBLE);contactAvatar.setVisibility(View.GONE);}else{if(contactPhoto!=null)contactPhoto.setVisibility(View.GONE);contactAvatar.setVisibility(View.VISIBLE);}}
     private void resolveConversationTitle(){
         if(selectionTitle==null||actionMode!=null)return;
         selectionTitle.setText(conversationTitle());
@@ -120,18 +123,24 @@ public class ConversationActivity extends Activity {
         final String currentAddress=address;
         MESSAGE_EXECUTOR.execute(()->{
             String found="";
+            Uri photoUri=null;
+            android.graphics.Bitmap photoBitmap=null;
             Cursor cursor=null;
             try{
                 Uri lookup=Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI,Uri.encode(currentAddress));
-                cursor=getContentResolver().query(lookup,new String[]{ContactsContract.PhoneLookup.DISPLAY_NAME},null,null,null);
-                if(cursor!=null&&cursor.moveToFirst()){String value=cursor.getString(0);if(value!=null)found=value.trim();}
+                cursor=getContentResolver().query(lookup,new String[]{ContactsContract.PhoneLookup.DISPLAY_NAME,ContactsContract.PhoneLookup.PHOTO_THUMBNAIL_URI},null,null,null);
+                if(cursor!=null&&cursor.moveToFirst()){String value=cursor.getString(0);if(value!=null)found=value.trim();String rawPhoto=cursor.getString(1);if(rawPhoto!=null&&!rawPhoto.trim().isEmpty())photoUri=Uri.parse(rawPhoto);}
             }catch(Exception e){android.util.Log.w("HashemSMS","Unable to resolve conversation contact name",e);}
             finally{if(cursor!=null)try{cursor.close();}catch(Exception e){android.util.Log.w("HashemSMS","Unable to close contact lookup cursor",e);}}
+            if(photoUri!=null){try(java.io.InputStream input=getContentResolver().openInputStream(photoUri)){if(input!=null)photoBitmap=android.graphics.BitmapFactory.decodeStream(input);}catch(Exception e){android.util.Log.w("HashemSMS","Unable to load conversation contact photo",e);}}
             final String displayName=found;
+            final android.graphics.Bitmap avatarBitmap=photoBitmap;
             runOnUiThread(()->{
                 if(isFinishing()||isDestroyed()||!Objects.equals(address,currentAddress))return;
                 conversationDisplayName=displayName;
-                if(actionMode==null&&selectionTitle!=null){selectionTitle.setText(conversationTitle());if(contactAvatar!=null)contactAvatar.setText(initialFor(conversationTitle()));}
+                contactPhotoBitmap=avatarBitmap;
+                if(actionMode==null&&selectionTitle!=null)selectionTitle.setText(conversationTitle());
+                updateContactAvatar();
             });
         });
     }
@@ -140,7 +149,7 @@ public class ConversationActivity extends Activity {
         root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL); root.setPadding(UiResources.dp(this,10),UiResources.dp(this,8),UiResources.dp(this,10),UiResources.dp(this,8)); root.setBackgroundColor(UiResources.color(ConversationActivity.this,R.color.surface));
         LinearLayout top=new LinearLayout(this); top.setGravity(Gravity.CENTER_VERTICAL);top.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);top.setPadding(UiResources.dp(this,6),UiResources.dp(this,4),UiResources.dp(this,6),UiResources.dp(this,10));top.setBackground(rounded(UiResources.color(ConversationActivity.this,R.color.card_surface),UiResources.color(ConversationActivity.this,R.color.card_stroke),20));
         ImageButton back=iconActionButton(R.drawable.ic_arrow_back,"رجوع",false); back.setOnClickListener(v->finish()); top.addView(back,new LinearLayout.LayoutParams(UiResources.dp(this,44),UiResources.dp(this,44)));
-        contactAvatar=new TextView(this);contactAvatar.setGravity(Gravity.CENTER);contactAvatar.setTextSize(18);contactAvatar.setTypeface(Typeface.DEFAULT,Typeface.BOLD);contactAvatar.setTextColor(UiResources.color(this,R.color.on_primary_container));contactAvatar.setBackground(rounded(UiResources.color(this,R.color.primary_container),0,28));contactAvatar.setText(initialFor(conversationTitle()));LinearLayout.LayoutParams avatarLp=new LinearLayout.LayoutParams(UiResources.dp(this,42),UiResources.dp(this,42));avatarLp.setMargins(UiResources.dp(this,8),0,UiResources.dp(this,8),0);top.addView(contactAvatar,avatarLp);
+        FrameLayout avatarFrame=new FrameLayout(this);avatarFrame.setBackground(rounded(UiResources.color(this,R.color.primary_container),0,28));avatarFrame.setClipToOutline(true);contactPhoto=new ImageView(this);contactPhoto.setScaleType(ImageView.ScaleType.CENTER_CROP);contactPhoto.setVisibility(View.GONE);avatarFrame.addView(contactPhoto,new FrameLayout.LayoutParams(-1,-1));contactAvatar=new TextView(this);contactAvatar.setGravity(Gravity.CENTER);contactAvatar.setTextSize(18);contactAvatar.setTypeface(Typeface.DEFAULT,Typeface.BOLD);contactAvatar.setTextColor(UiResources.color(this,R.color.on_primary_container));contactAvatar.setText(initialFor(conversationTitle()));avatarFrame.addView(contactAvatar,new FrameLayout.LayoutParams(-1,-1));LinearLayout.LayoutParams avatarLp=new LinearLayout.LayoutParams(UiResources.dp(this,42),UiResources.dp(this,42));avatarLp.setMargins(UiResources.dp(this,8),0,UiResources.dp(this,8),0);top.addView(avatarFrame,avatarLp);
         LinearLayout identity=new LinearLayout(this);identity.setOrientation(LinearLayout.VERTICAL);identity.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         selectionTitle=tv(address,18);selectionTitle.setTypeface(Typeface.DEFAULT,Typeface.BOLD);selectionTitle.setPadding(UiResources.dp(this,4),UiResources.dp(this,2),UiResources.dp(this,4),0);selectionTitle.setSingleLine(true);selectionTitle.setEllipsize(android.text.TextUtils.TruncateAt.END);
         TextView subtitle=tv("رسائل نصية · SMS",12);subtitle.setTextColor(UiResources.color(ConversationActivity.this,R.color.on_surface_variant));subtitle.setPadding(8,0,8,0);
@@ -348,7 +357,7 @@ public class ConversationActivity extends Activity {
         if(actionMode==null){selected.clear();actionMode=startActionMode(new SelectionCallback());}
         if(selected.contains(id))selected.remove(id);else selected.add(id);
         if(selected.isEmpty()){if(actionMode!=null)actionMode.finish();return;}
-        selectionTitle.setText(selected.size()+" محددة");if(contactAvatar!=null)contactAvatar.setText(String.valueOf(selected.size()));
+        selectionTitle.setText(selected.size()+" محددة");updateContactAvatar();
         if(messageAdapter!=null)messageAdapter.refreshSelection(id);
         if(actionMode!=null)actionMode.invalidate();
     }
@@ -366,6 +375,7 @@ public class ConversationActivity extends Activity {
                 selected.clear();selected.addAll(ids);
                 if(startMode&&actionMode==null)actionMode=startActionMode(new SelectionCallback());
                 if(selectionTitle!=null)selectionTitle.setText(selected.size()+" محددة");
+                updateContactAvatar();
                 if(messageAdapter!=null)messageAdapter.notifyDataSetChanged();
                 ActionMode target=mode!=null?mode:actionMode;
                 if(target!=null)target.invalidate();
@@ -377,7 +387,7 @@ public class ConversationActivity extends Activity {
         public boolean onCreateActionMode(ActionMode mode,Menu menu){MenuItem copy=menu.add(0,1,0,"نسخ");copy.setIcon(R.drawable.ic_content_copy);copy.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);copy.setContentDescription("نسخ الرسائل المحددة");MenuItem forward=menu.add(0,2,1,"إعادة توجيه");forward.setIcon(R.drawable.ic_forward);forward.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);forward.setContentDescription("إعادة توجيه الرسائل المحددة");MenuItem star=menu.add(0,3,2,"تمييز بنجمة");star.setIcon(R.drawable.ic_star);star.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);star.setContentDescription("تمييز الرسائل المحددة بنجمة");MenuItem delete=menu.add(0,4,3,"حذف");delete.setIcon(R.drawable.ic_delete);delete.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);delete.setContentDescription("حذف الرسائل المحددة");menu.add(0,5,4,"تحديد الكل");return true;}
         public boolean onPrepareActionMode(ActionMode mode,Menu menu){return true;}
         public boolean onActionItemClicked(ActionMode mode,MenuItem item){int id=item.getItemId(); if(id==5){selectAllMessages(false,mode);return true;} if(id==1){copySelected();mode.finish();return true;} if(id==4){ArrayList<Long> ids=new ArrayList<>(selected);new AlertDialog.Builder(ConversationActivity.this).setMessage("هل تريد حذف "+ids.size()+" رسالة محددة؟").setNegativeButton("إلغاء",null).setPositiveButton("حذف",(dialog,which)->MESSAGE_EXECUTOR.execute(()->{db.deleteMessages(ids);mainHandler.post(()->loadMessages(false));})).show();mode.finish();return true;} if(id==3){ArrayList<Long> ids=new ArrayList<>(selected);MESSAGE_EXECUTOR.execute(()->{db.starMessages(ids);mainHandler.post(()->loadMessages(false));});mode.finish();return true;} if(id==2){forwardSelected();mode.finish();return true;} return false;}
-        public void onDestroyActionMode(ActionMode mode){ArrayList<Long> old=new ArrayList<>(selected);selected.clear();actionMode=null;selectionTitle.setText(conversationTitle());if(contactAvatar!=null)contactAvatar.setText(initialFor(conversationTitle()));if(messageAdapter!=null)for(Long id:old)messageAdapter.refreshSelection(id);loadMessages(false);}
+        public void onDestroyActionMode(ActionMode mode){ArrayList<Long> old=new ArrayList<>(selected);selected.clear();actionMode=null;selectionTitle.setText(conversationTitle());updateContactAvatar();if(messageAdapter!=null)for(Long id:old)messageAdapter.refreshSelection(id);loadMessages(false);}
     }
 
     void copySelected(){ArrayList<Long> ids=new ArrayList<>(selected);MESSAGE_EXECUTOR.execute(()->{StringBuilder copied=new StringBuilder();Cursor c=null;try{c=db.messagesByIds(ids);while(c.moveToNext())copied.append(c.getString(c.getColumnIndexOrThrow("body"))).append("\n");}finally{if(c!=null)c.close();}String text=copied.toString();runOnUiThread(()->{((android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(android.content.ClipData.newPlainText("SMS",text));Toast.makeText(this,"تم نسخ الرسائل",Toast.LENGTH_SHORT).show();});});}
