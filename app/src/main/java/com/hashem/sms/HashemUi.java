@@ -134,7 +134,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             ImageView logo = new ImageView(m);
             logo.setImageResource(R.drawable.ic_launcher_foreground);
             logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(54), dp(54));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(44), dp(44));
             lp.setMarginEnd(dp(8));
             bar.addView(logo, 0, lp);
             bar.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -184,7 +184,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             LinearLayout box = new LinearLayout(m);
             box.setOrientation(LinearLayout.HORIZONTAL);
             box.setGravity(Gravity.CENTER_VERTICAL);
-            box.setPaddingRelative(dp(5), dp(5), dp(16), dp(5));
+            box.setPaddingRelative(dp(4), dp(4), dp(12), dp(4));
             box.setBackground(round(col(R.color.surface_variant), col(R.color.search_border), dp(30), dp(1)));
             ImageView circle = new ImageView(m);
             circle.setImageResource(R.drawable.ic_search);
@@ -197,13 +197,13 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                 InputMethodManager imm = (InputMethodManager) m.getSystemService(Context.INPUT_METHOD_SERVICE);
                 if (imm != null) imm.showSoftInput(m.search, InputMethodManager.SHOW_IMPLICIT);
             });
-            box.addView(circle, new LinearLayout.LayoutParams(dp(46), dp(46)));
+            box.addView(circle, new LinearLayout.LayoutParams(dp(38), dp(38)));
             m.search.setBackground(null);
             m.search.setHint(R.string.search_hint);
             m.search.setPaddingRelative(dp(14), 0, dp(10), 0);
             box.addView(m.search, new LinearLayout.LayoutParams(0, -1, 1));
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(58));
-            lp.bottomMargin = dp(10);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(48));
+            lp.bottomMargin = dp(8);
             m.root.addView(box, idx, lp);
         }
 
@@ -214,16 +214,16 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             String[] labels = { m.getString(R.string.chip_all), m.getString(R.string.chip_unread), m.getString(R.string.chip_failed), m.getString(R.string.chip_bulk), m.getString(R.string.chip_groups), m.getString(R.string.chip_starred) };
             int[] icons = {R.drawable.ic_chip_all, R.drawable.ic_chip_eye, R.drawable.ic_chip_warning, R.drawable.ic_nav_messages, R.drawable.ic_nav_messages, R.drawable.ic_star};
             ViewGroup.LayoutParams old = m.filtersScroll.getLayoutParams();
-            if (old != null) { old.height = dp(52); m.filtersScroll.setLayoutParams(old); }
+            if (old != null) { old.height = dp(46); m.filtersScroll.setLayoutParams(old); }
             for (int i = 0; i < filters.length; i++) {
                 final String f = filters[i];
                 LinearLayout chip = new LinearLayout(m);
                 chip.setOrientation(LinearLayout.HORIZONTAL);
                 chip.setGravity(Gravity.CENTER_VERTICAL);
-                chip.setPaddingRelative(dp(14), 0, dp(14), 0);
+                chip.setPaddingRelative(dp(12), 0, dp(12), 0);
                 ImageView ic = new ImageView(m);
                 ic.setImageResource(icons[i]);
-                LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(dp(20), dp(20));
+                LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(dp(18), dp(18));
                 ilp.setMarginEnd(dp(6));
                 chip.addView(ic, ilp);
                 TextView tx = new TextView(m);
@@ -241,13 +241,13 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                     badge.setPadding(dp(5), 0, dp(5), 0);
                     badge.setBackground(round(i == 1 ? 0xFF2F80FF : col(R.color.error), 0, dp(12), 0));
                     badge.setVisibility(View.GONE);
-                    LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(-2, dp(22));
+                    LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(-2, dp(20));
                     blp.setMarginStart(dp(8));
                     chip.addView(badge, blp);
                     if (i == 1) unreadBadge = badge; else if (i == 2) failedBadge = badge;
                 }
                 chip.setOnClickListener(v -> { m.filter = f; m.selectedBottomTab = "conversations"; m.render(); });
-                LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(-2, dp(44));
+                LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(-2, dp(40));
                 clp.setMarginEnd(dp(8));
                 tabs.addView(chip, clp);
                 chips[i] = chip; chipTexts[i] = tx; chipIcons[i] = ic;
@@ -299,13 +299,13 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             ViewGroup p = (ViewGroup) b.getParent();
             if (p != null) p.removeView(b);
             try { b.setText(m.getString(R.string.compose_start)); } catch (Throwable ignored) { b.setText("بدء محادثة"); }
-            b.setTextSize(15);
+            b.setTextSize(14);
             b.setTextColor(Color.WHITE);
             if (bold != null) b.setTypeface(bold);
             b.setMinWidth(0);
-            b.setMinHeight(dp(52));
-            b.setMinimumHeight(dp(52));
-            b.setPaddingRelative(dp(22), 0, dp(22), 0);
+            b.setMinHeight(dp(46));
+            b.setMinimumHeight(dp(46));
+            b.setPaddingRelative(dp(18), 0, dp(18), 0);
             GradientDrawable g = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
                     new int[]{0xFF1F6FE0, 0xFF29B6F6});
             g.setCornerRadius(dp(30));
@@ -316,7 +316,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             if (ds[2] != null) { ds[2] = ds[2].mutate(); ds[2].setTint(Color.WHITE); }
             b.setCompoundDrawablePadding(dp(10));
             b.setElevation(dp(6));
-            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(-2, dp(52), Gravity.BOTTOM | Gravity.START);
+            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(-2, dp(46), Gravity.BOTTOM | Gravity.START);
             lp.setMargins(dp(16), 0, dp(16), dp(16));
             m.contentHost.addView(b, lp);
             if (m.threadsRecycler != null) {
@@ -379,7 +379,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                 if (lp instanceof RecyclerView.LayoutParams) {
                     RecyclerView.LayoutParams rlp = (RecyclerView.LayoutParams) lp;
                     rlp.width = ViewGroup.LayoutParams.MATCH_PARENT;
-                    rlp.setMargins(dp(2), dp(4), dp(2), dp(4));
+                    rlp.setMargins(dp(2), dp(3), dp(2), dp(3));
                     h.container.setLayoutParams(rlp);
                 }
                 View divider = h.container.getChildAt(1);
