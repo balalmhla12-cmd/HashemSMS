@@ -221,10 +221,10 @@ public class ConversationActivity extends Activity {
         @Override public RecyclerView.ViewHolder onCreateViewHolder(android.view.ViewGroup parent,int viewType){
             if(viewType==TYPE_EMPTY){TextView empty=tv("",16);empty.setGravity(Gravity.CENTER);return new EmptyHolder(empty);}
             LinearLayout line=new LinearLayout(ConversationActivity.this);line.setGravity(Gravity.START);line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);line.setPadding(8,3,8,3);
-            LinearLayout column=new LinearLayout(ConversationActivity.this);column.setOrientation(LinearLayout.VERTICAL);
+            LinearLayout column=new LinearLayout(ConversationActivity.this);column.setOrientation(LinearLayout.VERTICAL);column.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
             LinearLayout bubble=new LinearLayout(ConversationActivity.this);bubble.setOrientation(LinearLayout.VERTICAL);bubble.setPadding(16,8,16,8);
-            TextView body=tv("",17);body.setMaxWidth((int)(getResources().getDisplayMetrics().widthPixels-80*getResources().getDisplayMetrics().density));
-            TextView meta=tv("",12);bubble.addView(body);bubble.addView(meta);
+            TextView body=tv("",17);body.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);body.setMaxWidth((int)(getResources().getDisplayMetrics().widthPixels-80*getResources().getDisplayMetrics().density));
+            TextView meta=tv("",12);meta.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);bubble.addView(body);bubble.addView(meta);
             LinearLayout.LayoutParams bubbleLp=new LinearLayout.LayoutParams(-2,-2);bubbleLp.setMargins(8,4,8,2);column.addView(bubble,bubbleLp);
             LinearLayout actions=new LinearLayout(ConversationActivity.this);actions.setOrientation(LinearLayout.HORIZONTAL);actions.setGravity(Gravity.CENTER_VERTICAL);actions.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);actions.setVisibility(View.GONE);
             ImageButton copy=messageActionIcon(R.drawable.ic_content_copy,"نسخ الرسالة"),forward=messageActionIcon(R.drawable.ic_forward,"إعادة توجيه الرسالة"),reply=messageActionIcon(R.drawable.ic_reply,"الرد على الرسالة"),star=messageActionIcon(R.drawable.ic_star,"تمييز الرسالة بنجمة"),more=messageActionIcon(R.drawable.ic_more_vert,"مزيد من إجراءات الرسالة");
@@ -237,10 +237,10 @@ public class ConversationActivity extends Activity {
             ConversationMessage item=getItem(position);
             if(holder instanceof EmptyHolder){((EmptyHolder)holder).text.setText(item.emptyText);return;}
             MessageHolder h=(MessageHolder)holder;boolean outgoing="out".equals(item.type);
-            h.line.setGravity(outgoing?Gravity.RIGHT:Gravity.LEFT);h.column.setGravity(outgoing?Gravity.RIGHT:Gravity.LEFT);
-            h.body.setText(item.body);h.body.setGravity(outgoing?Gravity.RIGHT:Gravity.LEFT);
+            h.line.setGravity(outgoing?Gravity.END:Gravity.START);h.column.setGravity(outgoing?Gravity.END:Gravity.START);
+            h.body.setText(item.body);h.body.setGravity(outgoing?Gravity.END:Gravity.START);
             h.body.setTextColor(UiResources.color(ConversationActivity.this,outgoing?R.color.on_bubble_out:R.color.on_bubble_in));
-            h.meta.setText(outgoing?(item.status==null?"":item.status):"واردة");h.meta.setGravity(outgoing?Gravity.RIGHT:Gravity.LEFT);
+            h.meta.setText(outgoing?(item.status==null?"":item.status):"واردة");h.meta.setGravity(outgoing?Gravity.END:Gravity.START);
             h.meta.setTextColor(UiResources.color(ConversationActivity.this,outgoing?R.color.on_bubble_out:R.color.on_bubble_in));
             h.meta.setCompoundDrawablesRelativeWithIntrinsicBounds(0,0,item.star==1?R.drawable.ic_star:0,0);h.meta.setCompoundDrawablePadding(UiResources.dp(ConversationActivity.this,4));
             h.bubble.setBackground(messageGradient(outgoing));h.actions.setVisibility(item.id==activeActionMessageId?View.VISIBLE:View.GONE);
