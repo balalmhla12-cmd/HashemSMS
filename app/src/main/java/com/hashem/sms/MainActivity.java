@@ -132,8 +132,8 @@ public class MainActivity extends androidx.appcompat.app.AppCompatActivity{
   switch(key){case "messages":return R.drawable.ic_nav_messages;case "schedule":return R.drawable.ic_schedule;case "archive":return R.drawable.ic_archive;case "star":return R.drawable.ic_star;case "block":return R.drawable.ic_block;case "delete":return R.drawable.ic_delete;case "forward":return R.drawable.ic_forward;default:return R.drawable.ic_settings;}
  }
  void openApplicationSettings(){
-  try{startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+getPackageName())));}
-  catch(Exception e){Toast.makeText(this,"تعذّر فتح إعدادات التطبيق",Toast.LENGTH_SHORT).show();}
+  try{startActivity(new Intent(this,SettingsActivity.class));}
+  catch(Exception e){Toast.makeText(this,"تعذّر فتح الإعدادات",Toast.LENGTH_SHORT).show();}
  }
   boolean isThreadListFilter(String value){return "all".equals(value)||"unread".equals(value)||"archived".equals(value)||"blocked".equals(value);}
   void onSmsUpdated(){if(isThreadListFilter(filter)){threadHandler.removeCallbacks(threadRefreshRunnable);threadHandler.postDelayed(threadRefreshRunnable,250);}else render();}
