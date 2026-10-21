@@ -17,4 +17,6 @@
     <string name="thread_status_pending">قيد الانتظار</string>
     <string name="thread_status_queued">في قائمة الانتظار</string>
     <string name="thread_status_sending">جارٍ الإرسال</string>
+    <string name="compose_selected_count">المحدد: %1$d</string>
+    <string name="compose_contacts_count">المحدد: %1$d · الظاهر: %2$d</string>
 </resources>
