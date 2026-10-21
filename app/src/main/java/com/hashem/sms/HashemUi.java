@@ -137,6 +137,13 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(54), dp(54));
             lp.setMarginEnd(dp(8));
             bar.addView(logo, 0, lp);
+            bar.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+            LinearLayout brand = (LinearLayout) bar.getChildAt(1);
+            brand.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
+            for (int i = 0; i < brand.getChildCount(); i++) {
+                View child = brand.getChildAt(i);
+                if (child instanceof TextView) child.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+            }
 
             LinearLayout actions = (LinearLayout) bar.getChildAt(bar.getChildCount() - 1);
             if (actions.getChildCount() > 0) actions.getChildAt(0).setVisibility(View.GONE); // old search icon
@@ -145,6 +152,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             LinearLayout pill = new LinearLayout(m);
             pill.setOrientation(LinearLayout.HORIZONTAL);
             pill.setGravity(Gravity.CENTER_VERTICAL);
+            pill.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
             pill.setPadding(dp(3), dp(3), dp(3), dp(3));
             pill.setBackground(round(col(R.color.surface_variant), col(R.color.search_border), dp(24), dp(1)));
             ImageView moon = toggleIcon(R.drawable.ic_moon, night, R.string.dark_mode);
