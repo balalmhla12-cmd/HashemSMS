@@ -159,8 +159,6 @@ public class MainActivity extends androidx.appcompat.app.AppCompatActivity{
   */
  void styleSecondaryScreen(){
   if(list==null)return;
-  list.setPadding(UiResources.dp(this,2),UiResources.dp(this,4),UiResources.dp(this,2),UiResources.dp(this,16));
-  list.setClipToPadding(false);
   for(int i=0;i<list.getChildCount();i++){
    View child=list.getChildAt(i);
    if(child instanceof EditText){
