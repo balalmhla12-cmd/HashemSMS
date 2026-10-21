@@ -48,6 +48,7 @@ public class ConversationActivity extends Activity {
 
     TextView tv(String s,int size){ TextView t=new TextView(this); t.setText(s); t.setTextSize(size); t.setTextColor(UiResources.color(ConversationActivity.this,R.color.conversation_text)); t.setPadding(18,12,18,12); return t; }
     GradientDrawable rounded(int color,int stroke,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(radius*getResources().getDisplayMetrics().density);if(stroke!=0)d.setStroke(1,color==0?stroke:stroke);return d;}
+    GradientDrawable messageGradient(boolean outgoing){GradientDrawable d=new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,new int[]{UiResources.color(this,outgoing?R.color.bubble_out_start:R.color.bubble_in_start),UiResources.color(this,outgoing?R.color.bubble_out_end:R.color.bubble_in_end)});d.setCornerRadius(UiResources.dp(this,20));return d;}
     Button actionButton(String label,boolean primary){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setTextSize(14);b.setTypeface(Typeface.DEFAULT,Typeface.BOLD);b.setTextColor(primary?UiResources.color(ConversationActivity.this,R.color.on_primary):UiResources.color(ConversationActivity.this,R.color.primary_variant));b.setPadding(14,6,14,6);b.setBackground(rounded(primary?purple:UiResources.color(ConversationActivity.this,R.color.primary_container),primary?0:UiResources.color(ConversationActivity.this,R.color.outline),28));b.setStateListAnimator(null);return b;}
     ImageButton iconActionButton(int iconRes,String description,boolean primary){ImageButton b=new ImageButton(this);b.setImageResource(iconRes);b.setContentDescription(description);b.setScaleType(ImageView.ScaleType.CENTER);b.setColorFilter(primary?UiResources.color(ConversationActivity.this,R.color.on_primary):UiResources.color(ConversationActivity.this,R.color.primary_variant));b.setPadding(0,0,0,0);b.setBackground(rounded(primary?purple:UiResources.color(ConversationActivity.this,R.color.primary_container),primary?0:UiResources.color(ConversationActivity.this,R.color.outline),28));b.setStateListAnimator(null);return b;}
 
@@ -206,7 +207,7 @@ public class ConversationActivity extends Activity {
                 TextView empty=tv("",16);empty.setGravity(Gravity.CENTER);
                 return new EmptyHolder(empty);
             }
-            LinearLayout line=new LinearLayout(ConversationActivity.this);line.setGravity(Gravity.START);line.setPadding(8,3,8,3);
+            LinearLayout line=new LinearLayout(ConversationActivity.this);line.setGravity(Gravity.START);line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);line.setPadding(8,3,8,3);
             LinearLayout bubble=new LinearLayout(ConversationActivity.this);bubble.setOrientation(LinearLayout.VERTICAL);bubble.setPadding(16,8,16,8);
             TextView body=tv("",17);
             body.setMaxWidth((int)(getResources().getDisplayMetrics().widthPixels-80*getResources().getDisplayMetrics().density));
@@ -219,10 +220,13 @@ public class ConversationActivity extends Activity {
             ConversationMessage item=getItem(position);
             if(holder instanceof EmptyHolder){((EmptyHolder)holder).text.setText(item.emptyText);return;}
             MessageHolder h=(MessageHolder)holder;
-            h.line.setGravity("out".equals(item.type)?Gravity.END:Gravity.START);
+            boolean outgoing="out".equals(item.type);
+            h.line.setGravity(outgoing?Gravity.RIGHT:Gravity.LEFT);
             h.body.setText(item.body);
-            boolean outgoing="out".equals(item.type);h.meta.setText(outgoing?(item.status==null?"":item.status):"واردة");h.meta.setGravity(outgoing?Gravity.END:Gravity.START);h.meta.setTextColor(UiResources.color(ConversationActivity.this,outgoing?R.color.on_primary_container:R.color.on_surface_variant));h.meta.setCompoundDrawablesRelativeWithIntrinsicBounds(0,0,item.star==1?R.drawable.ic_star:0,0);h.meta.setCompoundDrawablePadding(UiResources.dp(ConversationActivity.this,4));
-            h.bubble.setBackground(rounded("out".equals(item.type)?UiResources.color(ConversationActivity.this,R.color.bubble_out):UiResources.color(ConversationActivity.this,R.color.bubble_in),0,24));
+            h.body.setGravity(outgoing?Gravity.RIGHT:Gravity.LEFT);
+            h.body.setTextColor(UiResources.color(ConversationActivity.this,outgoing?R.color.on_bubble_out:R.color.on_bubble_in));
+            h.meta.setText(outgoing?(item.status==null?"":item.status):"واردة");h.meta.setGravity(outgoing?Gravity.RIGHT:Gravity.LEFT);h.meta.setTextColor(UiResources.color(ConversationActivity.this,outgoing?R.color.on_bubble_out:R.color.on_bubble_in));h.meta.setCompoundDrawablesRelativeWithIntrinsicBounds(0,0,item.star==1?R.drawable.ic_star:0,0);h.meta.setCompoundDrawablePadding(UiResources.dp(ConversationActivity.this,4));
+            h.bubble.setBackground(messageGradient(outgoing));
             h.bubble.setOnLongClickListener(v->{toggleSelection(item.id);return true;});
             h.bubble.setOnClickListener(v->{if(actionMode!=null)toggleSelection(item.id);});
         }
