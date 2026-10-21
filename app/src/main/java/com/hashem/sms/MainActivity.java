@@ -166,7 +166,7 @@ public class MainActivity extends androidx.appcompat.app.AppCompatActivity{
     field.setTextColor(UiResources.color(this,R.color.on_surface));
     field.setHintTextColor(UiResources.color(this,R.color.on_surface_variant));
     field.setPadding(UiResources.dp(this,14),UiResources.dp(this,10),UiResources.dp(this,14),UiResources.dp(this,10));
-    field.setBackground(rounded(UiResources.color(this,R.color.surface_variant),UiResources.color(this,R.color.search_border),UiResources.dp(this,14)));
+    field.setBackground(rounded(UiResources.color(this,R.color.surface_variant),UiResources.color(this,R.color.search_border),14));
     field.setMinHeight(UiResources.dp(this,48));
    }else if(child instanceof Button){
     Button action=(Button)child;
