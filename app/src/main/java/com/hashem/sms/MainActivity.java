@@ -107,9 +107,33 @@ public class MainActivity extends androidx.appcompat.app.AppCompatActivity{
  @Override public void onBindViewHolder(ContactViewHolder h,int position){ContactsLogic.ContactRecord item=getItem(position);h.name.setText(item.name.isEmpty()?(item.numbers.isEmpty()?"جهة اتصال":item.numbers.get(0)):item.name);String primary=item.numbers.isEmpty()?"":item.numbers.get(0);h.numbers.setText(item.numbers.size()>1?primary+" · "+item.numbers.size()+" أرقام":primary);h.fallback.setText(item.name.isEmpty()?(primary.isEmpty()?"?":primary.substring(0,1)):item.name.substring(0,1));h.photo.setTag(primary);h.photo.setImageDrawable(null);h.photo.setVisibility(View.GONE);h.fallback.setVisibility(View.VISIBLE);Uri photoUri=item.photoUri.isEmpty()?null:Uri.parse(item.photoUri);android.graphics.Bitmap cached=contactBitmapCache.get(primary);if(cached!=null){h.photo.setImageBitmap(cached);h.photo.setVisibility(View.VISIBLE);h.fallback.setVisibility(View.GONE);}else if(photoUri!=null&&!primary.isEmpty())loadContactPhotoAsync(primary,photoUri,h.photo,h.fallback);h.row.setOnClickListener(v->{if(item.numbers.size()==1)openContactConversation(item.numbers.get(0));else if(item.numbers.size()>1){String[] choices=item.numbers.toArray(new String[0]);new AlertDialog.Builder(MainActivity.this).setTitle("اختر رقمًا لبدء المحادثة").setItems(choices,(dialog,which)->openContactConversation(choices[which])).setNegativeButton("إلغاء",null).show();}});}
  }
  void showMoreScreen(){
-  threadHandler.removeCallbacks(threadRefreshRunnable);threadHandler.removeCallbacks(searchFilterRunnable);threadsRecycler.setVisibility(View.GONE);emptyThreadsView.setVisibility(View.GONE);otherScroll.setVisibility(View.VISIBLE);list.removeAllViews();list.addView(tv("المزيد",22));list.addView(tv("أدوات الرسائل وإدارتها",13));
-  String[][] sections={{"الرسائل الجماعية","bulk"},{"الرسائل المجدولة","scheduled"},{"المحادثات المؤرشفة","archived"},{"الرسائل المميزة","starred"},{"الأرقام المحظورة","blocked"},{"المهملات","trash"},{"الرسائل التي تعذّر إرسالها","failed"},{"قواعد توجيه الرسائل","rules"}};
-  for(String[] section:sections){Button b=button(section[0]);b.setGravity(Gravity.CENTER_VERTICAL|Gravity.END);b.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_arrow_back,0,0,0);b.setCompoundDrawablePadding(UiResources.dp(this,10));b.setOnClickListener(v->{filter=section[1];selectedBottomTab="more";render();});LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,52);lp.bottomMargin=6;list.addView(b,lp);}updateBottomNavigation();
+  threadHandler.removeCallbacks(threadRefreshRunnable);threadHandler.removeCallbacks(searchFilterRunnable);
+  threadsRecycler.setVisibility(View.GONE);emptyThreadsView.setVisibility(View.GONE);otherScroll.setVisibility(View.VISIBLE);list.removeAllViews();
+  list.addView(tv("المزيد",22));list.addView(tv("أدوات الرسائل وإدارتها",13));
+  String[][] sections={{"الرسائل الجماعية","bulk","messages"},{"الرسائل المجدولة","scheduled","schedule"},{"المحادثات المؤرشفة","archived","archive"},{"الرسائل المميزة","starred","star"},{"الأرقام المحظورة","blocked","block"},{"المهملات","trash","delete"},{"قواعد توجيه الرسائل","rules","forward"},{"الإعدادات","settings","settings"}};
+  for(String[] section:sections){
+   LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.HORIZONTAL);row.setGravity(Gravity.CENTER_VERTICAL);row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+   int pad=UiResources.dp(this,14);row.setPadding(pad,UiResources.dp(this,8),pad,UiResources.dp(this,8));
+   row.setBackground(rounded(UiResources.color(this,R.color.card_surface),UiResources.color(this,R.color.card_stroke),UiResources.dp(this,16)));
+   ImageView icon=new ImageView(this);icon.setImageResource(moreSectionIcon(section[2]));icon.setContentDescription(section[0]);
+   icon.setColorFilter(UiResources.color(this,"settings".equals(section[1])?R.color.icon_gold:R.color.primary_variant));
+   row.addView(icon,new LinearLayout.LayoutParams(UiResources.dp(this,24),UiResources.dp(this,24)));
+   View gap=new View(this);row.addView(gap,new LinearLayout.LayoutParams(UiResources.dp(this,12),1));
+   TextView label=tv(section[0],15);label.setPadding(0,0,0,0);row.addView(label,new LinearLayout.LayoutParams(0,-2,1));
+   ImageView arrow=new ImageView(this);arrow.setImageResource(R.drawable.ic_arrow_back);arrow.setColorFilter(UiResources.color(this,R.color.on_surface_variant));
+   row.addView(arrow,new LinearLayout.LayoutParams(UiResources.dp(this,20),UiResources.dp(this,20)));
+   row.setContentDescription(section[0]);row.setClickable(true);row.setFocusable(true);
+   row.setOnClickListener(v->{if("settings".equals(section[1])){openApplicationSettings();return;}filter=section[1];selectedBottomTab="more";render();});
+   LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,UiResources.dp(this,56));lp.bottomMargin=UiResources.dp(this,8);list.addView(row,lp);
+  }
+  updateBottomNavigation();
+ }
+ int moreSectionIcon(String key){
+  switch(key){case "messages":return R.drawable.ic_nav_messages;case "schedule":return R.drawable.ic_schedule;case "archive":return R.drawable.ic_archive;case "star":return R.drawable.ic_star;case "block":return R.drawable.ic_block;case "delete":return R.drawable.ic_delete;case "forward":return R.drawable.ic_forward;default:return R.drawable.ic_settings;}
+ }
+ void openApplicationSettings(){
+  try{startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+getPackageName())));}
+  catch(Exception e){Toast.makeText(this,"تعذّر فتح إعدادات التطبيق",Toast.LENGTH_SHORT).show();}
  }
   boolean isThreadListFilter(String value){return "all".equals(value)||"unread".equals(value)||"archived".equals(value)||"blocked".equals(value);}
   void onSmsUpdated(){if(isThreadListFilter(filter)){threadHandler.removeCallbacks(threadRefreshRunnable);threadHandler.postDelayed(threadRefreshRunnable,250);}else render();}
