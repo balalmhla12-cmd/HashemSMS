@@ -155,6 +155,21 @@ jobs:
       - name: Prepare stable APK filename
         run: cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/HashemSMS-debug.apk
 
+      - name: Publish phase1-ui debug APK
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/phase1-ui'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view phase1-ui-debug >/dev/null 2>&1; then
+            gh release delete phase1-ui-debug --yes --cleanup-tag
+          else
+            git push origin :refs/tags/phase1-ui-debug >/dev/null 2>&1 || true
+          fi
+          gh release create phase1-ui-debug app/build/outputs/apk/debug/HashemSMS-debug.apk \
+            --target "$GITHUB_SHA" \
+            --title "HashemSMS phase1-ui debug APK" \
+            --notes "Automated debug APK for phase1-ui commit $GITHUB_SHA. Private repository downloads require GitHub access. Debug build only; not a production-signed release."
+
       - name: Publish stable latest-debug release
         if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
