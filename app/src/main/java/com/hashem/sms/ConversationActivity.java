@@ -168,7 +168,7 @@ public class ConversationActivity extends Activity {
         LinearLayout composerRow=new LinearLayout(this);composerRow.setGravity(Gravity.CENTER_VERTICAL);composerRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);composerRow.setPadding(UiResources.dp(this,4),UiResources.dp(this,5),UiResources.dp(this,6),UiResources.dp(this,5));composerRow.setBackground(rounded(UiResources.color(ConversationActivity.this,R.color.surface_variant),UiResources.color(ConversationActivity.this,R.color.search_border),30));
         ImageButton attachment=iconActionButton(R.drawable.ic_attachment,"إرفاق وسائط",false);attachment.setOnClickListener(v->Toast.makeText(this,"إرسال الصور والفيديو عبر MMS غير متاح بعد",Toast.LENGTH_LONG).show());composerRow.addView(attachment,new LinearLayout.LayoutParams(UiResources.dp(this,36),UiResources.dp(this,40)));
         ImageButton emoji=iconActionButton(R.drawable.ic_emoji,"إدراج رمز تعبيري",false);emoji.setOnClickListener(v->showEmojiPicker());composerRow.addView(emoji,new LinearLayout.LayoutParams(UiResources.dp(this,36),UiResources.dp(this,40)));
-        composer=new EditText(this);composer.setHint("رسالة نصية");composer.setTextSize(16);composer.setMinLines(1);composer.setMaxLines(5);composer.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);composer.setTextDirection(View.TEXT_DIRECTION_RTL);composer.setGravity(Gravity.CENTER_VERTICAL|Gravity.RIGHT);composer.setPadding(UiResources.dp(this,12),UiResources.dp(this,6),UiResources.dp(this,12),UiResources.dp(this,6));composer.setTextColor(UiResources.color(this,R.color.on_surface));composer.setHintTextColor(UiResources.color(this,R.color.on_surface_variant));composer.setBackgroundColor(UiResources.color(ConversationActivity.this,android.R.color.transparent));composerRow.addView(composer,new LinearLayout.LayoutParams(0,-2,1));
+        composer=new EditText(this);composer.setHint("رسالة نصية");composer.setTextSize(16);composer.setMinLines(1);composer.setMaxLines(5);composer.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);composer.setTextDirection(View.TEXT_DIRECTION_RTL);composer.setGravity(Gravity.CENTER_VERTICAL|Gravity.END);composer.setPadding(UiResources.dp(this,12),UiResources.dp(this,6),UiResources.dp(this,12),UiResources.dp(this,6));composer.setTextColor(UiResources.color(this,R.color.on_surface));composer.setHintTextColor(UiResources.color(this,R.color.on_surface_variant));composer.setBackgroundColor(UiResources.color(ConversationActivity.this,android.R.color.transparent));composerRow.addView(composer,new LinearLayout.LayoutParams(0,-2,1));
         Button send=actionButton("إرسال",true);send.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_send,0,0,0);send.setCompoundDrawablePadding(UiResources.dp(ConversationActivity.this,6));send.setOnClickListener(v->send());LinearLayout.LayoutParams sendLp=new LinearLayout.LayoutParams(-2,UiResources.dp(this,40));sendLp.setMargins(UiResources.dp(this,4),0,0,0);composerRow.addView(send,sendLp);
         LinearLayout.LayoutParams rowLp=new LinearLayout.LayoutParams(-1,-2);rowLp.topMargin=UiResources.dp(this,8);root.addView(composerRow,rowLp);setContentView(root);
     }
@@ -291,7 +291,7 @@ public class ConversationActivity extends Activity {
             h.line.setGravity(outgoing?Gravity.END:Gravity.START);h.column.setGravity(outgoing?Gravity.END:Gravity.START);
             h.body.setText(item.body);h.body.setGravity(outgoing?Gravity.END:Gravity.START);h.body.setTextIsSelectable(false);
             h.body.setTextColor(UiResources.color(ConversationActivity.this,outgoing?R.color.on_bubble_out:R.color.on_bubble_in));
-            String state=outgoing?displayStatus(item.status):"";String time=new java.text.SimpleDateFormat("h:mm a",new Locale("ar")).format(new Date(item.timestamp));h.meta.setText((state.isEmpty()?"":state+" · ")+time);h.meta.setGravity(outgoing?Gravity.END:Gravity.START);
+            String state=outgoing?displayStatus(item.status):"";String time=new java.text.SimpleDateFormat("h:mm a",new Locale("ar")).format(new Date(item.timestamp));h.meta.setText(String.format(Locale.getDefault(), "%1$s%2$s", state.isEmpty()?"":state+" · ", time));h.meta.setGravity(outgoing?Gravity.END:Gravity.START);
             h.meta.setTextColor(UiResources.color(ConversationActivity.this,outgoing?R.color.on_bubble_out:R.color.on_bubble_in));
             h.meta.setCompoundDrawablesRelativeWithIntrinsicBounds(0,0,item.star==1?R.drawable.ic_star:0,0);h.meta.setCompoundDrawablePadding(UiResources.dp(ConversationActivity.this,4));
             GradientDrawable bubbleBackground=messageGradient(outgoing);
@@ -377,8 +377,8 @@ public class ConversationActivity extends Activity {
         if(actionMode==null){selected.clear();actionMode=startActionMode(new SelectionCallback());}
         if(selected.contains(id))selected.remove(id);else selected.add(id);
         if(selected.isEmpty()){if(actionMode!=null)actionMode.finish();return;}
-        if(actionMode!=null)actionMode.setTitle(selected.size()+" محددة");selectionTitle.setText(selected.size()+" محددة");updateContactAvatar();
-        if(messageAdapter!=null)messageAdapter.notifyDataSetChanged();
+        if(actionMode!=null)actionMode.setTitle(getString(R.string.compose_selected_count,selected.size()));selectionTitle.setText(getString(R.string.compose_selected_count,selected.size()));updateContactAvatar();
+        if(messageAdapter!=null)messageAdapter.notifyItemRangeChanged(0,messageAdapter.getItemCount());
         if(actionMode!=null)actionMode.invalidate();
     }
 
@@ -394,7 +394,7 @@ public class ConversationActivity extends Activity {
                 if(isFinishing()||isDestroyed())return;
                 selected.clear();selected.addAll(ids);
                 if(startMode&&actionMode==null)actionMode=startActionMode(new SelectionCallback());
-                if(selectionTitle!=null)selectionTitle.setText(selected.size()+" محددة");
+                if(selectionTitle!=null)selectionTitle.setText(getString(R.string.compose_selected_count,selected.size()));
                 if(mode!=null)mode.setTitle(selected.size()+" محددة");else if(actionMode!=null)actionMode.setTitle(selected.size()+" محددة");
                 updateContactAvatar();
                 if(messageAdapter!=null)messageAdapter.notifyDataSetChanged();
@@ -405,7 +405,7 @@ public class ConversationActivity extends Activity {
     }
 
     class SelectionCallback implements ActionMode.Callback{
-        public boolean onCreateActionMode(ActionMode mode,Menu menu){mode.setTitle("0 محددة");MenuItem cancel=menu.add(0,6,0,"إلغاء");cancel.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);MenuItem all=menu.add(0,5,1,"تحديد الكل");all.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);MenuItem copy=menu.add(0,1,2,"نسخ");copy.setIcon(R.drawable.ic_content_copy);copy.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);MenuItem delete=menu.add(0,4,3,"حذف");delete.setIcon(R.drawable.ic_delete);delete.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);return true;}
+        public boolean onCreateActionMode(ActionMode mode,Menu menu){mode.setTitle("0 محددة");MenuItem cancel=menu.add(0,6,0,"إلغاء");cancel.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);MenuItem all=menu.add(0,5,1,"تحديد الكل");all.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);MenuItem copy=menu.add(0,1,2,"نسخ");copy.setIcon(R.drawable.ic_content_copy);copy.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);MenuItem delete=menu.add(0,4,3,"حذف");delete.setIcon(R.drawable.ic_delete);delete.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);return true;}
         public boolean onPrepareActionMode(ActionMode mode,Menu menu){return true;}
         public boolean onActionItemClicked(ActionMode mode,MenuItem item){int id=item.getItemId(); if(id==6){mode.finish();return true;} if(id==5){selectAllMessages(false,mode);mode.setTitle(selected.size()+" محددة");return true;} if(id==1){copySelected();mode.finish();return true;} if(id==4){ArrayList<Long> ids=new ArrayList<>(selected);new AlertDialog.Builder(ConversationActivity.this).setTitle("حذف الرسائل؟").setMessage("هل تريد حذف "+ids.size()+" رسالة محددة؟").setNegativeButton("إلغاء",null).setPositiveButton("حذف",(dialog,which)->MESSAGE_EXECUTOR.execute(()->{db.deleteMessages(ids);mainHandler.post(()->loadMessages(false));})).show();mode.finish();return true;} return false;}
         public void onDestroyActionMode(ActionMode mode){ArrayList<Long> old=new ArrayList<>(selected);selected.clear();actionMode=null;selectionTitle.setText(conversationTitle());updateContactAvatar();if(messageAdapter!=null)for(Long id:old)messageAdapter.refreshSelection(id);loadMessages(false);}
