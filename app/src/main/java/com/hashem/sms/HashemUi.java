@@ -67,7 +67,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
         final TextView[] chipTexts = new TextView[6];
         final ImageView[] chipIcons = new ImageView[6];
         TextView unreadBadge, failedBadge;
-        Typeface bold;
+        Typeface bold, regular;
         String lastKey = "";
         long lastCount = 0;
         int errors = 0;
@@ -98,6 +98,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
 
         void install() {
             try { bold = Typeface.create(ResourcesCompat.getFont(m, R.font.almarai_family), Typeface.BOLD); } catch (Throwable ignored) {}
+            try { regular = Typeface.create(ResourcesCompat.getFont(m, R.font.almarai_regular), Typeface.NORMAL); } catch (Throwable ignored) {}
             safe(this::header);
             safe(this::search);
             safe(this::buildChips);
@@ -134,7 +135,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             ImageView logo = new ImageView(m);
             logo.setImageResource(R.drawable.ic_launcher_foreground);
             logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(44), dp(44));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(32), dp(32));
             lp.setMarginEnd(dp(8));
             bar.addView(logo, 0, lp);
             bar.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -197,12 +198,12 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                 InputMethodManager imm = (InputMethodManager) m.getSystemService(Context.INPUT_METHOD_SERVICE);
                 if (imm != null) imm.showSoftInput(m.search, InputMethodManager.SHOW_IMPLICIT);
             });
-            box.addView(circle, new LinearLayout.LayoutParams(dp(38), dp(38)));
+            box.addView(circle, new LinearLayout.LayoutParams(dp(32), dp(32)));
             m.search.setBackground(null);
             m.search.setHint(R.string.search_hint);
             m.search.setPaddingRelative(dp(14), 0, dp(10), 0);
             box.addView(m.search, new LinearLayout.LayoutParams(0, -1, 1));
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(48));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(40));
             lp.bottomMargin = dp(8);
             m.root.addView(box, idx, lp);
         }
@@ -214,7 +215,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             String[] labels = { m.getString(R.string.chip_all), m.getString(R.string.chip_unread), m.getString(R.string.chip_failed), m.getString(R.string.chip_bulk), m.getString(R.string.chip_groups), m.getString(R.string.chip_starred) };
             int[] icons = {R.drawable.ic_chip_all, R.drawable.ic_chip_eye, R.drawable.ic_chip_warning, R.drawable.ic_nav_messages, R.drawable.ic_nav_messages, R.drawable.ic_star};
             ViewGroup.LayoutParams old = m.filtersScroll.getLayoutParams();
-            if (old != null) { old.height = dp(46); m.filtersScroll.setLayoutParams(old); }
+            if (old != null) { old.height = dp(30); m.filtersScroll.setLayoutParams(old); }
             for (int i = 0; i < filters.length; i++) {
                 final String f = filters[i];
                 LinearLayout chip = new LinearLayout(m);
@@ -247,7 +248,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                     if (i == 1) unreadBadge = badge; else if (i == 2) failedBadge = badge;
                 }
                 chip.setOnClickListener(v -> { m.filter = f; m.selectedBottomTab = "conversations"; m.render(); });
-                LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(-2, dp(40));
+                LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(-2, dp(30));
                 clp.setMarginEnd(dp(8));
                 tabs.addView(chip, clp);
                 chips[i] = chip; chipTexts[i] = tx; chipIcons[i] = ic;
@@ -303,8 +304,8 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             b.setTextColor(Color.WHITE);
             if (bold != null) b.setTypeface(bold);
             b.setMinWidth(0);
-            b.setMinHeight(dp(46));
-            b.setMinimumHeight(dp(46));
+            b.setMinHeight(dp(40));
+            b.setMinimumHeight(dp(40));
             b.setPaddingRelative(dp(18), 0, dp(18), 0);
             GradientDrawable g = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
                     new int[]{0xFF1F6FE0, 0xFF29B6F6});
@@ -316,7 +317,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             if (ds[2] != null) { ds[2] = ds[2].mutate(); ds[2].setTint(Color.WHITE); }
             b.setCompoundDrawablePadding(dp(10));
             b.setElevation(dp(6));
-            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(-2, dp(46), Gravity.BOTTOM | Gravity.START);
+            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(-2, dp(40), Gravity.BOTTOM | Gravity.START);
             lp.setMargins(dp(16), 0, dp(16), dp(16));
             m.contentHost.addView(b, lp);
             if (m.threadsRecycler != null) {
@@ -374,18 +375,25 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
         void styleRow(MainActivity.ThreadViewHolder h, MainActivity.ThreadItem it) {
             if (h.container.getTag() == null) {
                 h.container.setTag("styled");
-                h.container.setBackground(round(col(R.color.card_surface), col(R.color.card_stroke), dp(18), dp(1)));
+                h.container.setBackgroundColor(Color.TRANSPARENT);
                 ViewGroup.LayoutParams lp = h.container.getLayoutParams();
                 if (lp instanceof RecyclerView.LayoutParams) {
                     RecyclerView.LayoutParams rlp = (RecyclerView.LayoutParams) lp;
                     rlp.width = ViewGroup.LayoutParams.MATCH_PARENT;
-                    rlp.setMargins(dp(2), dp(3), dp(2), dp(3));
+                    rlp.setMargins(0, 0, 0, 0);
                     h.container.setLayoutParams(rlp);
                 }
                 View divider = h.container.getChildAt(1);
                 if (divider != null) divider.setVisibility(View.GONE);
-                if (bold != null) h.name.setTypeface(bold);
+                // Row weight is set below according to current read state.
             }
+            if (bold != null && regular != null) {
+                h.name.setTypeface(it.unread ? bold : regular);
+                h.body.setTypeface(it.unread ? bold : regular);
+            }
+            h.name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+            h.body.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+            h.time.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
             String label = it.contact.isEmpty() ? it.address : it.contact;
             int ring = PALETTE[Math.abs(label.hashCode()) % PALETTE.length];
             if (!Integer.valueOf(ring).equals(h.avatar.getTag())) {
