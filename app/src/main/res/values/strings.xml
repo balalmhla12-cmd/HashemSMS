@@ -18,6 +18,8 @@
     <string name="thread_status_queued">في قائمة الانتظار</string>
     <string name="thread_status_sending">جارٍ الإرسال</string>
     <string name="compose_selected_count">المحدد: %1$d</string>
+    <string name="compose_selected_count_short">%1$d محددة</string>
+    <string name="compose_results_for">%1$d نتائج لـ «%2$s»</string>
     <string name="compose_contacts_count">المحدد: %1$d · الظاهر: %2$d</string>
     <string name="settings_title">الإعدادات</string>
     <string name="settings_search_hint">ابحث في الإعدادات</string>
