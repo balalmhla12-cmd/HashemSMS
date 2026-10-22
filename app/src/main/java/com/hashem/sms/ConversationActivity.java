@@ -303,7 +303,7 @@ public class ConversationActivity extends Activity {
             h.selector.setOnClickListener(v->{if(actionMode!=null)toggleSelection(item.id);});
             h.otp.setVisibility(View.GONE);h.retry.setVisibility(View.GONE);
             java.util.regex.Matcher otpMatcher=java.util.regex.Pattern.compile("(?<!\\d)(\\d{4,8})(?!\\d)").matcher(item.body);
-            if(!outgoing&&otpMatcher.find()){String code=otpMatcher.group(1);h.otp.setVisibility(View.VISIBLE);h.otp.setOnClickListener(v->{((android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(android.content.ClipData.newPlainText("رمز التحقق",code));Toast.makeText(this,"تم نسخ رمز التحقق",Toast.LENGTH_SHORT).show();});}
+            if(!outgoing&&otpMatcher.find()){String code=otpMatcher.group(1);h.otp.setVisibility(View.VISIBLE);h.otp.setOnClickListener(v->{((android.content.ClipboardManager)ConversationActivity.this.getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(android.content.ClipData.newPlainText("رمز التحقق",code));Toast.makeText(ConversationActivity.this,"تم نسخ رمز التحقق",Toast.LENGTH_SHORT).show();});}
             else if(outgoing&&isFailed(item.status)){h.retry.setVisibility(View.VISIBLE);h.retry.setOnClickListener(v->dispatchSms(address,item.body,"RETRY",3000,4000));}
             View.OnLongClickListener longPress=v->{toggleSelection(item.id);return true;};
             View.OnClickListener tap=v->{if(actionMode!=null)toggleSelection(item.id);else showActions(item.id);};
