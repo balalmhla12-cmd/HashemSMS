@@ -376,7 +376,7 @@ public class ConversationActivity extends Activity {
         if(selected.contains(id))selected.remove(id);else selected.add(id);
         if(selected.isEmpty()){if(actionMode!=null)actionMode.finish();return;}
         if(actionMode!=null)actionMode.setTitle(selected.size()+" محددة");selectionTitle.setText(selected.size()+" محددة");updateContactAvatar();
-        if(messageAdapter!=null)messageAdapter.refreshSelection(id);
+        if(messageAdapter!=null)messageAdapter.notifyDataSetChanged();
         if(actionMode!=null)actionMode.invalidate();
     }
 
