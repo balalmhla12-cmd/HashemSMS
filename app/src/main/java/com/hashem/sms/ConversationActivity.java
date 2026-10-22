@@ -270,9 +270,11 @@ public class ConversationActivity extends Activity {
             LinearLayout bubble=new LinearLayout(ConversationActivity.this);bubble.setOrientation(LinearLayout.VERTICAL);bubble.setPadding(16,8,16,8);
             TextView body=tv("",17);body.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);body.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG);body.setMaxWidth((int)(getResources().getDisplayMetrics().widthPixels-80*getResources().getDisplayMetrics().density));
             TextView meta=tv("",11);meta.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);bubble.addView(body);bubble.addView(meta);
-            Button otp=actionButton("نسخ الرمز",false);otp.setTextSize(12);otp.setVisibility(View.GONE);bubble.addView(otp,new LinearLayout.LayoutParams(-2,UiResources.dp(ConversationActivity.this,32)));
-            Button retry=actionButton("إعادة المحاولة",false);retry.setTextSize(12);retry.setVisibility(View.GONE);bubble.addView(retry,new LinearLayout.LayoutParams(-2,UiResources.dp(ConversationActivity.this,32)));
+            Button otp=actionButton("نسخ الرمز",false);otp.setTextSize(12);otp.setVisibility(View.GONE);
+            Button retry=actionButton("إعادة المحاولة",false);retry.setTextSize(12);retry.setVisibility(View.GONE);
             LinearLayout.LayoutParams bubbleLp=new LinearLayout.LayoutParams(-2,-2);bubbleLp.setMargins(8,4,8,2);column.addView(bubble,bubbleLp);
+            column.addView(otp,new LinearLayout.LayoutParams(-2,UiResources.dp(ConversationActivity.this,32)));
+            column.addView(retry,new LinearLayout.LayoutParams(-2,UiResources.dp(ConversationActivity.this,32)));
             LinearLayout actions=new LinearLayout(ConversationActivity.this);actions.setOrientation(LinearLayout.HORIZONTAL);actions.setGravity(Gravity.CENTER_VERTICAL);actions.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);actions.setVisibility(View.GONE);
             ImageButton copy=messageActionIcon(R.drawable.ic_content_copy,"نسخ"),forward=messageActionIcon(R.drawable.ic_forward,"إعادة توجيه"),reply=messageActionIcon(android.R.drawable.ic_menu_edit,"تعديل"),star=messageActionIcon(R.drawable.ic_star,"نجمة"),more=messageActionIcon(R.drawable.ic_more_vert,"خيارات");
             int actionSize=UiResources.dp(ConversationActivity.this,34);
