@@ -195,7 +195,7 @@ public class ConversationActivity extends Activity {
                     String body=c.getString(bodyCol);
                     if(body==null)body="";
                     if(!query.isEmpty()&&!body.toLowerCase(Locale.ROOT).contains(query))continue;
-                    rows.add(new ConversationMessage(c.getLong(idCol),body,c.getString(typeCol),c.getString(statusCol),c.getInt(starCol),null));
+                    long timestamp=c.getLong(c.getColumnIndexOrThrow("ts"));long day=dayStart(timestamp);if(rows.isEmpty()||rows.get(rows.size()-1).timestamp==0L||dayStart(rows.get(rows.size()-1).timestamp)!=day)rows.add(ConversationMessage.date(day,timestamp));rows.add(new ConversationMessage(c.getLong(idCol),body,c.getString(typeCol),c.getString(statusCol),c.getInt(starCol),null,timestamp,false));
                 }
             }catch(Exception e){
                 android.util.Log.e("HashemSMS","Unable to load conversation messages",e);
@@ -227,24 +227,25 @@ public class ConversationActivity extends Activity {
     static final class ConversationMessage {
         final long id;
         final String body,type,status,emptyText;
-        final int star;
-        ConversationMessage(long id,String body,String type,String status,int star,String emptyText){
-            this.id=id;this.body=body;this.type=type;this.status=status;this.star=star;this.emptyText=emptyText;
-        }
+        final int star; final long timestamp; final boolean dateDivider;
+        ConversationMessage(long id,String body,String type,String status,int star,String emptyText){this(id,body,type,status,star,emptyText,System.currentTimeMillis(),false);}
+        ConversationMessage(long id,String body,String type,String status,int star,String emptyText,long timestamp,boolean dateDivider){this.id=id;this.body=body;this.type=type;this.status=status;this.star=star;this.emptyText=emptyText;this.timestamp=timestamp;this.dateDivider=dateDivider;}
         static final long EMPTY_ID=Long.MIN_VALUE;
         static ConversationMessage empty(String text){return new ConversationMessage(EMPTY_ID,"","","",0,text);}
+        static ConversationMessage date(long day,long ts){return new ConversationMessage(-Math.max(1L,day),"","","",0,null,ts,true);}
         boolean isEmpty(){return emptyText!=null;}
+        boolean isDateDivider(){return dateDivider;}
     }
 
     static final class MessageDiffCallback extends DiffUtil.ItemCallback<ConversationMessage>{
             @Override public boolean areItemsTheSame(ConversationMessage a,ConversationMessage b){return a.id==b.id;}
             @Override public boolean areContentsTheSame(ConversationMessage a,ConversationMessage b){
-                return a.id==b.id&&Objects.equals(a.body,b.body)&&Objects.equals(a.type,b.type)&&Objects.equals(a.status,b.status)&&a.star==b.star&&Objects.equals(a.emptyText,b.emptyText);
+                return a.id==b.id&&Objects.equals(a.body,b.body)&&Objects.equals(a.type,b.type)&&Objects.equals(a.status,b.status)&&a.star==b.star&&Objects.equals(a.emptyText,b.emptyText)&&a.timestamp==b.timestamp&&a.dateDivider==b.dateDivider;
             }
         }
 
     private final class ConversationAdapter extends ListAdapter<ConversationMessage,RecyclerView.ViewHolder>{
-        private static final int TYPE_MESSAGE=1,TYPE_EMPTY=2;
+        private static final int TYPE_MESSAGE=1,TYPE_EMPTY=2,TYPE_DATE=3;
         private long activeActionMessageId=Long.MIN_VALUE;
         ConversationAdapter(){super(new MessageDiffCallback());}
         void refreshSelection(long id){int position=findPosition(id);if(position>=0)notifyItemChanged(position);}
@@ -260,30 +261,34 @@ public class ConversationActivity extends Activity {
             for(int i=0;i<getCurrentList().size();i++)if(getItem(i).id==id)return i;
             return -1;
         }
-        @Override public int getItemViewType(int position){return getItem(position).isEmpty()?TYPE_EMPTY:TYPE_MESSAGE;}
+        @Override public int getItemViewType(int position){ConversationMessage m=getItem(position);return m.isEmpty()?TYPE_EMPTY:m.isDateDivider()?TYPE_DATE:TYPE_MESSAGE;}
         @Override public RecyclerView.ViewHolder onCreateViewHolder(android.view.ViewGroup parent,int viewType){
             if(viewType==TYPE_EMPTY){TextView empty=tv("",16);empty.setGravity(Gravity.CENTER);return new EmptyHolder(empty);}
+            if(viewType==TYPE_DATE){TextView date=tv("",12);date.setGravity(Gravity.CENTER);date.setTextColor(UiResources.color(ConversationActivity.this,R.color.on_surface_variant));date.setPadding(0,UiResources.dp(ConversationActivity.this,10),0,UiResources.dp(ConversationActivity.this,8));return new DateHolder(date);}
             LinearLayout line=new LinearLayout(ConversationActivity.this);line.setGravity(Gravity.START);line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);line.setPadding(8,3,8,3);
             LinearLayout column=new LinearLayout(ConversationActivity.this);column.setOrientation(LinearLayout.VERTICAL);column.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
             LinearLayout bubble=new LinearLayout(ConversationActivity.this);bubble.setOrientation(LinearLayout.VERTICAL);bubble.setPadding(16,8,16,8);
-            TextView body=tv("",17);body.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);body.setMaxWidth((int)(getResources().getDisplayMetrics().widthPixels-80*getResources().getDisplayMetrics().density));
-            TextView meta=tv("",12);meta.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);bubble.addView(body);bubble.addView(meta);
+            TextView body=tv("",17);body.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);body.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG);body.setMaxWidth((int)(getResources().getDisplayMetrics().widthPixels-80*getResources().getDisplayMetrics().density));
+            TextView meta=tv("",11);meta.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);bubble.addView(body);bubble.addView(meta);
+            Button otp=actionButton("نسخ الرمز",false);otp.setTextSize(12);otp.setVisibility(View.GONE);bubble.addView(otp,new LinearLayout.LayoutParams(-2,UiResources.dp(ConversationActivity.this,32)));
+            Button retry=actionButton("إعادة المحاولة",false);retry.setTextSize(12);retry.setVisibility(View.GONE);bubble.addView(retry,new LinearLayout.LayoutParams(-2,UiResources.dp(ConversationActivity.this,32)));
             LinearLayout.LayoutParams bubbleLp=new LinearLayout.LayoutParams(-2,-2);bubbleLp.setMargins(8,4,8,2);column.addView(bubble,bubbleLp);
             LinearLayout actions=new LinearLayout(ConversationActivity.this);actions.setOrientation(LinearLayout.HORIZONTAL);actions.setGravity(Gravity.CENTER_VERTICAL);actions.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);actions.setVisibility(View.GONE);
             ImageButton copy=messageActionIcon(R.drawable.ic_content_copy,"نسخ"),forward=messageActionIcon(R.drawable.ic_forward,"إعادة توجيه"),reply=messageActionIcon(android.R.drawable.ic_menu_edit,"تعديل"),star=messageActionIcon(R.drawable.ic_star,"نجمة"),more=messageActionIcon(R.drawable.ic_more_vert,"خيارات");
             int actionSize=UiResources.dp(ConversationActivity.this,34);
             for(ImageButton button:new ImageButton[]{copy,forward,reply,star,more}){LinearLayout.LayoutParams actionLp=new LinearLayout.LayoutParams(actionSize,actionSize);actionLp.setMargins(2,0,2,0);actions.addView(button,actionLp);}
             column.addView(actions,new LinearLayout.LayoutParams(-2,-2));line.addView(column,new LinearLayout.LayoutParams(-2,-2));
-            return new MessageHolder(line,column,bubble,body,meta,actions,copy,forward,reply,star,more);
+            return new MessageHolder(line,column,bubble,body,meta,actions,copy,forward,reply,star,more,otp,retry);
         }
         @Override public void onBindViewHolder(RecyclerView.ViewHolder holder,int position){
             ConversationMessage item=getItem(position);
             if(holder instanceof EmptyHolder){((EmptyHolder)holder).text.setText(item.emptyText);return;}
+            if(holder instanceof DateHolder){((DateHolder)holder).text.setText(dateLabel(item.timestamp));return;}
             MessageHolder h=(MessageHolder)holder;boolean outgoing="out".equals(item.type);
             h.line.setGravity(outgoing?Gravity.END:Gravity.START);h.column.setGravity(outgoing?Gravity.END:Gravity.START);
             h.body.setText(item.body);h.body.setGravity(outgoing?Gravity.END:Gravity.START);h.body.setTextIsSelectable(false);
             h.body.setTextColor(UiResources.color(ConversationActivity.this,outgoing?R.color.on_bubble_out:R.color.on_bubble_in));
-            h.meta.setText(outgoing?(item.status==null?"":item.status):"واردة");h.meta.setGravity(outgoing?Gravity.END:Gravity.START);
+            String state=outgoing?displayStatus(item.status):"";String time=new java.text.SimpleDateFormat("h:mm a",new Locale("ar")).format(new Date(item.timestamp));h.meta.setText((state.isEmpty()?"":state+" · ")+time);h.meta.setGravity(outgoing?Gravity.END:Gravity.START);
             h.meta.setTextColor(UiResources.color(ConversationActivity.this,outgoing?R.color.on_bubble_out:R.color.on_bubble_in));
             h.meta.setCompoundDrawablesRelativeWithIntrinsicBounds(0,0,item.star==1?R.drawable.ic_star:0,0);h.meta.setCompoundDrawablePadding(UiResources.dp(ConversationActivity.this,4));
             GradientDrawable bubbleBackground=messageGradient(outgoing);
@@ -291,6 +296,10 @@ public class ConversationActivity extends Activity {
             if(isSelected)bubbleBackground.setStroke(UiResources.dp(ConversationActivity.this,2),UiResources.color(ConversationActivity.this,R.color.primary_variant));
             h.bubble.setBackground(bubbleBackground);
             h.actions.setVisibility(item.id==activeActionMessageId&&actionMode==null?View.VISIBLE:View.GONE);h.actions.setContentDescription("إجراءات الرسالة");
+            h.otp.setVisibility(View.GONE);h.retry.setVisibility(View.GONE);
+            java.util.regex.Matcher otpMatcher=java.util.regex.Pattern.compile("(?<!\\d)(\\d{4,8})(?!\\d)").matcher(item.body);
+            if(!outgoing&&otpMatcher.find()){String code=otpMatcher.group(1);h.otp.setVisibility(View.VISIBLE);h.otp.setOnClickListener(v->{((android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(android.content.ClipData.newPlainText("رمز التحقق",code));Toast.makeText(this,"تم نسخ رمز التحقق",Toast.LENGTH_SHORT).show();});}
+            else if(outgoing&&isFailed(item.status)){h.retry.setVisibility(View.VISIBLE);h.retry.setOnClickListener(v->dispatchSms(address,item.body,"RETRY",3000,4000));}
             View.OnLongClickListener longPress=v->{toggleSelection(item.id);return true;};
             View.OnClickListener tap=v->{if(actionMode!=null)toggleSelection(item.id);else showActions(item.id);};
             h.bubble.setOnLongClickListener(longPress);h.body.setOnLongClickListener(longPress);h.meta.setOnLongClickListener(longPress);
@@ -303,15 +312,16 @@ public class ConversationActivity extends Activity {
     }
 
     private static final class MessageHolder extends RecyclerView.ViewHolder{
-        final LinearLayout line,column,bubble,actions;final TextView body,meta;final ImageButton copy,forward,reply,star,more;
-        MessageHolder(LinearLayout line,LinearLayout column,LinearLayout bubble,TextView body,TextView meta,LinearLayout actions,ImageButton copy,ImageButton forward,ImageButton reply,ImageButton star,ImageButton more){
-            super(line);this.line=line;this.column=column;this.bubble=bubble;this.body=body;this.meta=meta;this.actions=actions;this.copy=copy;this.forward=forward;this.reply=reply;this.star=star;this.more=more;
+        final LinearLayout line,column,bubble,actions;final TextView body,meta;final ImageButton copy,forward,reply,star,more;final Button otp,retry;
+        MessageHolder(LinearLayout line,LinearLayout column,LinearLayout bubble,TextView body,TextView meta,LinearLayout actions,ImageButton copy,ImageButton forward,ImageButton reply,ImageButton star,ImageButton more,Button otp,Button retry){
+            super(line);this.line=line;this.column=column;this.bubble=bubble;this.body=body;this.meta=meta;this.actions=actions;this.copy=copy;this.forward=forward;this.reply=reply;this.star=star;this.more=more;this.otp=otp;this.retry=retry;
         }
     }
     private static final class EmptyHolder extends RecyclerView.ViewHolder{
         final TextView text;
         EmptyHolder(TextView text){super(text);this.text=text;}
     }
+    private static final class DateHolder extends RecyclerView.ViewHolder{final TextView text;DateHolder(TextView text){super(text);this.text=text;}}
 
     ImageButton messageActionIcon(int iconRes,String description){
         ImageButton button=new ImageButton(this);button.setImageResource(iconRes);button.setContentDescription(description);button.setScaleType(ImageView.ScaleType.CENTER);
@@ -350,8 +360,12 @@ public class ConversationActivity extends Activity {
 
     static void pruneSelection(ArrayList<Long> selection,Collection<Long> existingMessageIds){
         HashSet<Long> existingIds=new HashSet<>(existingMessageIds);
-        selection.removeIf(id->!existingIds.contains(id));
+        selection.removeIf(id->!existingIds.contains(id)||id<0);
     }
+    private long dayStart(long timestamp){Calendar cal=Calendar.getInstance();cal.setTimeInMillis(timestamp);cal.set(Calendar.HOUR_OF_DAY,0);cal.set(Calendar.MINUTE,0);cal.set(Calendar.SECOND,0);cal.set(Calendar.MILLISECOND,0);return cal.getTimeInMillis();}
+    private String dateLabel(long timestamp){long today=dayStart(System.currentTimeMillis()),day=dayStart(timestamp);if(day==today)return "اليوم";if(day==today-86400000L)return "أمس";return new java.text.SimpleDateFormat("d MMMM yyyy",new Locale("ar")).format(new Date(timestamp));}
+    private String displayStatus(String status){if(status==null)return "";String s=status.trim().toLowerCase(Locale.ROOT);if(s.isEmpty())return "";if(s.contains("fail")||s.contains("فشل")||s.contains("لم يتم"))return "فشل";if(s.contains("send")||s.contains("sent")||s.contains("تم"))return "تم";if(s.contains("pending")||s.contains("outbox")||s.contains("جار"))return "قيد الإرسال";return status;}
+    private boolean isFailed(String status){String s=status==null?"":status.toLowerCase(Locale.ROOT);return s.contains("fail")||s.contains("فشل")||s.contains("لم يتم");}
 
     void toggleSelection(long id){
         if(id==ConversationMessage.EMPTY_ID)return;
