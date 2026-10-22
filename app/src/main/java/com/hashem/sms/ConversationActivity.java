@@ -263,7 +263,7 @@ public class ConversationActivity extends Activity {
         }
         @Override public int getItemViewType(int position){ConversationMessage m=getItem(position);return m.isEmpty()?TYPE_EMPTY:m.isDateDivider()?TYPE_DATE:TYPE_MESSAGE;}
         @Override public RecyclerView.ViewHolder onCreateViewHolder(android.view.ViewGroup parent,int viewType){
-            if(viewType==TYPE_EMPTY){TextView empty=tv("",16);empty.setGravity(Gravity.CENTER);return new EmptyHolder(empty);}
+            if(viewType==TYPE_EMPTY){TextView empty=tv("ابدأ المحادثة",16);empty.setGravity(Gravity.CENTER);empty.setCompoundDrawablesWithIntrinsicBounds(0,android.R.drawable.ic_dialog_email,0,0);empty.setCompoundDrawablePadding(UiResources.dp(ConversationActivity.this,12));return new EmptyHolder(empty);}
             if(viewType==TYPE_DATE){TextView date=tv("",12);date.setGravity(Gravity.CENTER);date.setTextColor(UiResources.color(ConversationActivity.this,R.color.on_surface_variant));date.setPadding(0,UiResources.dp(ConversationActivity.this,10),0,UiResources.dp(ConversationActivity.this,8));return new DateHolder(date);}
             LinearLayout line=new LinearLayout(ConversationActivity.this);line.setGravity(Gravity.START);line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);line.setPadding(8,3,8,3);
             LinearLayout column=new LinearLayout(ConversationActivity.this);column.setOrientation(LinearLayout.VERTICAL);column.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -277,8 +277,9 @@ public class ConversationActivity extends Activity {
             ImageButton copy=messageActionIcon(R.drawable.ic_content_copy,"نسخ"),forward=messageActionIcon(R.drawable.ic_forward,"إعادة توجيه"),reply=messageActionIcon(android.R.drawable.ic_menu_edit,"تعديل"),star=messageActionIcon(R.drawable.ic_star,"نجمة"),more=messageActionIcon(R.drawable.ic_more_vert,"خيارات");
             int actionSize=UiResources.dp(ConversationActivity.this,34);
             for(ImageButton button:new ImageButton[]{copy,forward,reply,star,more}){LinearLayout.LayoutParams actionLp=new LinearLayout.LayoutParams(actionSize,actionSize);actionLp.setMargins(2,0,2,0);actions.addView(button,actionLp);}
-            column.addView(actions,new LinearLayout.LayoutParams(-2,-2));line.addView(column,new LinearLayout.LayoutParams(-2,-2));
-            return new MessageHolder(line,column,bubble,body,meta,actions,copy,forward,reply,star,more,otp,retry);
+            column.addView(actions,new LinearLayout.LayoutParams(-2,-2));
+            TextView selector=tv("○",22);selector.setGravity(Gravity.CENTER);selector.setTextColor(UiResources.color(ConversationActivity.this,R.color.primary_variant));selector.setVisibility(View.GONE);line.addView(selector,new LinearLayout.LayoutParams(UiResources.dp(ConversationActivity.this,28),UiResources.dp(ConversationActivity.this,28)));line.addView(column,new LinearLayout.LayoutParams(-2,-2));
+            return new MessageHolder(line,column,bubble,body,meta,actions,copy,forward,reply,star,more,otp,retry,selector);
         }
         @Override public void onBindViewHolder(RecyclerView.ViewHolder holder,int position){
             ConversationMessage item=getItem(position);
@@ -296,13 +297,15 @@ public class ConversationActivity extends Activity {
             if(isSelected)bubbleBackground.setStroke(UiResources.dp(ConversationActivity.this,2),UiResources.color(ConversationActivity.this,R.color.primary_variant));
             h.bubble.setBackground(bubbleBackground);
             h.actions.setVisibility(item.id==activeActionMessageId&&actionMode==null?View.VISIBLE:View.GONE);h.actions.setContentDescription("إجراءات الرسالة");
+            h.selector.setVisibility(actionMode!=null?View.VISIBLE:View.GONE);h.selector.setText(isSelected?"●":"○");h.selector.setContentDescription(isSelected?"رسالة محددة":"تحديد الرسالة");
+            h.selector.setOnClickListener(v->{if(actionMode!=null)toggleSelection(item.id);});
             h.otp.setVisibility(View.GONE);h.retry.setVisibility(View.GONE);
             java.util.regex.Matcher otpMatcher=java.util.regex.Pattern.compile("(?<!\\d)(\\d{4,8})(?!\\d)").matcher(item.body);
             if(!outgoing&&otpMatcher.find()){String code=otpMatcher.group(1);h.otp.setVisibility(View.VISIBLE);h.otp.setOnClickListener(v->{((android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(android.content.ClipData.newPlainText("رمز التحقق",code));Toast.makeText(this,"تم نسخ رمز التحقق",Toast.LENGTH_SHORT).show();});}
             else if(outgoing&&isFailed(item.status)){h.retry.setVisibility(View.VISIBLE);h.retry.setOnClickListener(v->dispatchSms(address,item.body,"RETRY",3000,4000));}
             View.OnLongClickListener longPress=v->{toggleSelection(item.id);return true;};
             View.OnClickListener tap=v->{if(actionMode!=null)toggleSelection(item.id);else showActions(item.id);};
-            h.bubble.setOnLongClickListener(longPress);h.body.setOnLongClickListener(longPress);h.meta.setOnLongClickListener(longPress);
+            h.bubble.setOnLongClickListener(longPress);h.body.setOnLongClickListener(longPress);h.meta.setOnLongClickListener(longPress);h.selector.setOnLongClickListener(longPress);
             h.bubble.setOnClickListener(tap);h.body.setOnClickListener(tap);h.meta.setOnClickListener(tap);
             h.copy.setOnClickListener(v->copyMessage(item));h.forward.setOnClickListener(v->forwardMessage(item));
             h.reply.setVisibility(outgoing?View.VISIBLE:View.GONE);h.reply.setOnClickListener(v->{if(outgoing){composer.setText(item.body);composer.setSelection(composer.length());composer.requestFocus();}});
@@ -312,9 +315,9 @@ public class ConversationActivity extends Activity {
     }
 
     private static final class MessageHolder extends RecyclerView.ViewHolder{
-        final LinearLayout line,column,bubble,actions;final TextView body,meta;final ImageButton copy,forward,reply,star,more;final Button otp,retry;
-        MessageHolder(LinearLayout line,LinearLayout column,LinearLayout bubble,TextView body,TextView meta,LinearLayout actions,ImageButton copy,ImageButton forward,ImageButton reply,ImageButton star,ImageButton more,Button otp,Button retry){
-            super(line);this.line=line;this.column=column;this.bubble=bubble;this.body=body;this.meta=meta;this.actions=actions;this.copy=copy;this.forward=forward;this.reply=reply;this.star=star;this.more=more;this.otp=otp;this.retry=retry;
+        final LinearLayout line,column,bubble,actions;final TextView body,meta,selector;final ImageButton copy,forward,reply,star,more;final Button otp,retry;
+        MessageHolder(LinearLayout line,LinearLayout column,LinearLayout bubble,TextView body,TextView meta,LinearLayout actions,ImageButton copy,ImageButton forward,ImageButton reply,ImageButton star,ImageButton more,Button otp,Button retry,TextView selector){
+            super(line);this.line=line;this.column=column;this.bubble=bubble;this.body=body;this.meta=meta;this.actions=actions;this.copy=copy;this.forward=forward;this.reply=reply;this.star=star;this.more=more;this.otp=otp;this.retry=retry;this.selector=selector;
         }
     }
     private static final class EmptyHolder extends RecyclerView.ViewHolder{
@@ -390,6 +393,7 @@ public class ConversationActivity extends Activity {
                 selected.clear();selected.addAll(ids);
                 if(startMode&&actionMode==null)actionMode=startActionMode(new SelectionCallback());
                 if(selectionTitle!=null)selectionTitle.setText(selected.size()+" محددة");
+                if(mode!=null)mode.setTitle(selected.size()+" محددة");else if(actionMode!=null)actionMode.setTitle(selected.size()+" محددة");
                 updateContactAvatar();
                 if(messageAdapter!=null)messageAdapter.notifyDataSetChanged();
                 ActionMode target=mode!=null?mode:actionMode;
