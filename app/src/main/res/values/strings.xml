@@ -51,7 +51,6 @@
     <string name="settings_notifications_desc">إدارة تنبيهات HashemSMS من إعدادات Android.</string>
     <string name="settings_schedule_desc">إدارة إذن المنبهات الدقيقة عند الحاجة إلى الجدولة.</string>
     <string name="settings_privacy_desc">راجع الصلاحيات الممنوحة وتحكم في الوصول من النظام.</string>
-    <string name="settings_advanced_desc">خيارات النظام المتقدمة الخاصة بالتطبيق.</string>
     <string name="settings_about_version">الإصدار %1$s</string>
     <string name="settings_about_package">معرّف الحزمة: %1$s</string>
     <string name="settings_search_empty">لا توجد إعدادات مطابقة لبحثك.</string>
