@@ -398,7 +398,7 @@ public class ConversationActivity extends Activity {
                 if(selectionTitle!=null)selectionTitle.setText(getString(R.string.compose_selected_count,selected.size()));
                 if(mode!=null)mode.setTitle(selected.size()+" محددة");else if(actionMode!=null)actionMode.setTitle(selected.size()+" محددة");
                 updateContactAvatar();
-                if(messageAdapter!=null)messageAdapter.notifyDataSetChanged();
+                if(messageAdapter!=null)messageAdapter.notifyItemRangeChanged(0,messageAdapter.getItemCount());
                 ActionMode target=mode!=null?mode:actionMode;
                 if(target!=null)target.invalidate();
             });

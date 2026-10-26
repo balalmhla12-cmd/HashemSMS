@@ -240,6 +240,7 @@ public class MainActivity extends androidx.appcompat.app.AppCompatActivity{
    void back(){if(step==3){step=2;render();}else if(step==2){step=1;render();}else if(step==1){step=0;selected.clear();render();}else if(step==4){step=3;render();}else dlg.dismiss();}
    final class Person{final String name,number;Person(String n,String p){name=n==null?"":n;number=p==null?"":p;}}
   }
+@android.annotation.SuppressLint("ClickableViewAccessibility")
 void pickContactsForCompose(EditText destination){
   if(checkSelfPermission("android.permission.READ_CONTACTS")!=PackageManager.PERMISSION_GRANTED){Toast.makeText(this,"امنح إذن جهات الاتصال أولًا، أو أدخل الرقم يدويًا.",Toast.LENGTH_LONG).show();return;}
   ArrayList<String[]> people=new ArrayList<>();android.database.Cursor c=null;
