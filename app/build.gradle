@@ -1,6 +1,9 @@
 plugins { id 'com.android.application' }
 
+def shortGitCommit = providers.exec { commandLine 'git', 'rev-parse', '--short=7', 'HEAD' }.standardOutput.asText.get().trim()
+
 android {
+    buildFeatures { buildConfig true }
     namespace 'com.hashem.sms'
     compileSdk 36
 
@@ -10,6 +13,7 @@ android {
         targetSdk 36
         versionCode 4
         versionName '1.3.0'
+        buildConfigField 'String', 'GIT_COMMIT', '"' + shortGitCommit + '"'
     }
 
     signingConfigs {
