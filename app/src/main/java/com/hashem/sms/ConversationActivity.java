@@ -283,6 +283,7 @@ public class ConversationActivity extends Activity {
             TextView selector=tv("○",22);selector.setGravity(Gravity.CENTER);selector.setTextColor(UiResources.color(ConversationActivity.this,R.color.primary_variant));selector.setVisibility(View.GONE);line.addView(selector,new LinearLayout.LayoutParams(UiResources.dp(ConversationActivity.this,28),UiResources.dp(ConversationActivity.this,28)));line.addView(column,new LinearLayout.LayoutParams(-2,-2));
             return new MessageHolder(line,column,bubble,body,meta,actions,copy,forward,reply,star,more,otp,retry,selector);
         }
+        @android.annotation.SuppressLint("RtlHardcoded")
         @Override public void onBindViewHolder(RecyclerView.ViewHolder holder,int position){
             ConversationMessage item=getItem(position);
             if(holder instanceof EmptyHolder){((EmptyHolder)holder).text.setText(item.emptyText);return;}
