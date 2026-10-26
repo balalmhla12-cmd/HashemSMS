@@ -54,7 +54,7 @@ public class ConversationActivity extends Activity {
 
     TextView tv(String s,int size){ TextView t=new TextView(this); t.setText(s); t.setTextSize(size); t.setTextColor(UiResources.color(ConversationActivity.this,R.color.conversation_text)); t.setPadding(UiResources.dp(this,18),UiResources.dp(this,12),UiResources.dp(this,18),UiResources.dp(this,12)); return t; }
     GradientDrawable rounded(int color,int stroke,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(radius*getResources().getDisplayMetrics().density);if(stroke!=0)d.setStroke(1,color==0?stroke:stroke);return d;}
-    GradientDrawable messageGradient(boolean outgoing){GradientDrawable d=new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,new int[]{UiResources.color(this,outgoing?R.color.bubble_out_start:R.color.bubble_in_start),UiResources.color(this,outgoing?R.color.bubble_out_end:R.color.bubble_in_end)});d.setCornerRadius(UiResources.dp(this,20));return d;}
+    GradientDrawable messageGradient(boolean outgoing){GradientDrawable d=new GradientDrawable();d.setColor(UiResources.color(this,outgoing?R.color.bubble_out:R.color.bubble_in));d.setCornerRadius(UiResources.dp(this,20));return d;}
     Button actionButton(String label,boolean primary){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setTextSize(14);b.setTypeface(Typeface.DEFAULT,Typeface.BOLD);b.setTextColor(primary?UiResources.color(ConversationActivity.this,R.color.on_primary):UiResources.color(ConversationActivity.this,R.color.primary_variant));b.setPadding(UiResources.dp(this,12),UiResources.dp(this,4),UiResources.dp(this,12),UiResources.dp(this,4));b.setMinHeight(UiResources.dp(this,44));b.setBackground(rounded(primary?purple:UiResources.color(ConversationActivity.this,R.color.primary_container),primary?0:UiResources.color(ConversationActivity.this,R.color.outline),28));b.setStateListAnimator(null);return b;}
     ImageButton iconActionButton(int iconRes,String description,boolean primary){ImageButton b=new ImageButton(this);b.setImageResource(iconRes);b.setContentDescription(description);b.setScaleType(ImageView.ScaleType.CENTER);b.setColorFilter(primary?UiResources.color(ConversationActivity.this,R.color.on_primary):UiResources.color(ConversationActivity.this,R.color.primary_variant));b.setPadding(0,0,0,0);b.setBackground(rounded(primary?purple:UiResources.color(ConversationActivity.this,R.color.primary_container),primary?0:UiResources.color(ConversationActivity.this,R.color.outline),28));b.setStateListAnimator(null);return b;}
 
@@ -288,10 +288,10 @@ public class ConversationActivity extends Activity {
             if(holder instanceof EmptyHolder){((EmptyHolder)holder).text.setText(item.emptyText);return;}
             if(holder instanceof DateHolder){((DateHolder)holder).text.setText(dateLabel(item.timestamp));return;}
             MessageHolder h=(MessageHolder)holder;boolean outgoing="out".equals(item.type);
-            h.line.setGravity(outgoing?Gravity.END:Gravity.START);h.column.setGravity(outgoing?Gravity.END:Gravity.START);
-            h.body.setText(item.body);h.body.setGravity(outgoing?Gravity.END:Gravity.START);h.body.setTextIsSelectable(false);
+            h.line.setGravity(outgoing?Gravity.RIGHT:Gravity.LEFT);h.column.setGravity(outgoing?Gravity.RIGHT:Gravity.LEFT);
+            h.body.setText(item.body);h.body.setGravity(outgoing?Gravity.RIGHT:Gravity.LEFT);h.body.setTextIsSelectable(false);
             h.body.setTextColor(UiResources.color(ConversationActivity.this,outgoing?R.color.on_bubble_out:R.color.on_bubble_in));
-            String state=outgoing?displayStatus(item.status):"";String time=new java.text.SimpleDateFormat("h:mm a",new Locale("ar")).format(new Date(item.timestamp));h.meta.setText(String.format(Locale.getDefault(), "%1$s%2$s", state.isEmpty()?"":state+" · ", time));h.meta.setGravity(outgoing?Gravity.END:Gravity.START);
+            String state=outgoing?displayStatus(item.status):"";String time=new java.text.SimpleDateFormat("hh:mm a",new Locale("ar")).format(new Date(item.timestamp));h.meta.setText(outgoing?(state.isEmpty()?time:state+" · "+time):time);h.meta.setGravity(outgoing?Gravity.RIGHT:Gravity.LEFT);
             h.meta.setTextColor(UiResources.color(ConversationActivity.this,outgoing?R.color.on_bubble_out:R.color.on_bubble_in));
             h.meta.setCompoundDrawablesRelativeWithIntrinsicBounds(0,0,item.star==1?R.drawable.ic_star:0,0);h.meta.setCompoundDrawablePadding(UiResources.dp(ConversationActivity.this,4));
             GradientDrawable bubbleBackground=messageGradient(outgoing);
@@ -354,11 +354,11 @@ public class ConversationActivity extends Activity {
         menu.getMenu().add("حذف").setIcon(R.drawable.ic_delete);menu.getMenu().add("تفاصيل الرسالة").setIcon(R.drawable.ic_more_vert);
         menu.setOnMenuItemClickListener(choice->{
             if("تفاصيل الرسالة".contentEquals(choice.getTitle())){
-                String direction="out".equals(item.type)?"صادرة":"واردة",status=item.status==null||item.status.trim().isEmpty()?"الحالة غير متاحة":item.status;
+                String direction="out".equals(item.type)?"صادرة":"واردة",status=displayStatus(item.status);if(status.isEmpty())status="غير معروفة";
                 new AlertDialog.Builder(this).setTitle("تفاصيل الرسالة").setMessage(direction+"\n"+status+"\n\n"+item.body).setPositiveButton("إغلاق",null).show();
             }else new AlertDialog.Builder(this).setTitle("حذف الرسالة؟").setMessage("هل تريد حذف هذه الرسالة؟").setNegativeButton("إلغاء",null).setPositiveButton("حذف",(dialog,which)->{
                 MESSAGE_EXECUTOR.execute(()->{db.deleteMessages(new ArrayList<>(Collections.singletonList(item.id)));mainHandler.post(()->loadMessages(false));});
-            }).setNegativeButton("إلغاء",null).show();
+            }).show();
             return true;
         });menu.show();
     }
@@ -369,7 +369,7 @@ public class ConversationActivity extends Activity {
     }
     private long dayStart(long timestamp){Calendar cal=Calendar.getInstance();cal.setTimeInMillis(timestamp);cal.set(Calendar.HOUR_OF_DAY,0);cal.set(Calendar.MINUTE,0);cal.set(Calendar.SECOND,0);cal.set(Calendar.MILLISECOND,0);return cal.getTimeInMillis();}
     private String dateLabel(long timestamp){long today=dayStart(System.currentTimeMillis()),day=dayStart(timestamp);if(day==today)return "اليوم";if(day==today-86400000L)return "أمس";return new java.text.SimpleDateFormat("d MMMM yyyy",new Locale("ar")).format(new Date(timestamp));}
-    private String displayStatus(String status){if(status==null)return "";String s=status.trim().toLowerCase(Locale.ROOT);if(s.isEmpty())return "";if(s.contains("fail")||s.contains("فشل")||s.contains("لم يتم"))return "فشل";if(s.contains("send")||s.contains("sent")||s.contains("تم"))return "تم";if(s.contains("pending")||s.contains("outbox")||s.contains("جار"))return "قيد الإرسال";return status;}
+    private String displayStatus(String status){if(status==null)return "";String s=status.trim().toLowerCase(Locale.ROOT);if(s.isEmpty())return "";if(s.contains("fail")||s.contains("فشل")||s.contains("لم يتم"))return "فشل";if(s.contains("sending")||s.contains("queued")||s.contains("pending")||s.contains("outbox")||s.contains("جار")||s.contains("قيد"))return "قيد الإرسال";if(s.equals("sent")||s.contains("delivered")||s.contains("تم الإرسال")||s.contains("تم التسليم")||s.equals("تم"))return "تم";return "";}
     private boolean isFailed(String status){String s=status==null?"":status.toLowerCase(Locale.ROOT);return s.contains("fail")||s.contains("فشل")||s.contains("لم يتم");}
 
     void toggleSelection(long id){
