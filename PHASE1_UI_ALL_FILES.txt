@@ -1,0 +1,586 @@
+HashemSMS — ملفات المرحلة الأولى كاملة
+المستودع: https://github.com/balalmhla12-cmd/HashemSMS
+الفرع المصدر: phase1-ui
+ملاحظة: جُمعت محتويات الملفات كما استُرجعت من الفرع، دون تعديل محتوى الشيفرة.
+
+
+==========================================================================================
+المسار: app/src/main/res/drawable/ic_launcher_foreground.xml
+Git blob SHA: 0495c48b8caa3fb3c383ae747eac3834e36517a5
+==========================================================================================
+
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="#06152B" android:pathData="M18,8 H90 C96.6,8 100,11.4 100,18 V90 C100,96.6 96.6,100 90,100 H18 C11.4,100 8,96.6 8,90 V18 C8,11.4 11.4,8 18,8 Z"/>
+    <path android:fillColor="#0B2B4B" android:pathData="M19,12 H89 C93.4,12 96,14.6 96,19 V89 C96,93.4 93.4,96 89,96 H19 C14.6,96 12,93.4 12,89 V19 C12,14.6 14.6,12 19,12 Z"/>
+    <path android:fillColor="#061B35" android:pathData="M21,15 H87 C90.9,15 93,17.1 93,21 V87 C93,90.9 90.9,93 87,93 H21 C17.1,93 15,90.9 15,87 V21 C15,17.1 17.1,15 21,15 Z"/>
+    <path android:fillColor="@color/icon_orange" android:pathData="M25,61 C21,44 29,27 43,19 C55,12 69,14 79,22 C65,16 52,19 43,28 C34,37 31,49 35,62 L29,69 Z"/>
+    <path android:fillColor="@color/icon_gold" android:pathData="M27,59 C25,43 33,29 45,22 C54,17 64,17 72,20 C59,19 47,26 40,37 C35,45 33,54 36,64 L30,70 Z"/>
+    <path android:fillColor="@color/accent_cyan" android:pathData="M38,29 C49,21 67,22 78,31 C88,40 88,54 78,63 C74,67 69,69 64,70 L68,79 L55,71 C43,72 33,65 29,55 C25,45 29,35 38,29 Z"/>
+    <path android:fillColor="#42D2F7" android:pathData="M40,32 C50,25 66,26 75,34 C83,41 83,53 75,60 C71,64 66,66 61,66 L64,72 L55,66 C45,67 37,61 34,53 C31,45 34,37 40,32 Z"/>
+    <path android:fillColor="#06304B" android:pathData="M43,43 C43,41.3 44.3,40 46,40 C47.7,40 49,41.3 49,43 C49,44.7 47.7,46 46,46 C44.3,46 43,44.7 43,43 Z M55,43 C55,41.3 56.3,40 58,40 C59.7,40 61,41.3 61,43 C61,44.7 59.7,46 58,46 C56.3,46 55,44.7 55,43 Z M67,43 C67,41.3 68.3,40 70,40 C71.7,40 73,41.3 73,43 C73,44.7 71.7,46 70,46 C68.3,46 67,44.7 67,43 Z"/>
+    <path android:fillColor="@color/icon_gold" android:pathData="M25,74 C31,69 37,65 44,63 C40,69 35,74 29,78 L22,81 Z"/>
+    <path android:fillColor="@color/icon_orange" android:pathData="M29,79 C35,75 40,71 44,66 C42,73 37,79 30,83 L24,85 Z"/>
+    <path android:fillColor="@color/icon_gold" android:pathData="M35,82 L76,82 C77.7,82 79,83.3 79,85 C79,86.7 77.7,88 76,88 H35 C33.3,88 32,86.7 32,85 C32,83.3 33.3,82 35,82 Z"/>
+    <path android:fillColor="#FFE4A0" android:pathData="M43,84 H69 V86 H43 Z"/>
+</vector>
+
+
+
+==========================================================================================
+المسار: app/src/main/res/font/almarai_family.xml
+Git blob SHA: 517c875d055b2c12b43200efc43f9bb6cc7d1315
+==========================================================================================
+
+<?xml version="1.0" encoding="utf-8"?>
+<font-family xmlns:app="http://schemas.android.com/apk/res-auto">
+    <font
+        app:font="@font/almarai_regular"
+        app:fontStyle="normal"
+        app:fontWeight="400" />
+    <font
+        app:font="@font/almarai_bold"
+        app:fontStyle="normal"
+        app:fontWeight="700" />
+    <font
+        app:font="@font/almarai_extrabold"
+        app:fontStyle="normal"
+        app:fontWeight="800" />
+</font-family>
+
+
+
+==========================================================================================
+المسار: app/src/main/res/values/colors.xml
+Git blob SHA: 95605679c19bff24d570a7f5b723e1fc23b4c7c9
+==========================================================================================
+
+<resources>
+    <color name="primary">#006B91</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="surface">#F4F9FD</color>
+    <color name="on_surface">#10243B</color>
+    <color name="on_surface_variant">#405A73</color>
+    <color name="primary_container">#D8EFFB</color>
+    <color name="bubble_in">#E5F0F8</color>
+    <color name="bubble_out">#B9E7FA</color>
+    <color name="divider">#D5E4EE</color>
+    <color name="unread_accent">#006B91</color>
+    <color name="on_unread_accent">#FFFFFF</color>
+    <color name="error">#B3261E</color>
+    <color name="on_error">#FFFFFF</color>
+    <color name="on_primary_container">#0B2840</color>
+    <color name="surface_variant">#E4F0F8</color>
+    <color name="outline">#627B96</color>
+    <color name="avatar_container">#DDEBF7</color>
+    <color name="primary_variant">#007EA8</color>
+    <color name="on_surface_emphasis">#10213B</color>
+    <color name="on_surface_subtle">#405A73</color>
+    <color name="timestamp">#526A80</color>
+    <color name="conversation_text">#10243B</color>
+    <color name="search_border">#B4CADB</color>
+    <color name="surface_dark">#F3F8FC</color>
+    <color name="text">#10243B</color>
+    <color name="text_dark">#10243B</color>
+    <color name="accent_cyan">#007EA8</color>
+    <color name="fab">#006B91</color>
+    <color name="on_fab">#FFFFFF</color>
+    <color name="chip_selected">#006B91</color>
+    <color name="on_chip_selected">#FFFFFF</color>
+    <color name="icon_gold">#9A6400</color>
+    <color name="icon_orange">#E58A22</color>
+    <color name="card_surface">#FFFFFF</color>
+    <color name="card_stroke">#D5E4EE</color>
+    <color name="background_top">#EAF6FD</color>
+    <color name="background_bottom">#F4F9FD</color>
+</resources>
+
+
+
+==========================================================================================
+المسار: app/src/main/res/values-night/colors.xml
+Git blob SHA: 6b60307a66249ba8e4e710337dbc8b3f1d195487
+==========================================================================================
+
+<resources>
+    <color name="primary">#00C8F9</color>
+    <color name="on_primary">#081B3A</color>
+    <color name="surface">#001028</color>
+    <color name="on_surface">#F5FAFF</color>
+    <color name="on_surface_variant">#B8CEE2</color>
+    <color name="primary_container">#0C3464</color>
+    <color name="bubble_in">#183860</color>
+    <color name="bubble_out">#0065B8</color>
+    <color name="divider">#082848</color>
+    <color name="unread_accent">#18BDF2</color>
+    <color name="on_unread_accent">#001028</color>
+    <color name="error">#FF6B7C</color>
+    <color name="on_error">#081B3A</color>
+    <color name="on_primary_container">#FFFFFF</color>
+    <color name="surface_variant">#082848</color>
+    <color name="outline">#17608B</color>
+    <color name="avatar_container">#0D324C</color>
+    <color name="primary_variant">#00C8F9</color>
+    <color name="on_surface_emphasis">#FFFFFF</color>
+    <color name="on_surface_subtle">#B8CEE2</color>
+    <color name="timestamp">#A8C1D8</color>
+    <color name="conversation_text">#F5FAFF</color>
+    <color name="search_border">#168FC5</color>
+    <color name="surface_dark">#001028</color>
+    <color name="text">#F5FAFF</color>
+    <color name="text_dark">#F5FAFF</color>
+    <color name="accent_cyan">#00C8F9</color>
+    <color name="fab">#0065C8</color>
+    <color name="on_fab">#FFFFFF</color>
+    <color name="chip_selected">#007EA8</color>
+    <color name="on_chip_selected">#FFFFFF</color>
+    <color name="icon_gold">#F4B942</color>
+    <color name="icon_orange">#F28C28</color>
+    <color name="card_surface">#06264A</color>
+    <color name="card_stroke">#164B73</color>
+    <color name="background_top">#05234A</color>
+    <color name="background_bottom">#001028</color>
+</resources>
+
+
+
+==========================================================================================
+المسار: app/src/main/res/values/themes.xml
+Git blob SHA: bdec4f2d98b83ef23fc57d3b7e21c897e1a20533
+==========================================================================================
+
+<resources>
+    <style name="AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textColorPrimary">@color/text</item>
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/on_primary</item>
+        <item name="colorSecondary">@color/accent_cyan</item>
+        <item name="colorOnSecondary">@color/on_primary</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/on_surface</item>
+        <item name="colorSurfaceVariant">@color/card_surface</item>
+        <item name="colorOnSurfaceVariant">@color/on_surface_variant</item>
+        <item name="colorOutline">@color/card_stroke</item>
+        <item name="colorError">@color/error</item>
+        <item name="colorOnError">@color/on_error</item>
+        <item name="android:colorBackground">@color/surface</item>
+        <item name="colorOnBackground">@color/on_surface</item>
+        <item name="colorSecondaryContainer">@color/chip_selected</item>
+        <item name="colorOnSecondaryContainer">@color/on_primary</item>
+        <item name="colorTertiary">@color/icon_gold</item>
+        <item name="colorOnTertiary">@color/on_primary</item>
+        <item name="android:colorAccent">@color/primary</item>
+        <item name="android:colorControlActivated">@color/primary</item>
+        <item name="android:colorControlHighlight">@color/primary_container</item>
+        <item name="android:colorButtonNormal">@color/primary_container</item>
+        <item name="android:windowBackground">@color/surface</item>
+        <item name="android:navigationBarColor">@color/surface</item>
+        <item name="android:statusBarColor">@color/surface</item>
+        <item name="android:windowLightStatusBar">true</item>
+        
+        <item name="android:windowActionModeOverlay">true</item>
+    </style>
+</resources>
+
+
+
+==========================================================================================
+المسار: app/src/main/res/values-night/themes.xml
+Git blob SHA: f1ac32d6a45c5b4511b65214d5a3944b69c3bda0
+==========================================================================================
+
+<resources>
+    <style name="AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textColorPrimary">@color/text_dark</item>
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/on_primary</item>
+        <item name="colorSecondary">@color/accent_cyan</item>
+        <item name="colorOnSecondary">@color/on_primary</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/on_surface</item>
+        <item name="colorSurfaceVariant">@color/card_surface</item>
+        <item name="colorOnSurfaceVariant">@color/on_surface_variant</item>
+        <item name="colorOutline">@color/card_stroke</item>
+        <item name="colorError">@color/error</item>
+        <item name="colorOnError">@color/on_error</item>
+        <item name="android:colorBackground">@color/surface_dark</item>
+        <item name="colorOnBackground">@color/on_surface</item>
+        <item name="colorSecondaryContainer">@color/chip_selected</item>
+        <item name="colorOnSecondaryContainer">@color/on_primary</item>
+        <item name="colorTertiary">@color/icon_gold</item>
+        <item name="colorOnTertiary">@color/on_primary</item>
+        <item name="android:colorAccent">@color/primary</item>
+        <item name="android:colorControlActivated">@color/primary</item>
+        <item name="android:colorControlHighlight">@color/primary_container</item>
+        <item name="android:colorButtonNormal">@color/primary_container</item>
+        <item name="android:windowBackground">@color/surface_dark</item>
+        <item name="android:navigationBarColor">@color/surface_dark</item>
+        <item name="android:statusBarColor">@color/surface_dark</item>
+        <item name="android:windowLightStatusBar">false</item>
+        
+        <item name="android:windowActionModeOverlay">true</item>
+    </style>
+</resources>
+
+
+
+==========================================================================================
+المسار: app/src/main/res/values/dimens.xml
+Git blob SHA: 4e414fd55e6e4f5ee7cf56d91202b576c7c2cd3f
+==========================================================================================
+
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <dimen name="space_4" tools:ignore="UnusedResources">4dp</dimen>
+    <dimen name="space_8" tools:ignore="UnusedResources">8dp</dimen>
+    <dimen name="space_12" tools:ignore="UnusedResources">12dp</dimen>
+    <dimen name="space_16" tools:ignore="UnusedResources">16dp</dimen>
+    <dimen name="space_24" tools:ignore="UnusedResources">24dp</dimen>
+    <dimen name="radius_4" tools:ignore="UnusedResources">4dp</dimen>
+    <dimen name="radius_8" tools:ignore="UnusedResources">8dp</dimen>
+    <dimen name="radius_12" tools:ignore="UnusedResources">12dp</dimen>
+    <dimen name="radius_16" tools:ignore="UnusedResources">16dp</dimen>
+    <dimen name="radius_24" tools:ignore="UnusedResources">24dp</dimen>
+    <dimen name="text_caption" tools:ignore="UnusedResources">12sp</dimen>
+    <dimen name="text_small" tools:ignore="UnusedResources">13sp</dimen>
+    <dimen name="text_body" tools:ignore="UnusedResources">14sp</dimen>
+    <dimen name="text_body_large" tools:ignore="UnusedResources">16sp</dimen>
+    <dimen name="text_title" tools:ignore="UnusedResources">23sp</dimen>
+    <dimen name="text_headline" tools:ignore="UnusedResources">24sp</dimen>
+    <dimen name="text_display" tools:ignore="UnusedResources">27sp</dimen>
+</resources>
+
+
+
+==========================================================================================
+المسار: app/src/main/AndroidManifest.xml
+Git blob SHA: ff87e4c4b301c9caaced743cfc0a97f6d00c70f7
+==========================================================================================
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+ <uses-feature android:name="android.hardware.telephony" android:required="false"/>
+ <uses-permission android:name="android.permission.SEND_SMS"/>
+ <uses-permission android:name="android.permission.RECEIVE_SMS"/>
+ <uses-permission android:name="android.permission.WRITE_SMS"/>
+ <uses-permission android:name="android.permission.RECEIVE_MMS"/>
+ <uses-permission android:name="android.permission.RECEIVE_WAP_PUSH"/>
+ <uses-permission android:name="android.permission.READ_SMS"/>
+ <uses-permission android:name="android.permission.READ_CONTACTS"/>
+ <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+ <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+ <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+ <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+ <application android:name=".HashemSmsApp" android:theme="@style/AppTheme" android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:allowBackup="false" android:supportsRtl="true">
+  <activity android:name=".ConversationActivity" android:exported="false"/>
+  <activity android:name=".MainActivity" android:exported="true">
+   <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+   <intent-filter><action android:name="android.intent.action.SENDTO"/><category android:name="android.intent.category.DEFAULT"/><data android:scheme="sms"/><data android:scheme="smsto"/><data android:scheme="mms"/><data android:scheme="mmsto"/></intent-filter>
+  </activity>
+  <receiver android:name=".SmsReceiver" android:exported="true" android:permission="android.permission.BROADCAST_SMS"><intent-filter><action android:name="android.provider.Telephony.SMS_DELIVER"/></intent-filter></receiver>
+  <receiver android:name=".MmsReceiver" android:exported="true" android:permission="android.permission.BROADCAST_WAP_PUSH"><intent-filter><action android:name="android.provider.Telephony.WAP_PUSH_DELIVER"/><data android:mimeType="application/vnd.wap.mms-message"/></intent-filter></receiver>
+  <receiver android:name=".SentReceiver" android:exported="false"/>
+  <receiver android:name=".DeliveredReceiver" android:exported="false"/>
+  <receiver android:name=".ScheduleReceiver" android:exported="false"/>
+  <receiver android:name=".NotificationActionReceiver" android:exported="false"/>
+  <receiver android:name=".BootReceiver" android:exported="false"><intent-filter><action android:name="android.intent.action.BOOT_COMPLETED"/></intent-filter></receiver>
+  <receiver android:name=".TimeChangeReceiver" android:exported="false"><intent-filter><action android:name="android.intent.action.TIME_SET"/><action android:name="android.intent.action.TIMEZONE_CHANGED"/></intent-filter></receiver>
+  <receiver android:name=".ExactAlarmPermissionReceiver" android:exported="false"><intent-filter><action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED"/></intent-filter></receiver>
+  <service android:name=".HeadlessSmsSendService" android:exported="true" android:permission="android.permission.SEND_RESPOND_VIA_MESSAGE"><intent-filter><action android:name="android.intent.action.RESPOND_VIA_MESSAGE"/><category android:name="android.intent.category.DEFAULT"/><data android:scheme="sms"/><data android:scheme="smsto"/><data android:scheme="mms"/><data android:scheme="mmsto"/></intent-filter></service>
+ </application>
+</manifest>
+
+
+
+==========================================================================================
+المسار: app/src/main/java/com/hashem/sms/UiResources.java
+Git blob SHA: 71a6324f1b04180fbcfa60d693eb98ecac320117
+==========================================================================================
+
+package com.hashem.sms;
+
+import android.app.Activity;
+import android.content.Context;
+import android.content.res.Configuration;
+import android.os.Build;
+import android.view.View;
+import androidx.core.content.ContextCompat;
+
+/** Shared resource access for colors used by programmatically-built views. */
+final class UiResources {
+    private UiResources() {}
+
+    static int color(Context context, int resourceId) {
+        return ContextCompat.getColor(context, resourceId);
+    }
+
+    static int dp(Context context, float value) {
+        return Math.round(value * context.getResources().getDisplayMetrics().density);
+    }
+
+    static void configureSystemBars(Activity activity) {
+        if (Build.VERSION.SDK_INT != 26) return;
+        View decor = activity.getWindow().getDecorView();
+        int flags = decor.getSystemUiVisibility();
+        boolean night = (activity.getResources().getConfiguration().uiMode
+                & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+        if (night) {
+            flags &= ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        } else {
+            flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        }
+        decor.setSystemUiVisibility(flags);
+    }
+}
+
+
+
+==========================================================================================
+المسار: app/src/main/java/com/hashem/sms/MainActivity.java
+Git blob SHA: 40826f9b994fce9432b6ccd502a86f4478bbf34f
+==========================================================================================
+
+package com.hashem.sms;
+import android.app.*;import android.app.role.RoleManager;import android.telephony.SmsManager;import android.os.*;import android.content.*;import android.content.pm.PackageManager;import android.provider.Telephony;import android.provider.ContactsContract;import android.net.Uri;import android.view.*;import androidx.appcompat.widget.PopupMenu;import android.widget.*;import android.graphics.Typeface;import android.graphics.drawable.GradientDrawable;import java.io.*;import java.util.*;
+
+public class MainActivity extends androidx.appcompat.app.AppCompatActivity{
+ BroadcastReceiver smsUpdatedReceiver=new BroadcastReceiver(){@Override public void onReceive(Context context,Intent intent){if(list!=null&&!isFinishing()&&!isDestroyed())onSmsUpdated();}}; boolean smsUpdatedReceiverRegistered=false; boolean basePermissionRequestPending=false;
+ LinearLayout root,list; EditText search,bulkNumbers,bulkBody; Db db; SubscriptionChoiceCallback pendingSubscriptionAction; int purple; TextView title; String filter="all",selectedBottomTab="conversations"; volatile boolean systemSynced=false; boolean syncStarted=false;
+ static final java.util.concurrent.ExecutorService DATA_EXECUTOR=java.util.concurrent.Executors.newSingleThreadExecutor();
+ static final java.util.concurrent.ExecutorService IMAGE_EXECUTOR=java.util.concurrent.Executors.newFixedThreadPool(2);
+ final HashMap<String,ContactData> contactCache=new HashMap<>(); final android.util.LruCache<String,android.graphics.Bitmap> contactBitmapCache=new android.util.LruCache<String,android.graphics.Bitmap>(50){@Override protected int sizeOf(String key,android.graphics.Bitmap value){return 1;}}; final HashSet<String> contactPhotoPending=new HashSet<>(); final HashSet<String> contactLookupPending=new HashSet<>(); long contactCacheGeneration=0; boolean contactsObserverRegistered=false; final android.os.Handler contactsObserverHandler=new android.os.Handler(android.os.Looper.getMainLooper()); final Runnable contactsObserverDebounceRunnable=()->invalidateContactCaches(); final android.database.ContentObserver contactsObserver=new android.database.ContentObserver(new android.os.Handler(android.os.Looper.getMainLooper())){@Override public void onChange(boolean selfChange){contactsObserverHandler.removeCallbacks(contactsObserverDebounceRunnable);contactsObserverHandler.postDelayed(contactsObserverDebounceRunnable,600);}};
+ android.os.Handler contactRefreshHandler=new android.os.Handler(android.os.Looper.getMainLooper()); Runnable contactRefreshRunnable=()->{if(list!=null&&!isFinishing()&&!isDestroyed()){if(isThreadListFilter(filter))applyThreadSearch();else render();}};
+ FrameLayout contentHost; ScrollView otherScroll; LinearLayout bottomNavigation; androidx.recyclerview.widget.RecyclerView threadsRecycler,contactsRecycler; TextView emptyThreadsView; ThreadAdapter threadAdapter; ContactsAdapter contactsAdapter; LinearLayout contactsScreen,contactsState; TextView contactsStateText; Button contactsPermissionButton; HorizontalScrollView filtersScroll; Button composeButton; boolean contactsLoaded=false,contactsLoadInProgress=false; volatile long contactsGeneration=0; final Handler contactsHandler=new Handler(Looper.getMainLooper()); final Runnable contactsSearchRunnable=()->filterContacts(search==null?"":search.getText().toString()); ArrayList<ContactsLogic.ContactRecord> allContacts=new ArrayList<>();
+ final android.os.Handler threadHandler=new android.os.Handler(android.os.Looper.getMainLooper()); Runnable threadRefreshRunnable=()->loadThreadRows(); Runnable searchFilterRunnable=()->applyThreadSearch();
+ java.util.concurrent.Future<?> pendingThreadsLoad,pendingFilterTask; volatile long threadGeneration=0,filterGeneration=0; ArrayList<ThreadItem> allThreadItems=new ArrayList<>();
+ public void onCreate(Bundle b){super.onCreate(b);if(b!=null){filter=b.getString("main_filter","all");selectedBottomTab=b.getString("main_bottom_tab","contacts".equals(filter)?"contacts":"more".equals(filter)?"more":"conversations");}UiResources.configureSystemBars(this);purple=UiResources.color(MainActivity.this,R.color.unread_accent);db=new Db(this);getOnBackPressedDispatcher().addCallback(this,new androidx.activity.OnBackPressedCallback(true){@Override public void handleOnBackPressed(){if(!"all".equals(filter)||!"conversations".equals(selectedBottomTab)){filter="all";selectedBottomTab="conversations";render();return;}finish();}});build();if(b!=null){search.setText(b.getString("main_search",""));search.setVisibility(View.VISIBLE);}requestPermissionsIfNeeded();}
+ TextView tv(String s,int sp){TextView t=new TextView(this);try{t.setTypeface(androidx.core.content.res.ResourcesCompat.getFont(this,R.font.almarai_regular));}catch(Exception ignored){}t.setText(s);t.setTextSize(sp);t.setTextColor(UiResources.color(MainActivity.this,R.color.on_surface));int p=UiResources.dp(this,12);t.setPadding(UiResources.dp(this,18),p,UiResources.dp(this,18),p);t.setGravity(Gravity.CENTER_VERTICAL);return t;}
+ GradientDrawable rounded(int color,int strokeColor,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(radius);if(strokeColor!=0)d.setStroke(1,strokeColor);return d;}
+ void styleScreenCard(LinearLayout card){int pad=UiResources.dp(this,12);card.setPadding(pad,pad,pad,pad);card.setBackground(rounded(UiResources.color(this,R.color.card_surface),UiResources.color(this,R.color.card_stroke),UiResources.dp(this,18)));}
+ ImageButton headerIconButton(int iconRes,String description){ImageButton b=new ImageButton(this);b.setImageResource(iconRes);b.setContentDescription(description);b.setScaleType(ImageView.ScaleType.CENTER);b.setColorFilter(UiResources.color(MainActivity.this,R.color.primary_variant));b.setPadding(0,0,0,0);b.setBackground(rounded(UiResources.color(MainActivity.this,R.color.surface_variant),0,24));b.setStateListAnimator(null);int size=(int)(getResources().getDisplayMetrics().density*44);b.setLayoutParams(new LinearLayout.LayoutParams(size,size));return b;}
+ Button button(String label){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setTextSize(14);try{b.setTypeface(androidx.core.content.res.ResourcesCompat.getFont(this,R.font.almarai_bold));}catch(Exception ignored){b.setTypeface(Typeface.DEFAULT,Typeface.BOLD);}b.setTextColor(UiResources.color(MainActivity.this,R.color.primary_variant));b.setPadding(UiResources.dp(this,16),UiResources.dp(this,8),UiResources.dp(this,16),UiResources.dp(this,8));b.setBackground(rounded(UiResources.color(MainActivity.this,R.color.primary_container),UiResources.color(MainActivity.this,R.color.outline),28));b.setStateListAnimator(null);return b;}
+ @Override protected void onResume(){super.onResume();AlarmScheduler.resolvePendingExactAlarm(this);requestNotificationPermissionIfNeeded();registerSmsUpdatedReceiver();registerContactsObserver();if(db!=null){if(list!=null)render();startSystemSyncInBackground();}}
+ @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("main_filter",filter);out.putString("main_bottom_tab",selectedBottomTab);out.putString("main_search",search==null?"":search.getText().toString());out.putBoolean("main_search_visible",search!=null&&search.getVisibility()==View.VISIBLE);}
+
+ @Override protected void onPause(){unregisterContactsObserver();unregisterSmsUpdatedReceiver();super.onPause();}
+ void registerContactsObserver(){if(contactsObserverRegistered)return;try{getContentResolver().registerContentObserver(ContactsContract.Contacts.CONTENT_URI,true,contactsObserver);contactsObserverRegistered=true;}catch(Exception e){android.util.Log.e("HashemSMS","Unable to register contacts observer",e);}}
+ void unregisterContactsObserver(){if(!contactsObserverRegistered)return;try{getContentResolver().unregisterContentObserver(contactsObserver);}catch(Exception e){android.util.Log.e("HashemSMS","Unable to unregister contacts observer",e);}finally{contactsObserverRegistered=false;}}
+ void invalidateContactCaches(){synchronized(contactCache){contactCache.clear();contactCacheGeneration++;}synchronized(contactBitmapCache){contactBitmapCache.evictAll();}synchronized(contactPhotoPending){contactPhotoPending.clear();}synchronized(contactLookupPending){contactLookupPending.clear();}contactsLoaded=false;contactsLoadInProgress=false;contactsGeneration++;if(list!=null&&!isFinishing()&&!isDestroyed()){if(isThreadListFilter(filter))loadThreadRows();else render();}}
+ @android.annotation.SuppressLint("UnspecifiedRegisterReceiverFlag") void registerSmsUpdatedReceiver(){if(smsUpdatedReceiverRegistered)return;IntentFilter filter=new IntentFilter(SmsReceiver.ACTION_SMS_UPDATED);if(Build.VERSION.SDK_INT>=33)registerReceiver(smsUpdatedReceiver,filter,Context.RECEIVER_NOT_EXPORTED);else registerReceiver(smsUpdatedReceiver,filter);smsUpdatedReceiverRegistered=true;}
+ void unregisterSmsUpdatedReceiver(){if(!smsUpdatedReceiverRegistered)return;try{unregisterReceiver(smsUpdatedReceiver);}catch(IllegalArgumentException e){android.util.Log.e("HashemSMS","SMS update receiver was not registered",e);}finally{smsUpdatedReceiverRegistered=false;}}
+ void startSystemSyncInBackground(){if(syncStarted||systemSynced||!getPackageName().equals(Telephony.Sms.getDefaultSmsPackage(this)))return;syncStarted=true;new Thread(()->{boolean ok=syncSystemMessages();if(isFinishing()||isDestroyed())return;runOnUiThread(()->{if(ok){systemSynced=true;if(list!=null)render();}else syncStarted=false;});},"hashem-sms-sync").start();}
+ boolean syncSystemMessages(){
+  if(!getPackageName().equals(Telephony.Sms.getDefaultSmsPackage(this)))return false;
+  android.database.Cursor c=null;boolean ok=false;
+  android.content.SharedPreferences prefs=getSharedPreferences("sms_sync",MODE_PRIVATE);
+  long lastSync=prefs.getLong("last_successful_sync",0L);
+  String selection=lastSync>0?Telephony.Sms.DATE+">=?":null;
+  String[] args=lastSync>0?new String[]{String.valueOf(Math.max(0,lastSync-120000L))}:null;
+  try{
+   c=getContentResolver().query(Telephony.Sms.CONTENT_URI,new String[]{Telephony.Sms._ID,Telephony.Sms.ADDRESS,Telephony.Sms.BODY,Telephony.Sms.TYPE,Telephony.Sms.DATE,Telephony.Sms.READ},selection,args,Telephony.Sms.DATE+" DESC");
+   if(c!=null){
+    ArrayList<Object[]> batch=new ArrayList<>(500);
+    while(c.moveToNext()){
+     batch.add(new Object[]{c.getLong(0),c.getString(1),c.getString(2),c.getInt(3),c.getLong(4),c.getInt(5)});
+     if(batch.size()==500){if(!db.importSystemMessageBatch(batch))return false;batch.clear();}
+    }
+    if(!batch.isEmpty()&&!db.importSystemMessageBatch(batch))return false;
+    ok=true;
+   }else android.util.Log.e("HashemSMS","Android SMS provider query returned null during sync");
+  }catch(Exception e){android.util.Log.e("HashemSMS","System SMS synchronization failed",e);ok=false;}
+  finally{try{if(c!=null)c.close();}catch(Exception e){android.util.Log.e("HashemSMS","Failed to close Android SMS provider cursor",e);}}
+  if(ok)prefs.edit().putLong("last_successful_sync",System.currentTimeMillis()).apply();
+  return ok;
+ }
+ void build(){
+  root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(UiResources.dp(this,16),UiResources.dp(this,12),UiResources.dp(this,16),UiResources.dp(this,8));root.setBackgroundResource(R.drawable.bg_hashem_gradient);
+  LinearLayout bar=new LinearLayout(this);bar.setOrientation(LinearLayout.HORIZONTAL);bar.setGravity(Gravity.CENTER_VERTICAL);bar.setPadding(UiResources.dp(this,2),UiResources.dp(this,6),UiResources.dp(this,2),UiResources.dp(this,10));
+  LinearLayout brand=new LinearLayout(this);brand.setOrientation(LinearLayout.VERTICAL);
+  title=tv("هاشم SMS",23);try{title.setTypeface(androidx.core.content.res.ResourcesCompat.getFont(this,R.font.almarai_extrabold));}catch(Exception ignored){title.setTypeface(Typeface.create("sans-serif",Typeface.BOLD));}android.text.SpannableString brandTitle=new android.text.SpannableString("هاشم SMS");brandTitle.setSpan(new android.text.style.ForegroundColorSpan(UiResources.color(MainActivity.this,R.color.on_surface)),0,4,android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);brandTitle.setSpan(new android.text.style.ForegroundColorSpan(UiResources.color(MainActivity.this,R.color.primary_variant)),5,8,android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);title.setText(brandTitle);title.setPadding(UiResources.dp(this,2),0,UiResources.dp(this,2),0);
+  TextView subtitle=tv("تواصل أسهل .. دائماً",13);subtitle.setTextColor(UiResources.color(MainActivity.this,R.color.on_surface_variant));subtitle.setPadding(2,1,2,0);
+  brand.addView(title);brand.addView(subtitle);bar.addView(brand,new LinearLayout.LayoutParams(0,-2,1));
+  LinearLayout headerActions=new LinearLayout(this);headerActions.setOrientation(LinearLayout.HORIZONTAL);headerActions.setGravity(Gravity.CENTER_VERTICAL);
+  ImageButton searchAction=headerIconButton(R.drawable.ic_search,"بحث");ImageButton menuAction=headerIconButton(R.drawable.ic_menu,"القائمة");
+  searchAction.setOnClickListener(v->{search.requestFocus();((android.view.inputmethod.InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).showSoftInput(search,android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);});
+  menuAction.setOnClickListener(v->{PopupMenu menu=new PopupMenu(this,menuAction);menu.setForceShowIcon(true);menu.getMenu().add("الكل");menu.getMenu().add("الرسائل غير المقروءة");menu.getMenu().add("الرسائل المميزة").setIcon(R.drawable.ic_star);menu.getMenu().add("الرسائل التي تعذّر إرسالها");menu.getMenu().add("الرسائل المجدولة");menu.getMenu().add("المحادثات المؤرشفة").setIcon(R.drawable.ic_archive);menu.getMenu().add("الأرقام المحظورة").setIcon(R.drawable.ic_block);menu.getMenu().add("المهملات").setIcon(R.drawable.ic_delete);menu.getMenu().add("الرسائل الجماعية");menu.getMenu().add("مجموعات المستلمين");menu.getMenu().add("المزيد").setIcon(R.drawable.ic_more_vert);menu.getMenu().add("تعيين كتطبيق SMS الافتراضي");menu.setOnMenuItemClickListener(item->{String choice=item.getTitle().toString();if(choice.equals("المزيد")){filter="more";selectedBottomTab="more";render();return true;}if(choice.equals("تعيين كتطبيق SMS الافتراضي")){requestDefault();return true;}if(choice.equals("الكل"))filter="all";else if(choice.equals("الرسائل غير المقروءة"))filter="unread";else if(choice.equals("الرسائل المميزة"))filter="starred";else if(choice.equals("الرسائل التي تعذّر إرسالها"))filter="failed";else if(choice.equals("الرسائل المجدولة"))filter="scheduled";else if(choice.equals("المحادثات المؤرشفة"))filter="archived";else if(choice.equals("الأرقام المحظورة"))filter="blocked";else if(choice.equals("المهملات"))filter="trash";else if(choice.equals("الرسائل الجماعية"))filter="bulk";else if(choice.equals("مجموعات المستلمين"))filter="groups";selectedBottomTab="conversations";render();return true;});menu.show();});
+  headerActions.addView(searchAction);headerActions.addView(menuAction);bar.addView(headerActions);root.addView(bar);
+  search=new EditText(this);search.setHint("ابحث في المحادثات أو الأرقام");search.setSingleLine();search.setTextSize(15);search.setPadding(UiResources.dp(this,18),UiResources.dp(this,4),UiResources.dp(this,18),UiResources.dp(this,4));search.setBackground(rounded(UiResources.color(MainActivity.this,R.color.surface_variant),UiResources.color(MainActivity.this,R.color.search_border),28));search.setCompoundDrawablePadding(UiResources.dp(this,8));search.setTextColor(UiResources.color(this,R.color.on_surface));search.setHintTextColor(UiResources.color(this,R.color.on_surface_variant));search.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int d){}public void onTextChanged(CharSequence s,int a,int b,int c){onSearchChanged();}public void afterTextChanged(android.text.Editable e){}});LinearLayout.LayoutParams searchLp=new LinearLayout.LayoutParams(-1,52);searchLp.bottomMargin=UiResources.dp(this,10);root.addView(search,searchLp);
+  LinearLayout tabs=new LinearLayout(this);tabs.setOrientation(LinearLayout.HORIZONTAL);tabs.setGravity(Gravity.CENTER_VERTICAL);String[] ts={"الكل","غير مقروءة","لم يتم الإرسال"};String[] fs={"all","unread","failed"};
+  for(int i=0;i<ts.length;i++){Button x=button(ts[i]);final String f=fs[i];x.setOnClickListener(v->{filter=f;selectedBottomTab="conversations";render();});x.setMinWidth(0);x.setTextSize(12);x.setPadding(UiResources.dp(this,14),UiResources.dp(this,5),UiResources.dp(this,14),UiResources.dp(this,5));LinearLayout.LayoutParams xp=new LinearLayout.LayoutParams(-2,UiResources.dp(this,42));xp.setMargins(0,0,UiResources.dp(this,7),0);tabs.addView(x,xp);}
+  filtersScroll=new HorizontalScrollView(this);filtersScroll.setHorizontalScrollBarEnabled(false);filtersScroll.setClipToPadding(false);filtersScroll.addView(tabs);LinearLayout.LayoutParams tabsLp=new LinearLayout.LayoutParams(-1,46);tabsLp.bottomMargin=UiResources.dp(this,8);root.addView(filtersScroll,tabsLp);
+  composeButton=button("بدء محادثة");composeButton.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_add_filled,0,0,0);composeButton.setCompoundDrawablePadding(UiResources.dp(MainActivity.this,8));composeButton.setTextSize(15);composeButton.setTextColor(UiResources.color(MainActivity.this,R.color.on_primary));composeButton.setBackground(rounded(UiResources.color(MainActivity.this,R.color.fab),UiResources.color(MainActivity.this,R.color.search_border),30));LinearLayout.LayoutParams composeLp=new LinearLayout.LayoutParams(UiResources.dp(this,220),UiResources.dp(this,52));composeLp.gravity=Gravity.CENTER_HORIZONTAL;composeLp.bottomMargin=UiResources.dp(this,10);composeButton.setOnClickListener(v->composeDialog());root.addView(composeButton,composeLp);
+  list=new LinearLayout(this);list.setOrientation(LinearLayout.VERTICAL);otherScroll=new ScrollView(this);otherScroll.setFillViewport(true);otherScroll.addView(list);contentHost=new FrameLayout(this);contentHost.addView(otherScroll,new FrameLayout.LayoutParams(-1,-1));
+   threadsRecycler=new androidx.recyclerview.widget.RecyclerView(this);threadsRecycler.setLayoutManager(new androidx.recyclerview.widget.LinearLayoutManager(this));threadAdapter=new ThreadAdapter();threadsRecycler.setAdapter(threadAdapter);contentHost.addView(threadsRecycler,new FrameLayout.LayoutParams(-1,-1));
+   emptyThreadsView=tv("لا توجد محادثات في هذا القسم",18);emptyThreadsView.setGravity(Gravity.CENTER);contentHost.addView(emptyThreadsView,new FrameLayout.LayoutParams(-1,-1));contactsScreen=new LinearLayout(this);contactsScreen.setOrientation(LinearLayout.VERTICAL);contactsScreen.setVisibility(View.GONE);TextView contactsHeading=tv("جهات الاتصال",21);contactsScreen.addView(contactsHeading,new LinearLayout.LayoutParams(-1,-2));TextView contactsSubtitle=tv("اختر جهة اتصال لبدء محادثة",13);contactsSubtitle.setTextColor(UiResources.color(this,R.color.on_surface_variant));contactsScreen.addView(contactsSubtitle,new LinearLayout.LayoutParams(-1,-2));contactsState=new LinearLayout(this);contactsState.setOrientation(LinearLayout.VERTICAL);contactsState.setGravity(Gravity.CENTER);contactsState.setPadding(20,20,20,20);contactsStateText=tv("",15);contactsStateText.setGravity(Gravity.CENTER);contactsState.addView(contactsStateText,new LinearLayout.LayoutParams(-1,-2));contactsPermissionButton=button("منح الإذن");contactsPermissionButton.setOnClickListener(v->onContactsPermissionAction());contactsState.addView(contactsPermissionButton,new LinearLayout.LayoutParams(-1,-2));contactsScreen.addView(contactsState,new LinearLayout.LayoutParams(-1,-2));contactsRecycler=new androidx.recyclerview.widget.RecyclerView(this);contactsRecycler.setLayoutManager(new androidx.recyclerview.widget.LinearLayoutManager(this));contactsAdapter=new ContactsAdapter();contactsRecycler.setAdapter(contactsAdapter);contactsScreen.addView(contactsRecycler,new LinearLayout.LayoutParams(-1,0,1));contentHost.addView(contactsScreen,new FrameLayout.LayoutParams(-1,-1));root.addView(contentHost,new LinearLayout.LayoutParams(-1,0,1));buildBottomNavigation();setContentView(root);render();
+ }
+ void buildBottomNavigation(){
+  bottomNavigation=new LinearLayout(this);bottomNavigation.setOrientation(LinearLayout.HORIZONTAL);bottomNavigation.setGravity(Gravity.CENTER);bottomNavigation.setPadding(UiResources.dp(this,4),UiResources.dp(this,8),UiResources.dp(this,4),UiResources.dp(this,4));bottomNavigation.setBackground(rounded(UiResources.color(this,R.color.card_surface),UiResources.color(this,R.color.card_stroke),24));
+  addNavigationItem("المحادثات","conversations",R.drawable.ic_nav_messages);
+  addNavigationItem("جهات الاتصال","contacts",R.drawable.ic_nav_contacts);
+  
+  LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,UiResources.dp(this,56));lp.topMargin=UiResources.dp(this,8);root.addView(bottomNavigation,lp);
+ }
+ void addNavigationItem(String label,String destination,int iconRes){
+  LinearLayout item=new LinearLayout(this);item.setOrientation(LinearLayout.VERTICAL);item.setGravity(Gravity.CENTER);item.setPadding(UiResources.dp(this,4),UiResources.dp(this,2),UiResources.dp(this,4),UiResources.dp(this,2));
+  ImageView icon=new ImageView(this);icon.setImageResource(iconRes);icon.setContentDescription(label);icon.setColorFilter(UiResources.color(this,R.color.primary_variant));icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);LinearLayout.LayoutParams iconLp=new LinearLayout.LayoutParams(UiResources.dp(this,24),UiResources.dp(this,24));iconLp.bottomMargin=2;
+  TextView text= new TextView(this);text.setText(label);text.setTextSize(11);try{text.setTypeface(androidx.core.content.res.ResourcesCompat.getFont(this,R.font.almarai_bold));}catch(Exception ignored){}text.setGravity(Gravity.CENTER);text.setTextColor(UiResources.color(this,R.color.on_surface_variant));
+  item.addView(icon,iconLp);item.addView(text);item.setBackground(rounded(UiResources.color(this,R.color.card_surface),0,22));item.setOnClickListener(v->{selectedBottomTab=destination;filter=destination.equals("conversations")?"all":destination;updateBottomNavigation();render();});LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-1,1);lp.setMargins(UiResources.dp(this,3),0,UiResources.dp(this,3),0);bottomNavigation.addView(item,lp);item.setTag(destination);
+ }
+ void updateBottomNavigation(){
+  if(bottomNavigation==null)return;for(int i=0;i<bottomNavigation.getChildCount();i++){View child=bottomNavigation.getChildAt(i);Object tag=child.getTag();boolean selected=tag!=null&&tag.equals(selectedBottomTab);child.setBackground(rounded(UiResources.color(this,selected?R.color.primary_container:R.color.card_surface),0,22));if(child instanceof LinearLayout){LinearLayout box=(LinearLayout)child;for(int j=0;j<box.getChildCount();j++){View childView=box.getChildAt(j);if(childView instanceof TextView)((TextView)childView).setTextColor(UiResources.color(this,selected?R.color.primary_variant:R.color.on_surface_variant));else if(childView instanceof ImageView)((ImageView)childView).setColorFilter(UiResources.color(this,selected?R.color.primary_variant:R.color.on_surface_variant));}}}
+ }
+ void showContactsScreen(){
+  threadHandler.removeCallbacks(threadRefreshRunnable);threadHandler.removeCallbacks(searchFilterRunnable);threadsRecycler.setVisibility(View.GONE);emptyThreadsView.setVisibility(View.GONE);otherScroll.setVisibility(View.GONE);contactsScreen.setVisibility(View.VISIBLE);updateBottomNavigation();
+  if(checkSelfPermission("android.permission.READ_CONTACTS")!=PackageManager.PERMISSION_GRANTED){contactsRecycler.setVisibility(View.GONE);showContactsPermissionState();promptContactsPermissionExplanationOnce();return;}
+  contactsState.setVisibility(View.GONE);contactsRecycler.setVisibility(View.VISIBLE);if(!contactsLoaded)loadContactsAsync();else filterContacts(search==null?"":search.getText().toString());
+ }
+ void showContactsPermissionState(){contactsState.setVisibility(View.VISIBLE);contactsRecycler.setVisibility(View.GONE);contactsStateText.setText("يلزم إذن جهات الاتصال لعرض الأسماء والأرقام. يمكنك منح الإذن أو فتح إعدادات التطبيق؛ لن نغيّر جهات الاتصال أو الرسائل.");boolean asked=getSharedPreferences("runtime_permissions",MODE_PRIVATE).getBoolean("contacts_permission_requested",false);boolean canAsk=!asked||shouldShowRequestPermissionRationale("android.permission.READ_CONTACTS");contactsPermissionButton.setVisibility(View.VISIBLE);contactsPermissionButton.setText(canAsk?"منح الإذن":"فتح الإعدادات");}
+ void promptContactsPermissionExplanationOnce(){android.content.SharedPreferences prefs=getSharedPreferences("runtime_permissions",MODE_PRIVATE);if(prefs.getBoolean("contacts_permission_explained",false))return;prefs.edit().putBoolean("contacts_permission_explained",true).apply();new AlertDialog.Builder(this).setTitle("السماح بجهات الاتصال").setMessage("يحتاج هذا التبويب إلى إذن قراءة جهات الاتصال لعرض الأسماء والأرقام وربطها بالمحادثات الموجودة. لا يغيّر هذا الإذن جهات الاتصال ولا عناوين الرسائل المخزنة.").setNegativeButton("ليس الآن",null).setPositiveButton("متابعة",(d,w)->requestContactsPermission()).show();}
+ void onContactsPermissionAction(){if(checkSelfPermission("android.permission.READ_CONTACTS")==PackageManager.PERMISSION_GRANTED){showContactsScreen();return;}android.content.SharedPreferences prefs=getSharedPreferences("runtime_permissions",MODE_PRIVATE);boolean asked=prefs.getBoolean("contacts_permission_requested",false);if(asked&&!shouldShowRequestPermissionRationale("android.permission.READ_CONTACTS")){new AlertDialog.Builder(this).setTitle("إعدادات إذن جهات الاتصال").setMessage("يبدو أن طلب الإذن لم يعد يظهر. افتح إعدادات التطبيق وفعّل إذن جهات الاتصال يدويًا.").setNegativeButton("إلغاء",null).setPositiveButton("فتح الإعدادات",(d,w)->{Intent i=new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+getPackageName()));startActivity(i);}).show();return;}new AlertDialog.Builder(this).setTitle("إذن جهات الاتصال").setMessage("يُستخدم الإذن لقراءة الأسماء والأرقام فقط حتى تظهر القائمة وتُفتح المحادثة الصحيحة.").setNegativeButton("ليس الآن",null).setPositiveButton("منح الإذن",(d,w)->requestContactsPermission()).show();}
+ void requestContactsPermission(){getSharedPreferences("runtime_permissions",MODE_PRIVATE).edit().putBoolean("contacts_permission_requested",true).apply();requestPermissions(new String[]{"android.permission.READ_CONTACTS"},81);}
+
+ static final class ContactBuilder{long id;String name,photo;ArrayList<String> numbers=new ArrayList<>();ContactBuilder(long id,String name,String photo){this.id=id;this.name=name==null?"":name;this.photo=photo==null?"":photo;}}
+ void loadContactsAsync(){if(contactsLoadInProgress||isFinishing()||isDestroyed())return;contactsLoadInProgress=true;final long generation=++contactsGeneration;contactsState.setVisibility(View.VISIBLE);contactsStateText.setText("جارٍ تحميل جهات الاتصال…");contactsPermissionButton.setVisibility(View.GONE);contactsRecycler.setVisibility(View.VISIBLE);DATA_EXECUTOR.execute(()->{ArrayList<ContactsLogic.ContactRecord> loaded=new ArrayList<>();android.database.Cursor c=null;try{c=getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,new String[]{ContactsContract.CommonDataKinds.Phone.CONTACT_ID,ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,ContactsContract.CommonDataKinds.Phone.NUMBER,ContactsContract.CommonDataKinds.Phone.PHOTO_THUMBNAIL_URI},null,null,ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME+" COLLATE NOCASE ASC");LinkedHashMap<Long,ContactBuilder> grouped=new LinkedHashMap<>();if(c!=null)while(c.moveToNext()){if(Thread.currentThread().isInterrupted())return;long id=c.getLong(0);String name=c.getString(1),number=c.getString(2),photo=c.getString(3);if(number==null||number.trim().isEmpty())continue;ContactBuilder b=grouped.get(id);if(b==null){b=new ContactBuilder(id,name,photo);grouped.put(id,b);}else if((b.name==null||b.name.trim().isEmpty())&&name!=null)b.name=name;if((b.photo==null||b.photo.isEmpty())&&photo!=null)b.photo=photo;b.numbers.add(number.trim());}for(ContactBuilder b:grouped.values()){ContactsLogic.ContactRecord record=new ContactsLogic.ContactRecord(b.id,b.name,b.numbers,b.photo);if(record.numbers.isEmpty())continue;loaded.add(record);Uri photoUri=record.photoUri.isEmpty()?null:Uri.parse(record.photoUri);synchronized(contactCache){for(String number:record.numbers)contactCache.put(number,new ContactData(record.name,photoUri,null));}}}catch(SecurityException e){android.util.Log.w("HashemSMS","Contacts permission unavailable",e);}catch(Exception e){android.util.Log.e("HashemSMS","Unable to load contacts",e);}finally{if(c!=null)try{c.close();}catch(Exception e){android.util.Log.w("HashemSMS","Unable to close contacts cursor",e);}}ArrayList<ContactsLogic.ContactRecord> sorted=new ArrayList<>(ContactsLogic.sortByName(loaded));runOnUiThread(()->{if(generation!=contactsGeneration||isFinishing()||isDestroyed())return;contactsLoadInProgress=false;contactsLoaded=true;allContacts=sorted;contactsPermissionButton.setVisibility(View.VISIBLE);if(checkSelfPermission("android.permission.READ_CONTACTS")!=PackageManager.PERMISSION_GRANTED){showContactsPermissionState();return;}if(sorted.isEmpty()){contactsState.setVisibility(View.VISIBLE);contactsStateText.setText("لا توجد جهات اتصال تحتوي على أرقام.");contactsPermissionButton.setVisibility(View.GONE);}else contactsState.setVisibility(View.GONE);contactsRecycler.setVisibility(View.VISIBLE);filterContacts(search==null?"":search.getText().toString());});});}
+ void filterContacts(String query){if(!"contacts".equals(filter)||contactsAdapter==null||!contactsLoaded)return;final String requested=query==null?"":query;final long generation=++contactsGeneration;DATA_EXECUTOR.execute(()->{List<ContactsLogic.ContactRecord> result=ContactsLogic.filter(allContacts,requested);runOnUiThread(()->{if(generation!=contactsGeneration||!"contacts".equals(filter)||isFinishing()||isDestroyed())return;contactsAdapter.submitList(new ArrayList<>(result));if(result.isEmpty()){contactsState.setVisibility(View.VISIBLE);contactsStateText.setText(requested.trim().isEmpty()?"لا توجد جهات اتصال تحتوي على أرقام.":"لا توجد نتائج مطابقة.");contactsPermissionButton.setVisibility(View.GONE);contactsRecycler.setVisibility(View.GONE);}else{contactsState.setVisibility(View.GONE);contactsRecycler.setVisibility(View.VISIBLE);}});});}
+ void openContactConversation(String number){DATA_EXECUTOR.execute(()->{String matched=number;android.database.Cursor c=null;try{c=db.getReadableDatabase().rawQuery("SELECT address,MAX(ts) latest FROM messages WHERE address IS NOT NULL AND address!='' AND trash=0 AND type!='trash' GROUP BY address ORDER BY latest DESC",null);while(c.moveToNext()){String stored=c.getString(0);if(ContactsLogic.matchesNumber(number,stored)){matched=stored;break;}}}catch(Exception e){android.util.Log.w("HashemSMS","Unable to match contact with existing conversations",e);}finally{if(c!=null)try{c.close();}catch(Exception ignored){}}final String address=matched;runOnUiThread(()->{if(isFinishing()||isDestroyed())return;Intent intent=new Intent(MainActivity.this,ConversationActivity.class);intent.putExtra("address",address);startActivity(intent);});});}
+ final class ContactViewHolder extends androidx.recyclerview.widget.RecyclerView.ViewHolder{final LinearLayout row;final ImageView photo;final TextView fallback,name,numbers;ContactViewHolder(LinearLayout outer,LinearLayout row,ImageView photo,TextView fallback,TextView name,TextView numbers){super(outer);this.row=row;this.photo=photo;this.fallback=fallback;this.name=name;this.numbers=numbers;}}
+ final class ContactsAdapter extends androidx.recyclerview.widget.ListAdapter<ContactsLogic.ContactRecord,ContactViewHolder>{ContactsAdapter(){super(new androidx.recyclerview.widget.DiffUtil.ItemCallback<ContactsLogic.ContactRecord>(){@Override public boolean areItemsTheSame(ContactsLogic.ContactRecord a,ContactsLogic.ContactRecord b){return a.id==b.id;}@Override public boolean areContentsTheSame(ContactsLogic.ContactRecord a,ContactsLogic.ContactRecord b){return a.name.equals(b.name)&&a.numbers.equals(b.numbers)&&a.photoUri.equals(b.photoUri);}});}
+ @Override public ContactViewHolder onCreateViewHolder(android.view.ViewGroup parent,int type){LinearLayout outer=new LinearLayout(MainActivity.this);outer.setOrientation(LinearLayout.VERTICAL);outer.setPadding(0,UiResources.dp(MainActivity.this,3),0,UiResources.dp(MainActivity.this,3));outer.setBackground(rounded(UiResources.color(MainActivity.this,R.color.card_surface),UiResources.color(MainActivity.this,R.color.card_stroke),18));LinearLayout row=new LinearLayout(MainActivity.this);row.setOrientation(LinearLayout.HORIZONTAL);row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(UiResources.dp(MainActivity.this,8),UiResources.dp(MainActivity.this,7),UiResources.dp(MainActivity.this,8),UiResources.dp(MainActivity.this,7));FrameLayout avatar=new FrameLayout(MainActivity.this);int size=UiResources.dp(MainActivity.this,52);avatar.setBackground(rounded(UiResources.color(MainActivity.this,R.color.avatar_container),0,size/2));avatar.setClipToOutline(true);ImageView photo=new ImageView(MainActivity.this);photo.setScaleType(ImageView.ScaleType.CENTER_CROP);avatar.addView(photo,new FrameLayout.LayoutParams(-1,-1));TextView fallback=tv("?",18);fallback.setGravity(Gravity.CENTER);fallback.setTypeface(Typeface.DEFAULT,Typeface.BOLD);fallback.setTextColor(UiResources.color(MainActivity.this,R.color.primary_variant));avatar.addView(fallback,new FrameLayout.LayoutParams(-1,-1));row.addView(avatar,new LinearLayout.LayoutParams(size,size));LinearLayout details=new LinearLayout(MainActivity.this);details.setOrientation(LinearLayout.VERTICAL);TextView name=tv("",16);name.setTypeface(Typeface.DEFAULT,Typeface.BOLD);name.setPadding(UiResources.dp(MainActivity.this,12),UiResources.dp(MainActivity.this,3),UiResources.dp(MainActivity.this,12),UiResources.dp(MainActivity.this,2));TextView numbers=tv("",13);numbers.setTextColor(UiResources.color(MainActivity.this,R.color.on_surface_variant));numbers.setPadding(UiResources.dp(MainActivity.this,12),UiResources.dp(MainActivity.this,1),UiResources.dp(MainActivity.this,12),UiResources.dp(MainActivity.this,3));details.addView(name);details.addView(numbers);row.addView(details,new LinearLayout.LayoutParams(0,-2,1));View divider=new View(MainActivity.this);divider.setBackgroundColor(UiResources.color(MainActivity.this,R.color.divider));outer.addView(row);outer.addView(divider,new LinearLayout.LayoutParams(-1,1));return new ContactViewHolder(outer,row,photo,fallback,name,numbers);}
+ @Override public void onBindViewHolder(ContactViewHolder h,int position){ContactsLogic.ContactRecord item=getItem(position);h.name.setText(item.name.isEmpty()?(item.numbers.isEmpty()?"جهة اتصال":item.numbers.get(0)):item.name);String primary=item.numbers.isEmpty()?"":item.numbers.get(0);h.numbers.setText(item.numbers.size()>1?primary+" · "+item.numbers.size()+" أرقام":primary);h.fallback.setText(item.name.isEmpty()?(primary.isEmpty()?"?":primary.substring(0,1)):item.name.substring(0,1));h.photo.setTag(primary);h.photo.setImageDrawable(null);h.photo.setVisibility(View.GONE);h.fallback.setVisibility(View.VISIBLE);Uri photoUri=item.photoUri.isEmpty()?null:Uri.parse(item.photoUri);android.graphics.Bitmap cached=contactBitmapCache.get(primary);if(cached!=null){h.photo.setImageBitmap(cached);h.photo.setVisibility(View.VISIBLE);h.fallback.setVisibility(View.GONE);}else if(photoUri!=null&&!primary.isEmpty())loadContactPhotoAsync(primary,photoUri,h.photo,h.fallback);h.row.setOnClickListener(v->{if(item.numbers.size()==1)openContactConversation(item.numbers.get(0));else if(item.numbers.size()>1){String[] choices=item.numbers.toArray(new String[0]);new AlertDialog.Builder(MainActivity.this).setTitle("اختر رقمًا لبدء المحادثة").setItems(choices,(dialog,which)->openContactConversation(choices[which])).setNegativeButton("إلغاء",null).show();}});}
+ }
+ void showMoreScreen(){
+  threadHandler.removeCallbacks(threadRefreshRunnable);threadHandler.removeCallbacks(searchFilterRunnable);threadsRecycler.setVisibility(View.GONE);emptyThreadsView.setVisibility(View.GONE);otherScroll.setVisibility(View.VISIBLE);list.removeAllViews();list.addView(tv("المزيد",22));list.addView(tv("أدوات الرسائل وإدارتها",13));
+  String[][] sections={{"الرسائل الجماعية","bulk"},{"الرسائل المجدولة","scheduled"},{"المحادثات المؤرشفة","archived"},{"الرسائل المميزة","starred"},{"الأرقام المحظورة","blocked"},{"المهملات","trash"},{"الرسائل التي تعذّر إرسالها","failed"},{"قواعد توجيه الرسائل","rules"}};
+  for(String[] section:sections){Button b=button(section[0]);b.setGravity(Gravity.CENTER_VERTICAL|Gravity.END);b.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_arrow_back,0,0,0);b.setCompoundDrawablePadding(UiResources.dp(this,10));b.setOnClickListener(v->{filter=section[1];selectedBottomTab="more";render();});LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,52);lp.bottomMargin=6;list.addView(b,lp);}updateBottomNavigation();
+ }
+  boolean isThreadListFilter(String value){return "all".equals(value)||"unread".equals(value)||"archived".equals(value)||"blocked".equals(value);}
+  void onSmsUpdated(){if(isThreadListFilter(filter)){threadHandler.removeCallbacks(threadRefreshRunnable);threadHandler.postDelayed(threadRefreshRunnable,250);}else render();}
+  void onSearchChanged(){if("contacts".equals(filter)){contactsHandler.removeCallbacks(contactsSearchRunnable);contactsHandler.postDelayed(contactsSearchRunnable,200);}else if(isThreadListFilter(filter)){threadHandler.removeCallbacks(searchFilterRunnable);threadHandler.postDelayed(searchFilterRunnable,200);}else render();}
+  void render(){if(list==null)return;updateBottomNavigation();boolean special="contacts".equals(filter)||"more".equals(filter);if(filtersScroll!=null)filtersScroll.setVisibility(special?View.GONE:View.VISIBLE);if(composeButton!=null)composeButton.setVisibility(special?View.GONE:View.VISIBLE);if("contacts".equals(filter)){showContactsScreen();return;}if("more".equals(filter)){contactsScreen.setVisibility(View.GONE);showMoreScreen();return;}contactsScreen.setVisibility(View.GONE);if(isThreadListFilter(filter)){otherScroll.setVisibility(View.GONE);threadsRecycler.setVisibility(View.VISIBLE);emptyThreadsView.setVisibility(View.GONE);loadThreadRows();return;}threadHandler.removeCallbacks(threadRefreshRunnable);threadHandler.removeCallbacks(searchFilterRunnable);threadsRecycler.setVisibility(View.GONE);emptyThreadsView.setVisibility(View.GONE);otherScroll.setVisibility(View.VISIBLE);list.removeAllViews();if("trash".equals(filter)){trashScreen();return;}if("starred".equals(filter)){starredScreen();return;}if("bulk".equals(filter)){bulkScreen();return;}if("groups".equals(filter)){groupsScreen();return;}if("rules".equals(filter)){forwardRulesScreen();return;}if("scheduled".equals(filter)){scheduledScreen();return;}if("failed".equals(filter)){failedScreen();return;}}
+  void loadThreadRows(){if(!isThreadListFilter(filter)||isFinishing()||isDestroyed())return;final String requestedFilter=filter;final long generation=++threadGeneration;if(pendingThreadsLoad!=null)pendingThreadsLoad.cancel(true);pendingThreadsLoad=DATA_EXECUTOR.submit(()->{ArrayList<ThreadItem> rows=new ArrayList<>();android.database.Cursor c=null;try{c=db.listThreads(requestedFilter);while(c.moveToNext()){if(Thread.currentThread().isInterrupted())return;String address=c.getString(c.getColumnIndexOrThrow("address"));String body=c.getString(c.getColumnIndexOrThrow("body"));String status=c.getString(c.getColumnIndexOrThrow("status"));long stamp=0;try{stamp=Long.parseLong(c.getString(c.getColumnIndexOrThrow("ts")));}catch(Exception ignored){}ContactData contact=loadContactData(address);rows.add(new ThreadItem(address,body==null?"":body,status==null?"":status,stamp,contact.name,contact.photoUri,contact.photo));}}catch(Exception e){android.util.Log.e("HashemSMS","Unable to load conversation list; keeping the previous list",e);return;}finally{if(c!=null)try{c.close();}catch(Exception e){android.util.Log.w("HashemSMS","Unable to close conversation cursor",e);}}if(Thread.currentThread().isInterrupted())return;runOnUiThread(()->{if(generation!=threadGeneration||!isThreadListFilter(filter)||!requestedFilter.equals(filter)||isFinishing()||isDestroyed())return;allThreadItems=rows;applyThreadSearch();});});}
+  void applyThreadSearch(){if(!isThreadListFilter(filter)||isFinishing()||isDestroyed())return;final String query=search.getText().toString().trim().toLowerCase(Locale.ROOT);final long generation=++filterGeneration;final ArrayList<ThreadItem> snapshot=new ArrayList<>(allThreadItems);if(pendingFilterTask!=null)pendingFilterTask.cancel(true);pendingFilterTask=DATA_EXECUTOR.submit(()->{ArrayList<ThreadItem> result=new ArrayList<>();for(ThreadItem item:snapshot){if(Thread.currentThread().isInterrupted())return;if(query.isEmpty()||item.address.toLowerCase(Locale.ROOT).contains(query)||item.body.toLowerCase(Locale.ROOT).contains(query)||item.contact.toLowerCase(Locale.ROOT).contains(query))result.add(item);}runOnUiThread(()->{if(generation!=filterGeneration||!isThreadListFilter(filter)||isFinishing()||isDestroyed())return;threadAdapter.submitList(result);emptyThreadsView.setVisibility(result.isEmpty()?View.VISIBLE:View.GONE);});});}
+  ContactData loadContactData(String number){synchronized(contactCache){ContactData cached=contactCache.get(number);if(cached!=null)return new ContactData(cached.name,cached.photoUri,contactBitmapCache.get(number));}String name="";Uri photoUri=null;android.database.Cursor cursor=null;try{Uri uri=Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI,Uri.encode(number));cursor=getContentResolver().query(uri,new String[]{ContactsContract.PhoneLookup.DISPLAY_NAME,ContactsContract.PhoneLookup.PHOTO_THUMBNAIL_URI},null,null,null);if(cursor!=null&&cursor.moveToFirst()){String found=cursor.getString(0);name=found==null?"":found;String raw=cursor.getString(1);if(raw!=null&&!raw.trim().isEmpty())photoUri=Uri.parse(raw);}}catch(Exception e){android.util.Log.w("HashemSMS","Contact lookup failed",e);}finally{if(cursor!=null)try{cursor.close();}catch(Exception e){android.util.Log.w("HashemSMS","Unable to close contact cursor",e);}}ContactData loaded=new ContactData(name,photoUri,null);synchronized(contactCache){ContactData raced=contactCache.get(number);if(raced!=null)loaded=raced;else contactCache.put(number,loaded);}return new ContactData(loaded.name,loaded.photoUri,contactBitmapCache.get(number));}
+  void loadContactPhotoAsync(String number,Uri photoUri,ImageView image,TextView fallback){if(photoUri==null)return;android.graphics.Bitmap cached=contactBitmapCache.get(number);if(cached!=null){if(number.equals(image.getTag())){image.setImageBitmap(cached);image.setVisibility(View.VISIBLE);fallback.setVisibility(View.GONE);}return;}final long generation;synchronized(contactCache){generation=contactCacheGeneration;}synchronized(contactPhotoPending){if(!contactPhotoPending.add(number))return;}IMAGE_EXECUTOR.execute(()->{android.graphics.Bitmap bitmap=null;java.io.InputStream in=null;try{in=getContentResolver().openInputStream(photoUri);if(in!=null)bitmap=android.graphics.BitmapFactory.decodeStream(in);}catch(Exception e){android.util.Log.w("HashemSMS","Contact thumbnail decode failed",e);}finally{if(in!=null)try{in.close();}catch(Exception ignored){}}synchronized(contactPhotoPending){contactPhotoPending.remove(number);}if(bitmap==null)return;synchronized(contactCache){ContactData current=contactCache.get(number);if(generation!=contactCacheGeneration||current==null||!java.util.Objects.equals(current.photoUri,photoUri))return;}contactBitmapCache.put(number,bitmap);final android.graphics.Bitmap loaded=bitmap;runOnUiThread(()->{if(!isFinishing()&&!isDestroyed()&&number.equals(image.getTag())){image.setImageBitmap(loaded);image.setVisibility(View.VISIBLE);fallback.setVisibility(View.GONE);}if(threadsRecycler!=null){for(int i=0;i<threadsRecycler.getChildCount();i++){View child=threadsRecycler.getChildAt(i);androidx.recyclerview.widget.RecyclerView.ViewHolder vh=threadsRecycler.getChildViewHolder(child);if(vh instanceof ThreadViewHolder){ThreadViewHolder th=(ThreadViewHolder)vh;if(number.equals(th.photo.getTag())){th.photo.setImageBitmap(loaded);th.photo.setVisibility(View.VISIBLE);th.fallback.setVisibility(View.GONE);}}}}});});}
+  void loadContactPhotoAsync(String number,Uri photoUri,ThreadViewHolder holder){loadContactPhotoAsync(number,photoUri,holder.photo,holder.fallback);}
+  static final class ContactData{final String name;final Uri photoUri;final android.graphics.Bitmap photo;ContactData(String name,Uri photoUri,android.graphics.Bitmap photo){this.name=name==null?"":name;this.photoUri=photoUri;this.photo=photo;}}
+  static final class ThreadItem{final String address,body,status,contact;final long timestamp;final Uri photoUri;final android.graphics.Bitmap photo;ThreadItem(String address,String body,String status,long timestamp,String contact,Uri photoUri,android.graphics.Bitmap photo){this.address=address;this.body=body;this.status=status;this.timestamp=timestamp;this.contact=contact==null?"":contact;this.photoUri=photoUri;this.photo=photo;}}
+  final class ThreadViewHolder extends androidx.recyclerview.widget.RecyclerView.ViewHolder{final LinearLayout row,details,meta,container;final FrameLayout avatar;final ImageView photo;final TextView fallback,name,body,status,time;ThreadViewHolder(LinearLayout outer,LinearLayout row,FrameLayout avatar,ImageView photo,TextView fallback,TextView name,TextView body,LinearLayout meta,TextView status,TextView time){super(outer);this.container=outer;this.row=row;this.avatar=avatar;this.photo=photo;this.fallback=fallback;this.name=name;this.body=body;this.meta=meta;this.status=status;this.time=time;this.details=(LinearLayout)row.getChildAt(1);}}
+  final class ThreadAdapter extends androidx.recyclerview.widget.ListAdapter<ThreadItem,ThreadViewHolder>{ThreadAdapter(){super(new androidx.recyclerview.widget.DiffUtil.ItemCallback<ThreadItem>(){@Override public boolean areItemsTheSame(ThreadItem a,ThreadItem b){return a.address.equals(b.address);}@Override public boolean areContentsTheSame(ThreadItem a,ThreadItem b){return a.body.equals(b.body)&&a.status.equals(b.status)&&a.timestamp==b.timestamp&&a.contact.equals(b.contact)&&java.util.Objects.equals(a.photoUri,b.photoUri)&&java.util.Objects.equals(a.photo,b.photo);}});}
+   @Override public ThreadViewHolder onCreateViewHolder(android.view.ViewGroup parent,int type){LinearLayout outer=new LinearLayout(MainActivity.this);outer.setOrientation(LinearLayout.VERTICAL);LinearLayout row=new LinearLayout(MainActivity.this);row.setOrientation(LinearLayout.HORIZONTAL);row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(UiResources.dp(MainActivity.this,6),UiResources.dp(MainActivity.this,8),UiResources.dp(MainActivity.this,6),UiResources.dp(MainActivity.this,8));FrameLayout avatar=new FrameLayout(MainActivity.this);avatar.setForegroundGravity(Gravity.CENTER);int avatarSize=(int)(getResources().getDisplayMetrics().density*52);avatar.setBackground(rounded(UiResources.color(MainActivity.this,R.color.avatar_container),0,avatarSize/2));avatar.setClipToOutline(true);ImageView photo=new ImageView(MainActivity.this);photo.setScaleType(ImageView.ScaleType.CENTER_CROP);avatar.addView(photo,new FrameLayout.LayoutParams(-1,-1));TextView fallback=new TextView(MainActivity.this);fallback.setGravity(Gravity.CENTER);fallback.setTextSize(18);fallback.setTypeface(Typeface.DEFAULT,Typeface.BOLD);fallback.setTextColor(UiResources.color(MainActivity.this,R.color.primary_variant));fallback.setMaxLines(1);fallback.setEllipsize(android.text.TextUtils.TruncateAt.END);fallback.setPadding(2,2,2,2);fallback.setVisibility(View.VISIBLE);avatar.addView(fallback,new FrameLayout.LayoutParams(-1,-1));LinearLayout details=new LinearLayout(MainActivity.this);details.setOrientation(LinearLayout.VERTICAL);details.setGravity(Gravity.CENTER_VERTICAL);details.setLayoutDirection(View.LAYOUT_DIRECTION_LOCALE);TextView name=tv("",16);name.setTypeface(Typeface.DEFAULT,Typeface.BOLD);name.setTextColor(UiResources.color(MainActivity.this,R.color.on_surface_emphasis));name.setSingleLine(true);name.setEllipsize(android.text.TextUtils.TruncateAt.END);name.setPadding(UiResources.dp(MainActivity.this,2),UiResources.dp(MainActivity.this,2),UiResources.dp(MainActivity.this,2),UiResources.dp(MainActivity.this,2));TextView body=tv("",14);body.setTextColor(UiResources.color(MainActivity.this,R.color.on_surface_subtle));body.setSingleLine(true);body.setEllipsize(android.text.TextUtils.TruncateAt.END);body.setPadding(UiResources.dp(MainActivity.this,2),UiResources.dp(MainActivity.this,2),UiResources.dp(MainActivity.this,2),UiResources.dp(MainActivity.this,2));details.addView(name,new LinearLayout.LayoutParams(-1,-2));details.addView(body,new LinearLayout.LayoutParams(-1,-2));LinearLayout meta=new LinearLayout(MainActivity.this);meta.setOrientation(LinearLayout.VERTICAL);meta.setGravity(Gravity.CENTER_HORIZONTAL);TextView status=tv("",10);status.setTextColor(purple);status.setPadding(UiResources.dp(MainActivity.this,3),UiResources.dp(MainActivity.this,2),UiResources.dp(MainActivity.this,3),UiResources.dp(MainActivity.this,2));TextView time=tv("",11);time.setTextColor(UiResources.color(MainActivity.this,R.color.timestamp));time.setPadding(UiResources.dp(MainActivity.this,3),UiResources.dp(MainActivity.this,2),UiResources.dp(MainActivity.this,3),UiResources.dp(MainActivity.this,2));meta.addView(status);meta.addView(time);LinearLayout.LayoutParams avatarLp=new LinearLayout.LayoutParams(avatarSize,avatarSize);avatarLp.setMargins(0,0,UiResources.dp(MainActivity.this,12),0);row.addView(avatar,avatarLp);row.addView(details,new LinearLayout.LayoutParams(0,-2,1));row.addView(meta);row.setMinimumHeight((int)(getResources().getDisplayMetrics().density*72));outer.addView(row);View divider=new View(MainActivity.this);divider.setBackgroundColor(UiResources.color(MainActivity.this,R.color.divider));outer.addView(divider,new LinearLayout.LayoutParams(-1,1));return new ThreadViewHolder(outer,row,avatar,photo,fallback,name,body,meta,status,time);}
+   @Override public void onBindViewHolder(ThreadViewHolder h,int position){ThreadItem item=getItem(position);h.name.setText(item.contact.isEmpty()?item.address:item.contact);h.body.setText(item.body);h.status.setText(item.status);h.time.setText(item.timestamp>0?new java.text.SimpleDateFormat("HH:mm",Locale.getDefault()).format(new Date(item.timestamp)):"");h.photo.setTag(item.address);h.photo.setImageDrawable(null);h.photo.setVisibility(View.GONE);String avatarLabel=item.contact.isEmpty()?item.address:item.contact;h.fallback.setText(avatarLabel.isEmpty()?"?":avatarLabel.substring(0,1));h.fallback.setVisibility(View.VISIBLE);android.graphics.Bitmap cached=contactBitmapCache.get(item.address);if(item.photo!=null){h.photo.setImageBitmap(item.photo);h.photo.setVisibility(View.VISIBLE);h.fallback.setVisibility(View.GONE);}else if(cached!=null){h.photo.setImageBitmap(cached);h.photo.setVisibility(View.VISIBLE);h.fallback.setVisibility(View.GONE);}else if(item.photoUri!=null){loadContactPhotoAsync(item.address,item.photoUri,h);}h.row.setOnClickListener(v->{Intent i=new Intent(MainActivity.this,ConversationActivity.class);i.putExtra("address",item.address);startActivity(i);});h.row.setOnLongClickListener(v->{PopupMenu menu=new PopupMenu(MainActivity.this,h.row);boolean archived="archived".equals(filter),blocked="blocked".equals(filter);menu.getMenu().add(archived?"إلغاء الأرشفة":"أرشفة المحادثة").setIcon(R.drawable.ic_archive);menu.getMenu().add(blocked?"إلغاء الحظر":"حظر الرقم").setIcon(R.drawable.ic_block);menu.setForceShowIcon(true);menu.setOnMenuItemClickListener(action->{String label=action.getTitle().toString();DATA_EXECUTOR.execute(()->{if("أرشفة المحادثة".equals(label)||"إلغاء الأرشفة".equals(label))db.setConversationFlag(item.address,"archived","أرشفة المحادثة".equals(label));else if("حظر الرقم".equals(label)||"إلغاء الحظر".equals(label))db.setConversationFlag(item.address,"blocked","حظر الرقم".equals(label));runOnUiThread(()->{if(isThreadListFilter(filter))loadThreadRows();});});return true;});menu.show();return true;});}
+  }
+
+ void starredScreen(){list.addView(tv("الرسائل المميزة",22));list.addView(tv("تظهر هنا الرسائل التي وضعت عليها نجمة داخل المحادثات.",14));android.database.Cursor c=db.list("starred");int n=0;String q=search.getText().toString().trim().toLowerCase(Locale.ROOT);while(c.moveToNext()){String a=c.getString(c.getColumnIndexOrThrow("address")),body=c.getString(c.getColumnIndexOrThrow("body")),status=c.getString(c.getColumnIndexOrThrow("status"));if(!q.isEmpty()&&!a.toLowerCase(Locale.ROOT).contains(q)&&!body.toLowerCase(Locale.ROOT).contains(q))continue;LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.VERTICAL);TextView starredTitle=tv(contactName(a)+"  ·  "+a,16);starredTitle.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_star,0,0,0);starredTitle.setCompoundDrawablePadding(UiResources.dp(MainActivity.this,6));row.addView(starredTitle);row.addView(tv(body,16));row.addView(tv(status,12));row.setOnClickListener(v->{Intent i=new Intent(this,ConversationActivity.class);i.putExtra("address",a);startActivity(i);});list.addView(row);View line=new View(this);line.setBackgroundColor(UiResources.color(MainActivity.this,R.color.divider));list.addView(line,new LinearLayout.LayoutParams(-1,1));n++;}c.close();if(n==0)list.addView(tv("لا توجد رسائل مميزة حاليًا",17));}
+ void trashScreen(){list.addView(tv("المهملات",22));list.addView(tv("استعد الرسائل المحذوفة أو احذفها نهائيًا.",14));android.database.Cursor c=db.listTrash();int n=0;while(c.moveToNext()){long id=c.getLong(c.getColumnIndexOrThrow("id"));String a=c.getString(c.getColumnIndexOrThrow("address")),body=c.getString(c.getColumnIndexOrThrow("body")),status=c.getString(c.getColumnIndexOrThrow("status"));if(!search.getText().toString().trim().isEmpty()&&!a.contains(search.getText().toString().trim())&&!body.contains(search.getText().toString().trim()))continue;LinearLayout card=new LinearLayout(this);card.setOrientation(LinearLayout.VERTICAL);styleScreenCard(card);card.addView(tv("من/إلى: "+a,16));card.addView(tv(body,16));card.addView(tv("الحالة السابقة: "+status,13));LinearLayout actions=new LinearLayout(this);Button restore=button("استعادة");restore.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("استعادة الرسالة").setMessage("ستعود الرسالة إلى المحادثة الأصلية.").setNegativeButton("إلغاء",null).setPositiveButton("استعادة",(d,w)->{db.restoreTrashMessage(id);render();}).show());Button remove=button("حذف نهائي");remove.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("حذف نهائي").setMessage("لا يمكن التراجع عن حذف هذه الرسالة نهائيًا.").setNegativeButton("إلغاء",null).setPositiveButton("حذف نهائي",(d,w)->{db.permanentlyDeleteTrashMessage(id);render();}).show());actions.addView(restore,new LinearLayout.LayoutParams(0,-2,1));actions.addView(remove,new LinearLayout.LayoutParams(0,-2,1));card.addView(actions);list.addView(card);View line=new View(this);line.setBackgroundColor(UiResources.color(MainActivity.this,R.color.divider));list.addView(line,new LinearLayout.LayoutParams(-1,1));n++;}c.close();if(n==0)list.addView(tv("المهملات فارغة",17));}
+ void failedScreen(){list.addView(tv("الرسائل التي تعذّر إرسالها",22));list.addView(tv("يمكنك مراجعة الرسالة ومحاولة إرسالها مرة أخرى.",14));android.database.Cursor c=db.list("failed");int n=0;while(c.moveToNext()){String a=c.getString(c.getColumnIndexOrThrow("address")),body=c.getString(c.getColumnIndexOrThrow("body")),st=c.getString(c.getColumnIndexOrThrow("status"));if(!search.getText().toString().trim().isEmpty()&&!a.contains(search.getText().toString().trim())&&!body.contains(search.getText().toString().trim()))continue;LinearLayout card=new LinearLayout(this);card.setOrientation(LinearLayout.VERTICAL);styleScreenCard(card);card.addView(tv("إلى: "+a,17));card.addView(tv(body,16));card.addView(tv("الحالة: "+st,13));Button retry=button("إعادة الإرسال إلى الرقم الأصلي");retry.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("إعادة إرسال الرسالة؟").setMessage("سيتم إرسال الرسالة مرة أخرى إلى "+a).setNegativeButton("إلغاء",null).setPositiveButton("إرسال", (d,w)->send(a,body)).show());card.addView(retry);Button forward=button("توجيه عبر قاعدة مسماة");forward.setOnClickListener(v->forwardFailedWithRule(a,body));card.addView(forward);list.addView(card);View line=new View(this);line.setBackgroundColor(UiResources.color(MainActivity.this,R.color.divider));list.addView(line,new LinearLayout.LayoutParams(-1,1));n++;}c.close();if(n==0)list.addView(tv("لا توجد رسائل فاشلة حاليًا",17));}
+ void forwardRulesScreen(){list.addView(tv("قواعد توجيه الرسائل الفاشلة",22));list.addView(tv("أنشئ قاعدة باسم واضح ورقم بديل. لا يتم توجيه أي رسالة تلقائيًا؛ اختر القاعدة يدويًا لكل رسالة فاشلة لتجنب إرسال محتوى دون قصد.",14));Button add=button("إضافة قاعدة توجيه");add.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_add,0,0,0);add.setCompoundDrawablePadding(UiResources.dp(MainActivity.this,6));add.setOnClickListener(v->createForwardRuleDialog());list.addView(add);android.database.Cursor c=db.listForwardRules();int n=0;while(c.moveToNext()){long id=c.getLong(c.getColumnIndexOrThrow("id"));String name=c.getString(c.getColumnIndexOrThrow("name"));String number=c.getString(c.getColumnIndexOrThrow("destination"));LinearLayout card=new LinearLayout(this);card.setOrientation(LinearLayout.VERTICAL);styleScreenCard(card);card.addView(tv(name,18));card.addView(tv("رقم التوجيه: "+number,15));Button del=button("حذف القاعدة");del.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("حذف قاعدة التوجيه").setMessage("هل تريد حذف قاعدة \""+name+"\"؟").setNegativeButton("إلغاء",null).setPositiveButton("حذف",(d,w)->{db.deleteForwardRule(id);render();}).show());card.addView(del);list.addView(card);View line=new View(this);line.setBackgroundColor(UiResources.color(MainActivity.this,R.color.divider));list.addView(line,new LinearLayout.LayoutParams(-1,1));n++;}c.close();if(n==0)list.addView(tv("لا توجد قواعد توجيه. أضف قاعدة لتظهر هنا.",16));}
+ void createForwardRuleDialog(){LinearLayout p=new LinearLayout(this);p.setOrientation(LinearLayout.VERTICAL);EditText name=new EditText(this);name.setHint("اسم القاعدة، مثل رقم بديل للعمل");EditText number=new EditText(this);number.setHint("رقم الهاتف الذي ستُوجّه إليه الرسالة");number.setInputType(3);p.addView(name);p.addView(number);new AlertDialog.Builder(this).setTitle("إضافة قاعدة توجيه").setView(p).setNegativeButton("إلغاء",null).setPositiveButton("حفظ",(d,w)->{String n=name.getText().toString().trim(),a=number.getText().toString().trim();if(n.isEmpty()||a.isEmpty()){Toast.makeText(this,"أدخل اسم القاعدة ورقم التوجيه",Toast.LENGTH_LONG).show();return;}if(!a.replaceAll("[\\s()\\-]","").matches("\\+?[0-9]{5,20}")){Toast.makeText(this,"رقم التوجيه غير صالح",Toast.LENGTH_LONG).show();return;}long id=db.createForwardRule(n,a);if(id<0)Toast.makeText(this,"تعذر حفظ القاعدة؛ قد يكون الاسم مستخدمًا",Toast.LENGTH_LONG).show();else{Toast.makeText(this,"تم حفظ قاعدة التوجيه",Toast.LENGTH_SHORT).show();render();}}).show();}
+ void forwardFailedWithRule(String originalAddress,String body){android.database.Cursor c=db.listForwardRules();ArrayList<Long> ids=new ArrayList<>();ArrayList<String> labels=new ArrayList<>();ArrayList<String> destinations=new ArrayList<>();while(c.moveToNext()){ids.add(c.getLong(c.getColumnIndexOrThrow("id")));labels.add(c.getString(c.getColumnIndexOrThrow("name"))+" — "+c.getString(c.getColumnIndexOrThrow("destination")));destinations.add(c.getString(c.getColumnIndexOrThrow("destination")));}c.close();if(ids.isEmpty()){new AlertDialog.Builder(this).setMessage("لا توجد قواعد توجيه. أضف قاعدة أولًا من تبويب قواعد التوجيه.").setPositiveButton("حسنًا",null).show();return;}new AlertDialog.Builder(this).setTitle("اختر قاعدة التوجيه").setItems(labels.toArray(new String[0]),(dialog,which)->new AlertDialog.Builder(this).setTitle("تأكيد التوجيه").setMessage("ستُرسل نسخة من نص الرسالة الفاشلة إلى "+destinations.get(which)+" عبر القاعدة: "+labels.get(which)+". لن تُرسل إلى المستلم الأصلي بهذه الخطوة.").setNegativeButton("إلغاء",null).setPositiveButton("توجيه الآن",(d,w)->send(destinations.get(which),body)).show()).setNegativeButton("إلغاء",null).show();}
+ void composeDialog(){composeDialog("");}void composeDialog(String addr){LinearLayout p=new LinearLayout(this);p.setOrientation(LinearLayout.VERTICAL);EditText to=new EditText(this);to.setHint("رقم الهاتف");to.setText(addr);EditText body=new EditText(this);body.setHint("اكتب رسالتك");body.setMinLines(4);p.addView(to);p.addView(body);AlertDialog dlg=new AlertDialog.Builder(this).setTitle("رسالة جديدة").setView(p).setPositiveButton("إرسال",(d,w)->send(to.getText().toString(),body.getText().toString())).setNegativeButton("إلغاء",null).setNeutralButton("جدولة",null).create();dlg.show();dlg.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v->{String a=to.getText().toString().trim(),b=body.getText().toString();if(a.isEmpty()||b.trim().isEmpty()){Toast.makeText(this,"أدخل الرقم ونص الرسالة",Toast.LENGTH_SHORT).show();return;}schedule(a,b);dlg.dismiss();});}
+ void send(String a,String b){
+  final String recipient=a==null?"":a.trim(),body=b==null?"":b;if(recipient.isEmpty()||body.trim().isEmpty()){Toast.makeText(this,"أدخل رقم الهاتف ونص الرسالة",Toast.LENGTH_SHORT).show();return;}
+  final android.content.Context appContext=getApplicationContext();final Db appDb=new Db(appContext);chooseSmsSubscription(new SubscriptionChoiceCallback(){public void onSelected(int subId){SmsSending.SEND_EXECUTOR.execute(()->SmsSending.sendSmsInBackground(appContext,appDb,recipient,body,"MAIN",1000,2000,subId,true));}public void onCancelled(){}});
+ }
+ void chooseSmsSubscription(SubscriptionChoiceCallback action){
+  try{android.telephony.TelephonyManager tm=(android.telephony.TelephonyManager)getSystemService(TELEPHONY_SERVICE);if(tm==null||tm.getPhoneCount()<=1){action.onSelected(-1);return;}}catch(SecurityException e){action.onCancelled();return;}
+  if(checkSelfPermission("android.permission.READ_PHONE_STATE")!=PackageManager.PERMISSION_GRANTED){pendingSubscriptionAction=action;requestPermissions(new String[]{"android.permission.READ_PHONE_STATE"},61);return;}showSmsSubscriptionChoices(action);
+ }
+ @android.annotation.SuppressLint("MissingPermission") void showSmsSubscriptionChoices(SubscriptionChoiceCallback callback){
+  final java.util.concurrent.atomic.AtomicBoolean resolved=new java.util.concurrent.atomic.AtomicBoolean(false);
+  SubscriptionChoiceCallback once=new SubscriptionChoiceCallback(){public void onSelected(int id){if(resolved.compareAndSet(false,true))callback.onSelected(id);}public void onCancelled(){if(resolved.compareAndSet(false,true))callback.onCancelled();}};
+  try{java.util.List<android.telephony.SubscriptionInfo> infos=android.telephony.SubscriptionManager.from(this).getActiveSubscriptionInfoList();
+   if(infos==null||infos.isEmpty()){android.util.Log.w("HashemSMS","No active SIM list; cancelling send rather than silently using default");Toast.makeText(this,"لا توجد شريحة SIM نشطة؛ أُلغي الإرسال.",Toast.LENGTH_SHORT).show();once.onCancelled();return;}
+   if(infos.size()==1){once.onSelected(infos.get(0).getSubscriptionId());return;}String[] labels=new String[infos.size()];
+   for(int i=0;i<infos.size();i++){android.telephony.SubscriptionInfo info=infos.get(i);String name;try{CharSequence display=info.getDisplayName();name=display==null||display.toString().trim().isEmpty()?"SIM "+(info.getSimSlotIndex()+1):display.toString();}catch(RuntimeException e){name="SIM "+(info.getSimSlotIndex()+1);}
+    String number="";try{String value=info.getNumber();if(value!=null)number=value.trim();}catch(RuntimeException e){android.util.Log.w("HashemSMS","Could not read SIM phone number for slot "+(info.getSimSlotIndex()+1),e);}labels[i]=name+(number.isEmpty()?"":" · "+number);}
+   new AlertDialog.Builder(this).setTitle("اختر شريحة الإرسال").setItems(labels,(dialog,which)->{if(which>=0&&which<infos.size())once.onSelected(infos.get(which).getSubscriptionId());else once.onCancelled();}).setNegativeButton("إرسال بالشريحة الافتراضية",(dialog,which)->once.onSelected(-1)).setOnCancelListener(dialog->once.onCancelled()).show();
+  }catch(SecurityException e){android.util.Log.w("HashemSMS","SIM list permission denied; cancelling send",e);Toast.makeText(this,"تعذّرت قراءة الشرائح؛ أُلغي الإرسال.",Toast.LENGTH_SHORT).show();once.onCancelled();}catch(RuntimeException e){android.util.Log.w("HashemSMS","SIM list could not be fetched; cancelling send",e);Toast.makeText(this,"تعذّر جلب قائمة الشرائح؛ أُلغي الإرسال.",Toast.LENGTH_SHORT).show();once.onCancelled();}
+ }
+ @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] grantResults){
+  super.onRequestPermissionsResult(requestCode,permissions,grantResults);if(requestCode==81){if(grantResults.length>0&&grantResults[0]==PackageManager.PERMISSION_GRANTED){synchronized(contactCache){contactCache.clear();contactCacheGeneration++;}synchronized(contactBitmapCache){contactBitmapCache.evictAll();}contactsLoaded=false;showContactsScreen();}else showContactsPermissionState();requestNotificationPermissionIfNeeded();return;}if(requestCode==5){basePermissionRequestPending=false;if(!requestContactsPermissionAtStartupOnce())requestNotificationPermissionIfNeeded();return;}if(requestCode==70){if(grantResults==null||grantResults.length==0||grantResults[0]!=PackageManager.PERMISSION_GRANTED)Toast.makeText(this,"لن تظهر إشعارات الرسائل دون الإذن.",Toast.LENGTH_SHORT).show();return;}if(requestCode!=61)return;SubscriptionChoiceCallback callback=pendingSubscriptionAction;pendingSubscriptionAction=null;if(callback==null)return;
+  if(grantResults!=null&&grantResults.length>0&&grantResults[0]==PackageManager.PERMISSION_GRANTED)showSmsSubscriptionChoices(callback);else{Toast.makeText(this,"لم يُمنح إذن قراءة حالة الهاتف؛ سيتم الإرسال بالشريحة الافتراضية.",Toast.LENGTH_SHORT).show();callback.onSelected(-1);}
+ }
+ void schedule(String a,String b){Calendar cal=Calendar.getInstance();cal.add(Calendar.MINUTE,5);DatePickerDialog datePicker=new DatePickerDialog(this,(view,year,month,day)->{cal.set(Calendar.YEAR,year);cal.set(Calendar.MONTH,month);cal.set(Calendar.DAY_OF_MONTH,day);TimePickerDialog timePicker=new TimePickerDialog(this,(timeView,hour,minute)->{cal.set(Calendar.HOUR_OF_DAY,hour);cal.set(Calendar.MINUTE,minute);cal.set(Calendar.SECOND,0);cal.set(Calendar.MILLISECOND,0);long when=cal.getTimeInMillis();if(when<=System.currentTimeMillis()){Toast.makeText(this,"اختر موعدًا في المستقبل",Toast.LENGTH_LONG).show();return;}confirmSchedule(a,b,when);},cal.get(Calendar.HOUR_OF_DAY),cal.get(Calendar.MINUTE),true);timePicker.setTitle("اختر وقت الإرسال");timePicker.show();},cal.get(Calendar.YEAR),cal.get(Calendar.MONTH),cal.get(Calendar.DAY_OF_MONTH));datePicker.setTitle("اختر تاريخ الإرسال");datePicker.getDatePicker().setMinDate(System.currentTimeMillis());datePicker.show();}
+ void confirmSchedule(String a,String b,long when){
+  String whenText=new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm",Locale.getDefault()).format(new Date(when));
+  new AlertDialog.Builder(this).setTitle("تأكيد جدولة الرسالة").setMessage("سيتم إرسال الرسالة إلى "+a+" في "+whenText+".").setNegativeButton("إلغاء",null).setPositiveButton("تأكيد الجدولة",(d,w)->{
+   long messageId=db.addMessage(a,b,"out","scheduled");if(messageId<=0){Toast.makeText(this,"تعذّر حفظ الرسالة المجدولة",Toast.LENGTH_LONG).show();return;}db.saveSchedule(messageId,a,b,when);
+   boolean exact=AlarmScheduler.scheduleBestEffort(this,messageId,a,b,when);
+   if(Build.VERSION.SDK_INT>=31&&!exact){AlarmScheduler.rememberPendingExactRequest(this,messageId);
+    new AlertDialog.Builder(this).setTitle("إذن المنبّه الدقيق").setMessage("لم يُمنح إذن المنبّه الدقيق. ستعمل الرسالة الآن بموعد تقريبي. يمكنك فتح إعدادات الإذن لتحسين دقة الموعد.")
+     .setPositiveButton("فتح إعدادات المنبّه الدقيق",(dialog,which)->{try{startActivity(new Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,android.net.Uri.parse("package:"+getPackageName())));}catch(Exception e){AlarmScheduler.clearPendingExactRequest(this);Toast.makeText(this,"تعذّر فتح إعدادات الإذن؛ ستبقى الجدولة تقريبية",Toast.LENGTH_LONG).show();}})
+     .setNegativeButton("استخدام موعد تقريبي",(dialog,which)->{AlarmScheduler.clearPendingExactRequest(this);Toast.makeText(this,"تمت الجدولة بموعد تقريبي",Toast.LENGTH_LONG).show();})
+     .setOnCancelListener(dialog->{AlarmScheduler.clearPendingExactRequest(this);Toast.makeText(this,"تمت الجدولة بموعد تقريبي",Toast.LENGTH_LONG).show();}).show();
+   }else Toast.makeText(this,"تمت جدولة الرسالة بالمنبّه الدقيق",Toast.LENGTH_LONG).show();render();
+  }).show();
+ }
+ void scheduledScreen(){list.addView(tv("الرسائل المجدولة",22));list.addView(tv("راجع الرسائل التي تنتظر الإرسال أو ألغِ جدولتها قبل موعدها.",14));android.database.Cursor c=db.listSchedules();int n=0;while(c.moveToNext()){long id=c.getLong(c.getColumnIndexOrThrow("id"));String a=c.getString(c.getColumnIndexOrThrow("address"));String body=c.getString(c.getColumnIndexOrThrow("body"));long at=c.getLong(c.getColumnIndexOrThrow("at"));LinearLayout card=new LinearLayout(this);card.setOrientation(LinearLayout.VERTICAL);styleScreenCard(card);card.addView(tv("إلى: "+a,16));card.addView(tv(body,16));card.addView(tv("الموعد: "+new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm",Locale.getDefault()).format(new Date(at)),13));Button cancel=button("إلغاء الجدولة");cancel.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("إلغاء الرسالة المجدولة").setMessage("لن تُرسل هذه الرسالة في الموعد المحدد.").setNegativeButton("العودة",null).setPositiveButton("إلغاء الجدولة",(d,w)->{if(db.cancelSchedule(id)){AlarmScheduler.cancel(this,id,a,body);render();Toast.makeText(this,"تم إلغاء الجدولة",Toast.LENGTH_SHORT).show();}else Toast.makeText(this,"تم تنفيذ الرسالة أو إلغاء جدولتها بالفعل",Toast.LENGTH_LONG).show();}).show());card.addView(cancel);list.addView(card);View line=new View(this);line.setBackgroundColor(UiResources.color(MainActivity.this,R.color.divider));list.addView(line,new LinearLayout.LayoutParams(-1,1));n++;}c.close();if(n==0)list.addView(tv("لا توجد رسائل مجدولة حاليًا.",16));}
+ void bulkScreen(){list.addView(tv("الرسائل الجماعية",22));list.addView(tv("اكتب رقمًا في كل سطر، ويمكن إضافة الاسم بعد فاصلة: 777123456, أحمد. استخدم {name} داخل نص الرسالة للتخصيص.",14));Button imp=button("استيراد ملف نصي أو CSV");imp.setOnClickListener(v->importFile());list.addView(imp);Button contacts=button("اختيار من جهات الاتصال · بحث وتحديد الكل");contacts.setOnClickListener(v->pickContactsForBulk());list.addView(contacts);bulkNumbers=new EditText(this);bulkNumbers.setHint("الرقم أو الرقم, الاسم — سطر لكل مستلم");bulkNumbers.setMinLines(5);bulkNumbers.setGravity(Gravity.TOP);list.addView(bulkNumbers);bulkBody=new EditText(this);bulkBody.setHint("نص الرسالة. مثال: مرحبًا {name}");bulkBody.setMinLines(4);bulkBody.setGravity(Gravity.TOP);list.addView(bulkBody);Button send=button("مراجعة ثم إرسال");send.setOnClickListener(v->confirmBulk());list.addView(send);}
+ void pickContactsForBulk(){
+   ArrayList<String[]> all=new ArrayList<>();
+   if(checkSelfPermission("android.permission.READ_CONTACTS")!=PackageManager.PERMISSION_GRANTED){
+    android.database.Cursor known=null;
+    try{known=db.listThreads("all");while(known.moveToNext()){String number=known.getString(known.getColumnIndexOrThrow("address"));if(number!=null&&!number.trim().isEmpty())all.add(new String[]{"",number.trim()});}}
+    catch(Exception e){android.util.Log.w("HashemSMS","Unable to load known conversation numbers for bulk picker",e);}
+    finally{if(known!=null)try{known.close();}catch(Exception ignored){}}
+    if(all.isEmpty()){Toast.makeText(this,"إذن جهات الاتصال غير ممنوح ولا توجد أرقام محادثات محفوظة. يمكنك إدخال الأرقام يدويًا.",Toast.LENGTH_LONG).show();return;}
+    Toast.makeText(this,"إذن جهات الاتصال غير ممنوح؛ يعرض المنتقي أرقام المحادثات المحفوظة فقط.",Toast.LENGTH_LONG).show();
+   }else{
+    android.database.Cursor c=null;
+    try{c=getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,new String[]{ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,ContactsContract.CommonDataKinds.Phone.NUMBER},null,null,ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME+" COLLATE NOCASE ASC");if(c!=null)while(c.moveToNext()){String name=c.getString(0),number=c.getString(1);if(number==null)continue;number=number.trim();if(number.isEmpty())continue;all.add(new String[]{name==null?"":name,number});}}
+    catch(Exception e){android.util.Log.e("HashemSMS","Unable to read contacts for bulk picker",e);Toast.makeText(this,"تعذّر قراءة جهات الاتصال. تحقق من الإذن.",Toast.LENGTH_LONG).show();return;}
+    finally{if(c!=null)try{c.close();}catch(Exception ignored){}}
+   }
+   if(all.isEmpty()){Toast.makeText(this,"لا توجد أرقام في جهات الاتصال.",Toast.LENGTH_LONG).show();return;}
+   LinkedHashMap<String,String[]> selected=new LinkedHashMap<>();
+   LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(4,4,4,4);
+   EditText query=new EditText(this);query.setSingleLine(true);query.setHint("ابحث باسم أو جزء من الرقم");panel.addView(query,new LinearLayout.LayoutParams(-1,-2));
+   TextView count=tv("المحدد: 0",14);panel.addView(count);
+   LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.HORIZONTAL);
+   Button selectAll=button("تحديد كل النتائج");Button clear=button("إلغاء التحديد");
+   actions.addView(selectAll,new LinearLayout.LayoutParams(0,-2,1));actions.addView(clear,new LinearLayout.LayoutParams(0,-2,1));panel.addView(actions);
+   LinearLayout rows=new LinearLayout(this);rows.setOrientation(LinearLayout.VERTICAL);ScrollView scroll=new ScrollView(this);scroll.setFillViewport(false);scroll.addView(rows);int pickerHeight=(int)(getResources().getDisplayMetrics().density*360);panel.addView(scroll,new LinearLayout.LayoutParams(-1,pickerHeight));
+   final String[] currentQuery={""};
+   Runnable refresh=()->{
+    rows.removeAllViews();currentQuery[0]=query.getText().toString().trim().toLowerCase(Locale.ROOT);int shown=0;
+    for(String[] person:all){String name=person[0],number=person[1];if(!currentQuery[0].isEmpty()&&!name.toLowerCase(Locale.ROOT).contains(currentQuery[0])&&!number.toLowerCase(Locale.ROOT).contains(currentQuery[0]))continue;
+     String key=number.replaceAll("[\\s()\\-]","");CheckBox cb=new CheckBox(this);cb.setText((name.isEmpty()?number:name+"  ·  "+number));cb.setTextSize(14);cb.setPadding(8,5,8,5);cb.setChecked(selected.containsKey(key));cb.setOnCheckedChangeListener((v,checked)->{if(checked)selected.put(key,new String[]{name,key});else selected.remove(key);count.setText("المحدد: "+selected.size());});rows.addView(cb);View line=new View(this);line.setBackgroundColor(UiResources.color(MainActivity.this,R.color.divider));rows.addView(line,new LinearLayout.LayoutParams(-1,1));shown++;
+    }
+    if(shown==0)rows.addView(tv("لا توجد نتائج مطابقة",15));count.setText("المحدد: "+selected.size()+" · النتائج الظاهرة: "+shown);
+   };
+   query.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int st,int c,int a){}public void onTextChanged(CharSequence s,int st,int before,int count){refresh.run();}public void afterTextChanged(android.text.Editable e){}});
+   selectAll.setOnClickListener(v->{String q=currentQuery[0];for(String[] person:all){String name=person[0],number=person[1];if(!q.isEmpty()&&!name.toLowerCase(Locale.ROOT).contains(q)&&!number.toLowerCase(Locale.ROOT).contains(q))continue;String key=number.replaceAll("[\\s()\\-]","");selected.put(key,new String[]{name,key});}refresh.run();});
+   clear.setOnClickListener(v->{selected.clear();refresh.run();});
+   refresh.run();
+   AlertDialog dialog=new AlertDialog.Builder(this).setTitle("اختيار المستلمين").setView(panel).setNegativeButton("إلغاء",null).setPositiveButton("إضافة المحددين",null).create();
+   dialog.setOnShowListener(v->{dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(btn->{if(selected.isEmpty()){Toast.makeText(this,"حدد مستلمًا واحدًا على الأقل",Toast.LENGTH_SHORT).show();return;}StringBuilder text=new StringBuilder(bulkNumbers==null?"":bulkNumbers.getText().toString().trim());for(String[] person:selected.values()){String number=person[1];if(bulkContainsNumber(text.toString(),number))continue;if(text.length()>0)text.append('\n');text.append(number);if(!person[0].trim().isEmpty())text.append(", ").append(person[0].trim());}if(bulkNumbers!=null)bulkNumbers.setText(text.toString());Toast.makeText(this,"أُضيف "+selected.size()+" جهة محددة إلى القائمة؛ راجع التكرار قبل الإرسال.",Toast.LENGTH_LONG).show();dialog.dismiss();});});
+   dialog.show();
+  }
+  boolean bulkContainsNumber(String current,String number){String target=number.replaceAll("[\\s()\\-]","");for(String line:current.split("\\r?\\n")){String first=line.trim().split(",",2)[0].replaceAll("[\\s()\\-]","");if(first.equals(target))return true;}return false;}
+ void confirmBulk(){
+  String raw=bulkNumbers.getText().toString().trim(),body=bulkBody.getText().toString().trim();if(raw.isEmpty()||body.isEmpty()){Toast.makeText(this,"أدخل المستلمين ونص الرسالة أولًا",Toast.LENGTH_SHORT).show();return;}
+  ArrayList<String[]> recipients=new ArrayList<>();HashSet<String> seenNumbers=new HashSet<>();int invalid=0;boolean firstLine=true;
+  for(String line:raw.split("\\r?\\n")){String[] p=line.trim().split(",",2);String number=p[0].trim();if(firstLine&&(number.toLowerCase(Locale.ROOT).contains("phone")||number.toLowerCase(Locale.ROOT).contains("number")||number.contains("رقم"))){firstLine=false;continue;}firstLine=false;if(number.isEmpty())continue;number=number.replaceAll("[\\s()\\-]","");if(!number.matches("\\+?[0-9]{5,20}")){invalid++;continue;}String name=p.length>1?p[1].trim():"";if(seenNumbers.add(number))recipients.add(new String[]{number,name});}
+  if(recipients.isEmpty()){Toast.makeText(this,"لم يتم العثور على أرقام صالحة؛ استخدم رقمًا واحدًا في كل سطر.",Toast.LENGTH_LONG).show();return;}
+  final int invalidCount=invalid;new AlertDialog.Builder(this).setTitle("تأكيد الرسائل الجماعية").setMessage("سيتم إرسال "+recipients.size()+" رسالة نصية"+(invalidCount>0?"، وسيتم تجاهل "+invalidCount+" سطر غير صالح":"")+". قد تُحتسب رسوم من شركة الاتصالات. أرسل فقط لمن وافقوا على تلقي الرسائل.")
+  .setNegativeButton("مراجعة",null).setPositiveButton("إرسال",(dialog,which)->chooseSmsSubscription(new SubscriptionChoiceCallback(){public void onSelected(int subId){Toast.makeText(MainActivity.this,"بدأت معالجة قائمة الإرسال في الخلفية؛ ستُحدَّث حالة كل مستلم على حدة.",Toast.LENGTH_LONG).show();android.content.Context appContext=getApplicationContext();Db appDb=new Db(appContext);SmsSending.enqueueBulkSend(appContext,appDb,recipients,body,subId);}public void onCancelled(){}})).show();
+ }
+ void groupsScreen(){list.addView(tv("مجموعات المستلمين",22));list.addView(tv("احفظ أسماء المجموعات وأرقام أعضائها، ثم حمّل المجموعة إلى شاشة الرسائل الجماعية.",14));Button add=button("إنشاء مجموعة");add.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_add,0,0,0);add.setCompoundDrawablePadding(UiResources.dp(MainActivity.this,6));add.setOnClickListener(v->createGroupDialog());list.addView(add);android.database.Cursor c=db.listGroups();int n=0;while(c.moveToNext()){long gid=c.getLong(c.getColumnIndexOrThrow("id"));String name=c.getString(c.getColumnIndexOrThrow("name"));android.database.Cursor members=db.groupMembers(gid);int count=members.getCount();members.close();LinearLayout card=new LinearLayout(this);card.setOrientation(LinearLayout.VERTICAL);styleScreenCard(card);card.addView(tv(name,18));card.addView(tv(count+" مستلم",13));Button use=button("استخدام في الرسائل الجماعية");use.setOnClickListener(v->{android.database.Cursor m=db.groupMembers(gid);StringBuilder numbers=new StringBuilder();while(m.moveToNext()){if(numbers.length()>0)numbers.append('\n');numbers.append(m.getString(m.getColumnIndexOrThrow("address")));String person=m.getString(m.getColumnIndexOrThrow("name"));if(person!=null&&!person.trim().isEmpty())numbers.append(", ").append(person);}m.close();filter="bulk";render();bulkNumbers.setText(numbers.toString());});card.addView(use);Button addMembers=button("إضافة مستلمين");addMembers.setOnClickListener(v->addGroupMembersDialog(gid));card.addView(addMembers);Button delete=button("حذف المجموعة");delete.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("حذف المجموعة").setMessage("سيتم حذف المجموعة وأعضائها المحفوظين، ولن تُحذف الرسائل السابقة.").setNegativeButton("إلغاء",null).setPositiveButton("حذف",(dlg,which)->{db.deleteGroup(gid);render();}).show());card.addView(delete);list.addView(card);View line=new View(this);line.setBackgroundColor(UiResources.color(MainActivity.this,R.color.divider));list.addView(line,new LinearLayout.LayoutParams(-1,1));n++;}c.close();if(n==0)list.addView(tv("لم تنشئ أي مجموعة بعد.",16));}
+ void createGroupDialog(){LinearLayout p=new LinearLayout(this);p.setOrientation(LinearLayout.VERTICAL);EditText name=new EditText(this);name.setHint("اسم المجموعة، مثل العائلة أو العمل");EditText members=new EditText(this);members.setHint("رقم الهاتف, الاسم — مستلم في كل سطر");members.setMinLines(5);members.setGravity(Gravity.TOP);p.addView(name);p.addView(members);new AlertDialog.Builder(this).setTitle("إنشاء مجموعة").setView(p).setNegativeButton("إلغاء",null).setPositiveButton("حفظ", (d,w)->{String groupName=name.getText().toString().trim(),raw=members.getText().toString().trim();if(groupName.isEmpty()||raw.isEmpty()){Toast.makeText(this,"أدخل اسم المجموعة ومستلمًا واحدًا على الأقل",Toast.LENGTH_LONG).show();return;}long gid=db.createGroup(groupName);if(gid<0){Toast.makeText(this,"تعذر حفظ المجموعة؛ قد يكون الاسم مستخدمًا من قبل",Toast.LENGTH_LONG).show();return;}int added=0;for(String line:raw.split("\\r?\\n")){String[] part=line.trim().split(",",2);String number=part[0].trim();if(number.isEmpty())continue;db.addGroupMember(gid,number,part.length>1?part[1]:"");added++;}Toast.makeText(this,"تم حفظ المجموعة: "+added+" مستلم",Toast.LENGTH_LONG).show();render();}).show();}
+ void addGroupMembersDialog(long gid){LinearLayout p=new LinearLayout(this);p.setOrientation(LinearLayout.VERTICAL);EditText members=new EditText(this);members.setHint("رقم الهاتف, الاسم — مستلم في كل سطر");members.setMinLines(5);members.setGravity(Gravity.TOP);p.addView(members);new AlertDialog.Builder(this).setTitle("إضافة مستلمين للمجموعة").setView(p).setNegativeButton("إلغاء",null).setPositiveButton("حفظ",(dlg,which)->{int added=0,invalid=0;for(String line:members.getText().toString().split("\\r?\\n")){String[] part=line.trim().split(",",2);String number=part[0].trim().replaceAll("[\\s()\\-]","");if(number.isEmpty())continue;if(!number.matches("\\+?[0-9]{5,20}")){invalid++;continue;}db.addGroupMember(gid,number,part.length>1?part[1]:"");added++;}String message="تم حفظ "+added+" مستلم";if(invalid>0)message+="؛ تم تجاهل "+invalid+" رقم غير صالح";Toast.makeText(this,message,Toast.LENGTH_LONG).show();render();}).show();}void importFile(){Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.setType("*/*");i.addCategory(Intent.CATEGORY_OPENABLE);startActivityForResult(i,44);}
+ protected void onActivityResult(int r,int c,Intent d){super.onActivityResult(r,c,d);if(r==44&&c==RESULT_OK&&d!=null){try{InputStream in=getContentResolver().openInputStream(d.getData());BufferedReader br=new BufferedReader(new InputStreamReader(in));StringBuilder s=new StringBuilder();String line;while((line=br.readLine())!=null)s.append(line).append('\n');br.close();if(bulkNumbers!=null)bulkNumbers.setText(s.toString());Toast.makeText(this,"تم تحميل محتوى الملف إلى قائمة المستلمين؛ راجعه قبل الإرسال.",Toast.LENGTH_LONG).show();}catch(Exception e){Toast.makeText(this,"تعذّر قراءة الملف: "+e.getMessage(),Toast.LENGTH_LONG).show();}}}
+
+ LinearLayout createContactAvatar(String number,String name){int size=(int)(getResources().getDisplayMetrics().density*52);LinearLayout holder=new LinearLayout(this);holder.setGravity(Gravity.CENTER);FrameLayout avatar=new FrameLayout(this);avatar.setBackground(rounded(UiResources.color(MainActivity.this,R.color.avatar_container),0,size/2));avatar.setClipToOutline(true);ImageView image=new ImageView(this);image.setScaleType(ImageView.ScaleType.CENTER_CROP);image.setTag(number);TextView fallback=new TextView(this);fallback.setGravity(Gravity.CENTER);String label=name==null||name.trim().isEmpty()?number:name.trim();fallback.setText(label.isEmpty()?"?":label.substring(0,1));fallback.setTextSize(18);fallback.setTypeface(Typeface.DEFAULT,Typeface.BOLD);fallback.setTextColor(UiResources.color(MainActivity.this,R.color.primary_variant));fallback.setMaxLines(1);fallback.setEllipsize(android.text.TextUtils.TruncateAt.END);avatar.addView(image,new FrameLayout.LayoutParams(-1,-1));avatar.addView(fallback,new FrameLayout.LayoutParams(-1,-1));android.graphics.Bitmap cached=contactBitmapCache.get(number);if(cached!=null){image.setImageBitmap(cached);image.setVisibility(View.VISIBLE);fallback.setVisibility(View.GONE);}else{image.setVisibility(View.GONE);ContactData data;synchronized(contactCache){data=contactCache.get(number);}if(data!=null&&data.photoUri!=null)loadContactPhotoAsync(number,data.photoUri,image,fallback);}holder.addView(avatar,new LinearLayout.LayoutParams(size,size));return holder;}
+
+ String contactName(String number){synchronized(contactCache){ContactData cached=contactCache.get(number);if(cached!=null)return cached.name;}synchronized(contactLookupPending){if(contactLookupPending.add(number)){DATA_EXECUTOR.execute(()->{loadContactData(number);synchronized(contactLookupPending){contactLookupPending.remove(number);}if(!isFinishing()&&!isDestroyed()){contactRefreshHandler.removeCallbacks(contactRefreshRunnable);contactRefreshHandler.postDelayed(contactRefreshRunnable,500);}});}}return "";}
+
+ boolean requestContactsPermissionAtStartupOnce(){if(checkSelfPermission("android.permission.READ_CONTACTS")==PackageManager.PERMISSION_GRANTED)return false;android.content.SharedPreferences prefs=getSharedPreferences("runtime_permissions",MODE_PRIVATE);if(prefs.getBoolean("contacts_auto_request_done",false))return false;if(prefs.getBoolean("contacts_permission_explained",false)){prefs.edit().putBoolean("contacts_auto_request_done",true).apply();return false;}prefs.edit().putBoolean("contacts_auto_request_done",true).putBoolean("contacts_permission_explained",true).apply();new AlertDialog.Builder(this).setTitle("السماح بجهات الاتصال").setMessage("يُستخدم هذا الإذن لعرض أسماء جهات الاتصال وصورها في القوائم ومنتقي الإرسال. عند رفضه ستظل الأرقام ظاهرة، ويمكنك منح الإذن لاحقًا من تبويب جهات الاتصال.").setNegativeButton("ليس الآن",(d,w)->requestNotificationPermissionIfNeeded()).setPositiveButton("متابعة",(d,w)->requestContactsPermission()).show();return true;}
+ void requestPermissionsIfNeeded(){ArrayList<String> needed=new ArrayList<>();String[] base={"android.permission.SEND_SMS","android.permission.RECEIVE_SMS","android.permission.READ_SMS"};for(String p:base)if(checkSelfPermission(p)!=PackageManager.PERMISSION_GRANTED)needed.add(p);if(!needed.isEmpty()){basePermissionRequestPending=true;requestPermissions(needed.toArray(new String[0]),5);return;}if(!requestContactsPermissionAtStartupOnce())requestNotificationPermissionIfNeeded();}
+ void requestNotificationPermissionIfNeeded(){if(basePermissionRequestPending||Build.VERSION.SDK_INT<33||!getPackageName().equals(Telephony.Sms.getDefaultSmsPackage(this)))return;String permission="android.permission.POST_NOTIFICATIONS";if(checkSelfPermission(permission)==PackageManager.PERMISSION_GRANTED){getSharedPreferences("runtime_permissions",MODE_PRIVATE).edit().putBoolean("post_notifications_requested",true).apply();return;}android.content.SharedPreferences prefs=getSharedPreferences("runtime_permissions",MODE_PRIVATE);if(prefs.getBoolean("post_notifications_requested",false))return;prefs.edit().putBoolean("post_notifications_requested",true).apply();requestPermissions(new String[]{permission},70);}
+ void requestDefault(){if(Build.VERSION.SDK_INT>=29){RoleManager rm=(RoleManager)getSystemService(ROLE_SERVICE);if(rm!=null&&rm.isRoleAvailable(RoleManager.ROLE_SMS)&&!rm.isRoleHeld(RoleManager.ROLE_SMS))startActivityForResult(rm.createRequestRoleIntent(RoleManager.ROLE_SMS),99);}else{Intent i=new Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT);i.putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME,getPackageName());startActivity(i);}}
+ static class CursorWrapper{android.database.Cursor c;CursorWrapper(android.database.Cursor x){c=x;}boolean moveToNext(){return c.moveToNext();}String getString(String col){return c.getString(c.getColumnIndexOrThrow(col));}void close(){c.close();}}
+
+}
