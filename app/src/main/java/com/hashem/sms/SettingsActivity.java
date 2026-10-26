@@ -436,6 +436,7 @@ public final class SettingsActivity extends AppCompatActivity {
             version = info.versionName == null ? "—" : info.versionName;
         } catch (PackageManager.NameNotFoundException ignored) {}
         String message = getString(R.string.settings_about_version, version) + "\n"
+                + "رقم النسخة البرمجية: " + BuildConfig.GIT_COMMIT + "\n"
                 + getString(R.string.settings_about_package, getPackageName());
         new androidx.appcompat.app.AlertDialog.Builder(this).setTitle(R.string.settings_about)
                 .setMessage(message).setPositiveButton(android.R.string.ok, null).show();
