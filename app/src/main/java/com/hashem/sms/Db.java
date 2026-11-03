@@ -2,7 +2,7 @@ package com.hashem.sms;
 import android.content.*;import android.database.sqlite.*;import android.database.*;import android.net.Uri;import android.provider.Telephony;import android.util.Log;import java.util.*;import java.util.concurrent.locks.ReentrantLock;
 public class Db extends SQLiteOpenHelper{
  public static final ReentrantLock PROVIDER_SYNC_LOCK = new ReentrantLock();
- public Db(Context c){super(c,"hashem.db",null,9);} 
+ public Db(Context c){super(c,"hashem.db",null,10);} 
  public void onCreate(SQLiteDatabase d){
   d.execSQL("CREATE TABLE messages(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,type TEXT,status TEXT,ts INTEGER,provider_id INTEGER,read INTEGER DEFAULT 0,star INTEGER DEFAULT 0,trash INTEGER NOT NULL DEFAULT 0)");
   d.execSQL("CREATE TABLE groups(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE)");
@@ -10,7 +10,7 @@ public class Db extends SQLiteOpenHelper{
   d.execSQL("CREATE TABLE schedules(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,at INTEGER)");
   d.execSQL("CREATE TABLE forward_rules(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL UNIQUE,destination TEXT NOT NULL)");
   d.execSQL("CREATE TABLE conversation_flags(address TEXT PRIMARY KEY,archived INTEGER NOT NULL DEFAULT 0,blocked INTEGER NOT NULL DEFAULT 0)");
-  createPerformanceIndexes(d);d.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_provider_id ON messages(provider_id)");
+  createPerformanceIndexes(d);d.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_provider_id ON messages(provider_id)");createMmsAttachmentsTable(d);
  }
  private boolean hasColumn(SQLiteDatabase d,String table,String column){Cursor c=null;try{c=d.rawQuery("PRAGMA table_info("+table+")",null);while(c.moveToNext())if(column.equalsIgnoreCase(c.getString(c.getColumnIndexOrThrow("name"))))return true;return false;}finally{if(c!=null)c.close();}}
  private void createPerformanceIndexes(SQLiteDatabase d){d.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_address_ts ON messages(address,ts DESC)");d.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_trash_type_ts ON messages(trash,type,ts DESC)");d.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_type_read_trash_address ON messages(type,read,trash,address)");d.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_star_ts ON messages(star,ts DESC)");}
@@ -22,7 +22,21 @@ public class Db extends SQLiteOpenHelper{
   if(oldVersion<6)createPerformanceIndexes(d);
   if(oldVersion<7&&!hasColumn(d,"messages","provider_id"))d.execSQL("ALTER TABLE messages ADD COLUMN provider_id INTEGER");
   if(oldVersion<9)rebuildMessagesWithoutThread(d);
+  if(oldVersion<10)createMmsAttachmentsTable(d);
  }
+ private void createMmsAttachmentsTable(SQLiteDatabase d){
+  d.execSQL("CREATE TABLE IF NOT EXISTS message_attachments(id INTEGER PRIMARY KEY AUTOINCREMENT,message_id INTEGER NOT NULL,local_path TEXT NOT NULL,content_type TEXT NOT NULL,size_bytes INTEGER NOT NULL,transaction_id TEXT NOT NULL,FOREIGN KEY(message_id) REFERENCES messages(id) ON DELETE CASCADE)");
+  d.execSQL("CREATE INDEX IF NOT EXISTS idx_message_attachments_message_id ON message_attachments(message_id)");
+ }
+ public long addMmsAttachment(long messageId,String localPath,String contentType,long sizeBytes,String transactionId){
+  if(messageId<=0||localPath==null||localPath.trim().isEmpty()||(!"image/jpeg".equals(contentType)&&!"image/png".equals(contentType))||sizeBytes<=0||transactionId==null||transactionId.trim().isEmpty())throw new IllegalArgumentException("Invalid MMS attachment metadata");
+  ContentValues row=new ContentValues();row.put("message_id",messageId);row.put("local_path",localPath);row.put("content_type",contentType);row.put("size_bytes",sizeBytes);row.put("transaction_id",transactionId);
+  return getWritableDatabase().insertOrThrow("message_attachments",null,row);
+ }
+ public Cursor mmsAttachments(long messageId){
+  return getReadableDatabase().query("message_attachments",new String[]{"id","message_id","local_path","content_type","size_bytes","transaction_id"},"message_id=?",new String[]{String.valueOf(messageId)},null,null,"id ASC");
+ }
+ public void deleteMmsAttachments(long messageId){getWritableDatabase().delete("message_attachments","message_id=?",new String[]{String.valueOf(messageId)});}
  private void rebuildMessagesWithoutThread(SQLiteDatabase d){
   java.util.ArrayList<String> indexes=new java.util.ArrayList<>();Cursor ix=null;
   try{ix=d.rawQuery("SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name='messages' AND sql IS NOT NULL",null);while(ix.moveToNext()){String sql=ix.getString(0);if(sql!=null&&!sql.toLowerCase(java.util.Locale.ROOT).contains("thread"))indexes.add(sql);}}

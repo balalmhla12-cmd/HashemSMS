@@ -24,9 +24,13 @@ import java.util.Set;
 public class DbMigrationTest {
     private Context context;
 
-    private static final String[] V9_COLUMNS = {
+    private static final String[] V10_COLUMNS = {
             "id", "address", "body", "type", "status", "ts",
             "provider_id", "read", "star", "trash"
+    };
+
+    private static final String[] V10_ATTACHMENT_COLUMNS = {
+            "id", "message_id", "local_path", "content_type", "size_bytes", "transaction_id"
     };
 
     private static final String[] REQUIRED_INDEXES = {
@@ -36,6 +40,7 @@ public class DbMigrationTest {
             "idx_messages_star_ts",
             "idx_messages_provider_id"
     };
+    private static final String ATTACHMENT_INDEX = "idx_message_attachments_message_id";
 
     @Before
     public void setUp() {
@@ -49,7 +54,7 @@ public class DbMigrationTest {
         Db db = new Db(context);
         SQLiteDatabase upgraded = db.getWritableDatabase();
 
-        assertEquals(9, upgraded.getVersion());
+        assertEquals(10, upgraded.getVersion());
         assertEquals(5, countRows(upgraded, "messages"));
         assertArrayEquals(new long[]{101, 102, 103, 104, 105}, messageIds(upgraded));
         assertEquals(987L, providerId(upgraded, 101));
@@ -58,7 +63,10 @@ public class DbMigrationTest {
         assertEquals(-1L, providerId(upgraded, 104));
         assertEquals(321L, providerId(upgraded, 105));
 
-        assertArrayEquals(V9_COLUMNS, columns(upgraded, "messages"));
+        assertArrayEquals(V10_COLUMNS, columns(upgraded, "messages"));
+        assertArrayEquals(V10_ATTACHMENT_COLUMNS, columns(upgraded, "message_attachments"));
+        assertEquals(0, countRows(upgraded, "message_attachments"));
+        assertAttachmentIndex(upgraded);
         assertFalse(Arrays.asList(columns(upgraded, "messages")).contains("thread"));
 
         assertMessage(upgraded, 101, "incoming body", "in", "received", 0, 0, 0);
@@ -85,8 +93,10 @@ public class DbMigrationTest {
         Db db = new Db(context);
         SQLiteDatabase fresh = db.getWritableDatabase();
 
-        assertEquals(9, fresh.getVersion());
-        assertArrayEquals(V9_COLUMNS, columns(fresh, "messages"));
+        assertEquals(10, fresh.getVersion());
+        assertArrayEquals(V10_COLUMNS, columns(fresh, "messages"));
+        assertArrayEquals(V10_ATTACHMENT_COLUMNS, columns(fresh, "message_attachments"));
+        assertAttachmentIndex(fresh);
         assertFalse(Arrays.asList(columns(fresh, "messages")).contains("thread"));
         assertRequiredIndexes(fresh);
         db.close();
@@ -102,7 +112,7 @@ public class DbMigrationTest {
 
         Db second = new Db(context);
         SQLiteDatabase reopened = second.getWritableDatabase();
-        assertEquals(9, reopened.getVersion());
+        assertEquals(10, reopened.getVersion());
         assertEquals(5, countRows(reopened, "messages"));
         assertArrayEquals(new long[]{101, 102, 103, 104, 105}, messageIds(reopened));
         assertEquals(987L, providerId(reopened, 101));
@@ -111,6 +121,39 @@ public class DbMigrationTest {
         assertEquals(1, countRows(reopened, "schedules"));
         assertRequiredIndexes(reopened);
         second.close();
+    }
+
+    @Test
+    public void upgradesVersion9WithoutLosingMessagesAndCreatesAttachmentStorage() {
+        SQLiteDatabase old = context.openOrCreateDatabase("hashem.db", Context.MODE_PRIVATE, null);
+        old.execSQL("CREATE TABLE messages(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,type TEXT,status TEXT,ts INTEGER,provider_id INTEGER,read INTEGER DEFAULT 0,star INTEGER DEFAULT 0,trash INTEGER NOT NULL DEFAULT 0)");
+        old.execSQL("CREATE TABLE groups(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE)");
+        old.execSQL("CREATE TABLE group_members(gid INTEGER,address TEXT,name TEXT,PRIMARY KEY(gid,address))");
+        old.execSQL("CREATE TABLE schedules(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,at INTEGER)");
+        old.execSQL("CREATE TABLE forward_rules(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL UNIQUE,destination TEXT NOT NULL)");
+        old.execSQL("CREATE TABLE conversation_flags(address TEXT PRIMARY KEY,archived INTEGER NOT NULL DEFAULT 0,blocked INTEGER NOT NULL DEFAULT 0)");
+        old.execSQL("INSERT INTO messages(id,address,body,type,status,ts,provider_id,read,star,trash) VALUES(77,'+967700','legacy MMS row','out','sent',123,456,1,1,0)");
+        old.setVersion(9);
+        old.close();
+
+        Db db = new Db(context);
+        SQLiteDatabase upgraded = db.getWritableDatabase();
+        assertEquals(10, upgraded.getVersion());
+        assertEquals(1, countRows(upgraded, "messages"));
+        assertMessage(upgraded, 77, "legacy MMS row", "out", "sent", 1, 1, 0);
+        assertEquals(456L, providerId(upgraded, 77));
+        assertEquals(0, countRows(upgraded, "message_attachments"));
+        long attachmentId = db.addMmsAttachment(77, "/cache/IMG-1.jpg", "image/jpeg", 2048L, "tx-77");
+        assertTrue(attachmentId > 0);
+        try (Cursor attachment = db.mmsAttachments(77)) {
+            assertTrue(attachment.moveToFirst());
+            assertEquals("/cache/IMG-1.jpg", attachment.getString(2));
+            assertEquals("image/jpeg", attachment.getString(3));
+            assertEquals(2048L, attachment.getLong(4));
+            assertEquals("tx-77", attachment.getString(5));
+        }
+        assertAttachmentIndex(upgraded);
+        db.close();
     }
 
     private void createVersion6Database() {
@@ -187,6 +230,14 @@ public class DbMigrationTest {
             while (c.moveToNext()) names.add(c.getString(c.getColumnIndexOrThrow("name")));
         }
         return names.toArray(new String[0]);
+    }
+
+    private static void assertAttachmentIndex(SQLiteDatabase db) {
+        try (Cursor c = db.rawQuery("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='message_attachments'", null)) {
+            boolean found = false;
+            while (c.moveToNext()) if (ATTACHMENT_INDEX.equals(c.getString(0))) found = true;
+            assertTrue("missing index " + ATTACHMENT_INDEX, found);
+        }
     }
 
     private static void assertRequiredIndexes(SQLiteDatabase db) {
