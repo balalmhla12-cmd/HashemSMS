@@ -1,8 +1,9 @@
 package com.hashem.sms;
-import android.content.*;import android.database.sqlite.*;import android.database.*;import android.net.Uri;import android.provider.Telephony;import android.util.Log;import java.util.*;import java.util.concurrent.locks.ReentrantLock;
+import android.content.*;import android.database.sqlite.*;import android.database.*;import android.net.Uri;import java.io.File;import android.provider.Telephony;import android.util.Log;import java.util.*;import java.util.concurrent.locks.ReentrantLock;
 public class Db extends SQLiteOpenHelper{
  public static final ReentrantLock PROVIDER_SYNC_LOCK = new ReentrantLock();
  public Db(Context c){super(c,"hashem.db",null,10);} 
+ @Override public void onConfigure(SQLiteDatabase d){super.onConfigure(d);d.setForeignKeyConstraintsEnabled(true);}
  public void onCreate(SQLiteDatabase d){
   d.execSQL("CREATE TABLE messages(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,type TEXT,status TEXT,ts INTEGER,provider_id INTEGER,read INTEGER DEFAULT 0,star INTEGER DEFAULT 0,trash INTEGER NOT NULL DEFAULT 0)");
   d.execSQL("CREATE TABLE groups(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE)");
@@ -36,7 +37,16 @@ public class Db extends SQLiteOpenHelper{
  public Cursor mmsAttachments(long messageId){
   return getReadableDatabase().query("message_attachments",new String[]{"id","message_id","local_path","content_type","size_bytes","transaction_id"},"message_id=?",new String[]{String.valueOf(messageId)},null,null,"id ASC");
  }
- public void deleteMmsAttachments(long messageId){getWritableDatabase().delete("message_attachments","message_id=?",new String[]{String.valueOf(messageId)});}
+ public void deleteMmsAttachments(long messageId){
+  SQLiteDatabase d=getWritableDatabase();ArrayList<String> paths=new ArrayList<>();Cursor c=null;
+  try{c=d.query("message_attachments",new String[]{"local_path"},"message_id=?",new String[]{String.valueOf(messageId)},null,null,null);while(c.moveToNext())paths.add(c.getString(0));}
+  finally{if(c!=null)c.close();}
+  d.beginTransaction();try{d.delete("message_attachments","message_id=?",new String[]{String.valueOf(messageId)});d.setTransactionSuccessful();}finally{d.endTransaction();}
+  deleteLocalAttachmentFiles(paths);
+ }
+ private void deleteLocalAttachmentFiles(ArrayList<String> paths){
+  for(String path:paths){if(path==null||path.trim().isEmpty())continue;try{File file=new File(path);if(file.exists()&&!file.delete())Log.w("HashemSMS","Unable to delete local MMS attachment: "+path);}catch(SecurityException e){Log.w("HashemSMS","Unable to delete local MMS attachment: "+path,e);}}
+ }
  private void rebuildMessagesWithoutThread(SQLiteDatabase d){
   java.util.ArrayList<String> indexes=new java.util.ArrayList<>();Cursor ix=null;
   try{ix=d.rawQuery("SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name='messages' AND sql IS NOT NULL",null);while(ix.moveToNext()){String sql=ix.getString(0);if(sql!=null&&!sql.toLowerCase(java.util.Locale.ROOT).contains("thread"))indexes.add(sql);}}
@@ -107,7 +117,13 @@ public class Db extends SQLiteOpenHelper{
  public void deleteThread(String address){ContentValues v=new ContentValues();v.put("trash",1);getWritableDatabase().update("messages",v,"address=? AND trash=0",new String[]{address});}
  public Cursor listTrash(){return getReadableDatabase().rawQuery("SELECT * FROM messages WHERE trash=1 OR type='trash' ORDER BY ts DESC",null);}
  public void restoreTrashMessage(long id){SQLiteDatabase d=getWritableDatabase();ContentValues legacy=new ContentValues();legacy.put("trash",0);legacy.put("type","out");d.update("messages",legacy,"id=? AND type='trash'",new String[]{String.valueOf(id)});ContentValues v=new ContentValues();v.put("trash",0);d.update("messages",v,"id=? AND type!='trash'",new String[]{String.valueOf(id)});}
- public void permanentlyDeleteTrashMessage(long id){getWritableDatabase().delete("messages","id=? AND (trash=1 OR type='trash')",new String[]{String.valueOf(id)});}
+ public void permanentlyDeleteTrashMessage(long id){
+  SQLiteDatabase d=getWritableDatabase();ArrayList<String> paths=new ArrayList<>();Cursor c=null;
+  try{c=d.query("message_attachments",new String[]{"local_path"},"message_id=?",new String[]{String.valueOf(id)},null,null,null);while(c.moveToNext())paths.add(c.getString(0));}
+  finally{if(c!=null)c.close();}
+  d.beginTransaction();try{d.delete("message_attachments","message_id=?",new String[]{String.valueOf(id)});d.delete("messages","id=? AND (trash=1 OR type='trash')",new String[]{String.valueOf(id)});d.setTransactionSuccessful();}finally{d.endTransaction();}
+  deleteLocalAttachmentFiles(paths);
+ }
  public void saveSchedule(long id,String address,String body,long at){ContentValues v=new ContentValues();v.put("id",id);v.put("address",address);v.put("body",body);v.put("at",at);getWritableDatabase().insertWithOnConflict("schedules",null,v,SQLiteDatabase.CONFLICT_REPLACE);}
  public Cursor listSchedules(){return getReadableDatabase().query("schedules",new String[]{"id","address","body","at"},null,null,null,null,"at ASC");}
  public static final class ScheduleRecord{public final long id,at;public final String address,body;public ScheduleRecord(long i,String a,String b,long t){id=i;address=a;body=b;at=t;}}

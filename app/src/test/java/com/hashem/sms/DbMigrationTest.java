@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.io.File;
+import android.content.ContentValues;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 35)
@@ -248,6 +250,49 @@ public class DbMigrationTest {
         }
         for (String index : REQUIRED_INDEXES) assertTrue("missing index " + index, actual.contains(index));
     }
+    @Test
+    public void permanentlyDeletingMessageRemovesAttachmentRowsAndLocalFiles() throws Exception {
+        Db db = new Db(context);
+        SQLiteDatabase writable = db.getWritableDatabase();
+        try (Cursor foreignKeys = writable.rawQuery("PRAGMA foreign_keys", null)) {
+            assertTrue(foreignKeys.moveToFirst());
+            assertEquals(1, foreignKeys.getInt(0));
+        }
+
+        long messageId = db.addMessage("+967700", "image message", "out", "failed");
+        ContentValues trash = new ContentValues();
+        trash.put("trash", 1);
+        writable.update("messages", trash, "id=?", new String[]{String.valueOf(messageId)});
+
+        File attachmentFile = new File(context.getFilesDir(), "mms-delete-test-IMG-1.jpg");
+        assertTrue(attachmentFile.createNewFile());
+        db.addMmsAttachment(messageId, attachmentFile.getAbsolutePath(),
+                "image/jpeg", 128L, "tx-delete-test");
+
+        db.permanentlyDeleteTrashMessage(messageId);
+
+        assertFalse(attachmentFile.exists());
+        assertEquals(0, countRows(writable, "message_attachments"));
+        assertEquals(0, countRows(writable, "messages"));
+        db.close();
+    }
+
+    @Test
+    public void deletingAttachmentRecordAlsoDeletesItsLocalFile() throws Exception {
+        Db db = new Db(context);
+        long messageId = db.addMessage("+967701", "image message", "out", "failed");
+        File attachmentFile = new File(context.getFilesDir(), "mms-record-delete-test-IMG-1.jpg");
+        assertTrue(attachmentFile.createNewFile());
+        db.addMmsAttachment(messageId, attachmentFile.getAbsolutePath(),
+                "image/jpeg", 128L, "tx-record-delete-test");
+
+        db.deleteMmsAttachments(messageId);
+
+        assertFalse(attachmentFile.exists());
+        assertEquals(0, countRows(db.getReadableDatabase(), "message_attachments"));
+        db.close();
+    }
+
     @Test
     public void conversationDiffDetectsChangedContentAndDifferentIds() {
         ConversationActivity.MessageDiffCallback diff = new ConversationActivity.MessageDiffCallback();
