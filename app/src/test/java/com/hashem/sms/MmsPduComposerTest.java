@@ -1,0 +1,110 @@
+package com.hashem.sms;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.Collections;
+
+public class MmsPduComposerTest {
+    private static byte[] bytes(String hex) {
+        String[] values = hex.trim().split("\\s+");
+        byte[] result = new byte[values.length];
+        for (int i = 0; i < values.length; i++) {
+            result[i] = (byte) Integer.parseInt(values[i], 16);
+        }
+        return result;
+    }
+
+    @Test
+    public void composesOneRecipientAndOneJpegAgainstHandWrittenBytes() {
+        byte[] actual = MmsPduComposer.build(
+                "T1",
+                Collections.singletonList("+123"),
+                null,
+                Collections.singletonList(new MmsPduComposer.ImagePart(
+                        new byte[]{0x01, 0x02}, "image/jpeg", "a.jpg")));
+
+        byte[] expected = bytes(
+                "8C 80 98 54 31 00 8D 92 89 81 " +
+                "97 2B 31 32 33 2F 54 59 50 45 3D 50 4C 4D 4E 00 " +
+                "84 61 70 70 6C 69 63 61 74 69 6F 6E 2F 76 6E 64 2E " +
+                "77 61 70 2E 6D 75 6C 74 69 70 61 72 74 2E 72 65 6C 61 74 65 64 00 " +
+                "01 12 02 " +
+                "69 6D 61 67 65 2F 6A 70 65 67 00 8E 61 2E 6A 70 67 00 01 02");
+        assertArrayEquals(expected, actual);
+    }
+
+    @Test
+    public void composesMultipleRecipientsAsRepeatedToHeaders() {
+        byte[] actual = MmsPduComposer.build(
+                "T1",
+                Arrays.asList("+123", "+456"),
+                null,
+                Collections.singletonList(new MmsPduComposer.ImagePart(
+                        new byte[]{0x01, 0x02}, "image/jpeg", "a.jpg")));
+
+        byte[] expected = bytes(
+                "8C 80 98 54 31 00 8D 92 89 81 " +
+                "97 2B 31 32 33 2F 54 59 50 45 3D 50 4C 4D 4E 00 " +
+                "97 2B 34 35 36 2F 54 59 50 45 3D 50 4C 4D 4E 00 " +
+                "84 61 70 70 6C 69 63 61 74 69 6F 6E 2F 76 6E 64 2E " +
+                "77 61 70 2E 6D 75 6C 74 69 70 61 72 74 2E 72 65 6C 61 74 65 64 00 " +
+                "01 12 02 " +
+                "69 6D 61 67 65 2F 6A 70 65 67 00 8E 61 2E 6A 70 67 00 01 02");
+        assertArrayEquals(expected, actual);
+    }
+
+    @Test
+    public void composesTwoImagesWithIndependentMultipartLengths() {
+        byte[] actual = MmsPduComposer.build(
+                "T1",
+                Collections.singletonList("+123"),
+                null,
+                Arrays.asList(
+                        new MmsPduComposer.ImagePart(new byte[]{0x01, 0x02}, "image/jpeg", "a.jpg"),
+                        new MmsPduComposer.ImagePart(new byte[]{0x03}, "image/png", "b.png")));
+
+        byte[] expected = bytes(
+                "8C 80 98 54 31 00 8D 92 89 81 " +
+                "97 2B 31 32 33 2F 54 59 50 45 3D 50 4C 4D 4E 00 " +
+                "84 61 70 70 6C 69 63 61 74 69 6F 6E 2F 76 6E 64 2E " +
+                "77 61 70 2E 6D 75 6C 74 69 70 61 72 74 2E 72 65 6C 61 74 65 64 00 " +
+                "02 " +
+                "12 02 69 6D 61 67 65 2F 6A 70 65 67 00 8E 61 2E 6A 70 67 00 01 02 " +
+                "11 01 69 6D 61 67 65 2F 70 6E 67 00 8E 62 2E 70 6E 67 00 03");
+        assertArrayEquals(expected, actual);
+    }
+
+    @Test
+    public void encodesOptionalUtf8Subject() {
+        byte[] actual = MmsPduComposer.build(
+                "T1",
+                Collections.singletonList("+123"),
+                "Hi",
+                Collections.singletonList(new MmsPduComposer.ImagePart(
+                        new byte[]{0x01}, "image/jpeg", "a.jpg")));
+
+        byte[] expected = bytes(
+                "8C 80 98 54 31 00 8D 92 89 81 " +
+                "97 2B 31 32 33 2F 54 59 50 45 3D 50 4C 4D 4E 00 " +
+                "96 04 EA 48 69 00 " +
+                "84 61 70 70 6C 69 63 61 74 69 6F 6E 2F 76 6E 64 2E " +
+                "77 61 70 2E 6D 75 6C 74 69 70 61 72 74 2E 72 65 6C 61 74 65 64 00 " +
+                "01 12 01 69 6D 61 67 65 2F 6A 70 65 67 00 8E 61 2E 6A 70 67 00 01");
+        assertArrayEquals(expected, actual);
+    }
+
+    @Test
+    public void rejectsNonImageParts() {
+        try {
+            new MmsPduComposer.ImagePart(new byte[]{0x01}, "video/mp4", "clip.mp4");
+            fail("video parts must be rejected");
+        } catch (IllegalArgumentException expected) {
+            assertEquals("Only JPEG and PNG images are supported", expected.getMessage());
+        }
+    }
+}
