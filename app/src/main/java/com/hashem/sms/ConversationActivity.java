@@ -28,7 +28,7 @@ import android.view.*;import androidx.appcompat.widget.PopupMenu;
 import android.widget.*;
 import java.util.*;
 
-public class ConversationActivity extends Activity {
+public class ConversationActivity extends androidx.activity.ComponentActivity {
     Db db; String address; LinearLayout root; RecyclerView messages; ConversationAdapter messageAdapter; EditText search, composer; TextView selectionTitle; ActionMode actionMode; final ArrayList<Long> selected = new ArrayList<>();
     private static final ExecutorService MESSAGE_EXECUTOR = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -49,6 +49,12 @@ public class ConversationActivity extends Activity {
     private TextView contactAvatar;
     private ImageView contactPhoto;
     private android.graphics.Bitmap contactPhotoBitmap;
+    private androidx.activity.result.ActivityResultLauncher<androidx.activity.result.PickVisualMediaRequest> imagePicker;
+    private LinearLayout attachmentPreview;
+    private ImageView attachmentPreviewImage;
+    private TextView attachmentPreviewLabel;
+    private java.io.File pendingImageFile;
+    private Uri pendingImageUri;
     
     SubscriptionChoiceCallback pendingSubscriptionAction;
 
@@ -60,6 +66,7 @@ public class ConversationActivity extends Activity {
 
     @Override public void onCreate(Bundle b){
         super.onCreate(b);UiResources.configureSystemBars(this);purple=UiResources.color(ConversationActivity.this,R.color.primary);
+        imagePicker=registerForActivityResult(new androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia(),this::onImagePicked);
         db=new Db(getApplicationContext());
         address=getIntent().getStringExtra("address");
         if(address==null)address="";
@@ -166,10 +173,11 @@ public class ConversationActivity extends Activity {
         messages.setAdapter(messageAdapter);
         root.addView(messages,new LinearLayout.LayoutParams(-1,0,1));
         LinearLayout composerRow=new LinearLayout(this);composerRow.setGravity(Gravity.CENTER_VERTICAL);composerRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);composerRow.setPadding(UiResources.dp(this,4),UiResources.dp(this,5),UiResources.dp(this,6),UiResources.dp(this,5));composerRow.setBackground(rounded(UiResources.color(ConversationActivity.this,R.color.surface_variant),UiResources.color(ConversationActivity.this,R.color.search_border),30));
-        ImageButton attachment=iconActionButton(R.drawable.ic_attachment,"إرفاق وسائط",false);attachment.setOnClickListener(v->Toast.makeText(this,"إرسال الصور والفيديو عبر MMS غير متاح بعد",Toast.LENGTH_LONG).show());composerRow.addView(attachment,new LinearLayout.LayoutParams(UiResources.dp(this,36),UiResources.dp(this,40)));
+        ImageButton attachment=iconActionButton(R.drawable.ic_attachment,"إرفاق صورة",false);attachment.setOnClickListener(v->imagePicker.launch(new androidx.activity.result.PickVisualMediaRequest.Builder().setMediaType(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE).build()));composerRow.addView(attachment,new LinearLayout.LayoutParams(UiResources.dp(this,36),UiResources.dp(this,40)));
         ImageButton emoji=iconActionButton(R.drawable.ic_emoji,"إدراج رمز تعبيري",false);emoji.setOnClickListener(v->showEmojiPicker());composerRow.addView(emoji,new LinearLayout.LayoutParams(UiResources.dp(this,36),UiResources.dp(this,40)));
         composer=new EditText(this);composer.setHint("رسالة نصية");composer.setTextSize(16);composer.setMinLines(1);composer.setMaxLines(5);composer.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);composer.setTextDirection(View.TEXT_DIRECTION_RTL);composer.setGravity(Gravity.CENTER_VERTICAL|Gravity.END);composer.setPadding(UiResources.dp(this,12),UiResources.dp(this,6),UiResources.dp(this,12),UiResources.dp(this,6));composer.setTextColor(UiResources.color(this,R.color.on_surface));composer.setHintTextColor(UiResources.color(this,R.color.on_surface_variant));composer.setBackgroundColor(UiResources.color(ConversationActivity.this,android.R.color.transparent));composerRow.addView(composer,new LinearLayout.LayoutParams(0,-2,1));
         Button send=actionButton("إرسال",true);send.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_send,0,0,0);send.setCompoundDrawablePadding(UiResources.dp(ConversationActivity.this,6));send.setOnClickListener(v->send());LinearLayout.LayoutParams sendLp=new LinearLayout.LayoutParams(-2,UiResources.dp(this,40));sendLp.setMargins(UiResources.dp(this,4),0,0,0);composerRow.addView(send,sendLp);
+        attachmentPreview=new LinearLayout(this);attachmentPreview.setGravity(Gravity.CENTER_VERTICAL);attachmentPreview.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);attachmentPreview.setPadding(UiResources.dp(this,8),UiResources.dp(this,6),UiResources.dp(this,8),UiResources.dp(this,6));attachmentPreview.setVisibility(View.GONE);attachmentPreview.setBackground(rounded(UiResources.color(this,R.color.card_surface),UiResources.color(this,R.color.card_stroke),16));attachmentPreviewImage=new ImageView(this);attachmentPreviewImage.setScaleType(ImageView.ScaleType.CENTER_CROP);attachmentPreview.addView(attachmentPreviewImage,new LinearLayout.LayoutParams(UiResources.dp(this,64),UiResources.dp(this,64)));attachmentPreviewLabel=tv("صورة مرفقة",13);attachmentPreview.addView(attachmentPreviewLabel,new LinearLayout.LayoutParams(0,-2,1));Button removeAttachment=actionButton("إزالة",false);removeAttachment.setOnClickListener(v->clearPendingImage());attachmentPreview.addView(removeAttachment);LinearLayout.LayoutParams previewLp=new LinearLayout.LayoutParams(-1,-2);previewLp.bottomMargin=UiResources.dp(this,6);root.addView(attachmentPreview,previewLp);
         LinearLayout.LayoutParams rowLp=new LinearLayout.LayoutParams(-1,-2);rowLp.topMargin=UiResources.dp(this,8);root.addView(composerRow,rowLp);setContentView(root);
     }
 
@@ -195,7 +203,7 @@ public class ConversationActivity extends Activity {
                     String body=c.getString(bodyCol);
                     if(body==null)body="";
                     if(!query.isEmpty()&&!body.toLowerCase(Locale.ROOT).contains(query))continue;
-                    long timestamp=c.getLong(c.getColumnIndexOrThrow("ts"));long day=dayStart(timestamp);if(rows.isEmpty()||rows.get(rows.size()-1).timestamp==0L||dayStart(rows.get(rows.size()-1).timestamp)!=day)rows.add(ConversationMessage.date(day,timestamp));rows.add(new ConversationMessage(c.getLong(idCol),body,c.getString(typeCol),c.getString(statusCol),c.getInt(starCol),null,timestamp,false));
+                    long timestamp=c.getLong(c.getColumnIndexOrThrow("ts"));long day=dayStart(timestamp);if(rows.isEmpty()||rows.get(rows.size()-1).timestamp==0L||dayStart(rows.get(rows.size()-1).timestamp)!=day)rows.add(ConversationMessage.date(day,timestamp));long messageId=c.getLong(idCol);String attachmentPath=null;Cursor attachmentCursor=null;try{attachmentCursor=db.mmsAttachments(messageId);if(attachmentCursor.moveToFirst())attachmentPath=attachmentCursor.getString(2);}finally{if(attachmentCursor!=null)attachmentCursor.close();}rows.add(new ConversationMessage(messageId,body,c.getString(typeCol),c.getString(statusCol),c.getInt(starCol),null,timestamp,false,attachmentPath));
                 }
             }catch(Exception e){
                 android.util.Log.e("HashemSMS","Unable to load conversation messages",e);
@@ -227,9 +235,10 @@ public class ConversationActivity extends Activity {
     static final class ConversationMessage {
         final long id;
         final String body,type,status,emptyText;
-        final int star; final long timestamp; final boolean dateDivider;
+        final int star; final long timestamp; final boolean dateDivider;final String attachmentPath;
         ConversationMessage(long id,String body,String type,String status,int star,String emptyText){this(id,body,type,status,star,emptyText,System.currentTimeMillis(),false);}
-        ConversationMessage(long id,String body,String type,String status,int star,String emptyText,long timestamp,boolean dateDivider){this.id=id;this.body=body;this.type=type;this.status=status;this.star=star;this.emptyText=emptyText;this.timestamp=timestamp;this.dateDivider=dateDivider;}
+        ConversationMessage(long id,String body,String type,String status,int star,String emptyText,long timestamp,boolean dateDivider){this(id,body,type,status,star,emptyText,timestamp,dateDivider,null);}
+        ConversationMessage(long id,String body,String type,String status,int star,String emptyText,long timestamp,boolean dateDivider,String attachmentPath){this.id=id;this.body=body;this.type=type;this.status=status;this.star=star;this.emptyText=emptyText;this.timestamp=timestamp;this.dateDivider=dateDivider;this.attachmentPath=attachmentPath;}
         static final long EMPTY_ID=Long.MIN_VALUE;
         static ConversationMessage empty(String text){return new ConversationMessage(EMPTY_ID,"","","",0,text);}
         static ConversationMessage date(long day,long ts){return new ConversationMessage(-Math.max(1L,day),"","","",0,null,ts,true);}
@@ -240,7 +249,7 @@ public class ConversationActivity extends Activity {
     static final class MessageDiffCallback extends DiffUtil.ItemCallback<ConversationMessage>{
             @Override public boolean areItemsTheSame(ConversationMessage a,ConversationMessage b){return a.id==b.id;}
             @Override public boolean areContentsTheSame(ConversationMessage a,ConversationMessage b){
-                return a.id==b.id&&Objects.equals(a.body,b.body)&&Objects.equals(a.type,b.type)&&Objects.equals(a.status,b.status)&&a.star==b.star&&Objects.equals(a.emptyText,b.emptyText)&&a.timestamp==b.timestamp&&a.dateDivider==b.dateDivider;
+                return a.id==b.id&&Objects.equals(a.body,b.body)&&Objects.equals(a.type,b.type)&&Objects.equals(a.status,b.status)&&a.star==b.star&&Objects.equals(a.emptyText,b.emptyText)&&a.timestamp==b.timestamp&&a.dateDivider==b.dateDivider&&Objects.equals(a.attachmentPath,b.attachmentPath);
             }
         }
 
@@ -268,6 +277,7 @@ public class ConversationActivity extends Activity {
             LinearLayout line=new LinearLayout(ConversationActivity.this);line.setGravity(Gravity.START);line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);line.setPadding(8,3,8,3);
             LinearLayout column=new LinearLayout(ConversationActivity.this);column.setOrientation(LinearLayout.VERTICAL);column.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
             LinearLayout bubble=new LinearLayout(ConversationActivity.this);bubble.setOrientation(LinearLayout.VERTICAL);bubble.setPadding(16,8,16,8);
+            ImageView media=new ImageView(ConversationActivity.this);media.setAdjustViewBounds(true);media.setMaxWidth(UiResources.dp(ConversationActivity.this,240));media.setMaxHeight(UiResources.dp(ConversationActivity.this,240));media.setScaleType(ImageView.ScaleType.CENTER_CROP);media.setVisibility(View.GONE);bubble.addView(media,new LinearLayout.LayoutParams(UiResources.dp(ConversationActivity.this,220),UiResources.dp(ConversationActivity.this,180)));
             TextView body=tv("",17);body.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);body.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG);body.setMaxWidth((int)(getResources().getDisplayMetrics().widthPixels-80*getResources().getDisplayMetrics().density));
             TextView meta=tv("",11);meta.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);bubble.addView(body);bubble.addView(meta);
             Button otp=actionButton("نسخ الرمز",false);otp.setTextSize(12);otp.setVisibility(View.GONE);
@@ -281,7 +291,7 @@ public class ConversationActivity extends Activity {
             for(ImageButton button:new ImageButton[]{copy,forward,reply,star,more}){LinearLayout.LayoutParams actionLp=new LinearLayout.LayoutParams(actionSize,actionSize);actionLp.setMargins(2,0,2,0);actions.addView(button,actionLp);}
             column.addView(actions,new LinearLayout.LayoutParams(-2,-2));
             TextView selector=tv("○",22);selector.setGravity(Gravity.CENTER);selector.setTextColor(UiResources.color(ConversationActivity.this,R.color.primary_variant));selector.setVisibility(View.GONE);line.addView(selector,new LinearLayout.LayoutParams(UiResources.dp(ConversationActivity.this,28),UiResources.dp(ConversationActivity.this,28)));line.addView(column,new LinearLayout.LayoutParams(-2,-2));
-            return new MessageHolder(line,column,bubble,body,meta,actions,copy,forward,reply,star,more,otp,retry,selector);
+            return new MessageHolder(line,column,bubble,media,body,meta,actions,copy,forward,reply,star,more,otp,retry,selector);
         }
         @android.annotation.SuppressLint("RtlHardcoded")
         @Override public void onBindViewHolder(RecyclerView.ViewHolder holder,int position){
@@ -290,7 +300,7 @@ public class ConversationActivity extends Activity {
             if(holder instanceof DateHolder){((DateHolder)holder).text.setText(dateLabel(item.timestamp));return;}
             MessageHolder h=(MessageHolder)holder;boolean outgoing="out".equals(item.type);
             h.line.setGravity(outgoing?Gravity.RIGHT:Gravity.LEFT);h.column.setGravity(outgoing?Gravity.RIGHT:Gravity.LEFT);
-            h.body.setText(item.body);h.body.setGravity(outgoing?Gravity.RIGHT:Gravity.LEFT);h.body.setTextIsSelectable(false);
+            h.body.setText(item.body);h.body.setGravity(outgoing?Gravity.RIGHT:Gravity.LEFT);h.body.setTextIsSelectable(false);if(item.attachmentPath!=null){android.graphics.BitmapFactory.Options options=new android.graphics.BitmapFactory.Options();options.inSampleSize=4;android.graphics.Bitmap thumbnail=android.graphics.BitmapFactory.decodeFile(item.attachmentPath,options);if(thumbnail!=null){h.media.setImageBitmap(thumbnail);h.media.setVisibility(View.VISIBLE);}else h.media.setVisibility(View.GONE);}else h.media.setVisibility(View.GONE);
             h.body.setTextColor(UiResources.color(ConversationActivity.this,outgoing?R.color.on_bubble_out:R.color.on_bubble_in));
             String state=outgoing?displayStatus(item.status):"";String time=new java.text.SimpleDateFormat("hh:mm a",new Locale("ar")).format(new Date(item.timestamp));h.meta.setText(outgoing?(state.isEmpty()?time:state+" · "+time):time);h.meta.setGravity(outgoing?Gravity.RIGHT:Gravity.LEFT);
             h.meta.setTextColor(UiResources.color(ConversationActivity.this,outgoing?R.color.on_bubble_out:R.color.on_bubble_in));
@@ -305,7 +315,7 @@ public class ConversationActivity extends Activity {
             h.otp.setVisibility(View.GONE);h.retry.setVisibility(View.GONE);
             java.util.regex.Matcher otpMatcher=java.util.regex.Pattern.compile("(?<!\\d)(\\d{4,8})(?!\\d)").matcher(item.body);
             if(!outgoing&&otpMatcher.find()){String code=otpMatcher.group(1);h.otp.setVisibility(View.VISIBLE);h.otp.setOnClickListener(v->{((android.content.ClipboardManager)ConversationActivity.this.getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(android.content.ClipData.newPlainText("رمز التحقق",code));Toast.makeText(ConversationActivity.this,"تم نسخ رمز التحقق",Toast.LENGTH_SHORT).show();});}
-            else if(outgoing&&isFailed(item.status)){h.retry.setVisibility(View.VISIBLE);h.retry.setOnClickListener(v->dispatchSms(address,item.body,"RETRY",3000,4000));}
+            else if(outgoing&&isFailed(item.status)){h.retry.setVisibility(View.VISIBLE);h.retry.setOnClickListener(v->{if(item.attachmentPath!=null)retryMms(item);else dispatchSms(address,item.body,"RETRY",3000,4000);});}
             View.OnLongClickListener longPress=v->{toggleSelection(item.id);return true;};
             View.OnClickListener tap=v->{if(actionMode!=null)toggleSelection(item.id);else showActions(item.id);};
             h.bubble.setOnLongClickListener(longPress);h.body.setOnLongClickListener(longPress);h.meta.setOnLongClickListener(longPress);h.selector.setOnLongClickListener(longPress);
@@ -318,9 +328,9 @@ public class ConversationActivity extends Activity {
     }
 
     private static final class MessageHolder extends RecyclerView.ViewHolder{
-        final LinearLayout line,column,bubble,actions;final TextView body,meta,selector;final ImageButton copy,forward,reply,star,more;final Button otp,retry;
-        MessageHolder(LinearLayout line,LinearLayout column,LinearLayout bubble,TextView body,TextView meta,LinearLayout actions,ImageButton copy,ImageButton forward,ImageButton reply,ImageButton star,ImageButton more,Button otp,Button retry,TextView selector){
-            super(line);this.line=line;this.column=column;this.bubble=bubble;this.body=body;this.meta=meta;this.actions=actions;this.copy=copy;this.forward=forward;this.reply=reply;this.star=star;this.more=more;this.otp=otp;this.retry=retry;this.selector=selector;
+        final LinearLayout line,column,bubble,actions;final ImageView media;final TextView body,meta,selector;final ImageButton copy,forward,reply,star,more;final Button otp,retry;
+        MessageHolder(LinearLayout line,LinearLayout column,LinearLayout bubble,ImageView media,TextView body,TextView meta,LinearLayout actions,ImageButton copy,ImageButton forward,ImageButton reply,ImageButton star,ImageButton more,Button otp,Button retry,TextView selector){
+            super(line);this.line=line;this.column=column;this.bubble=bubble;this.media=media;this.body=body;this.meta=meta;this.actions=actions;this.copy=copy;this.forward=forward;this.reply=reply;this.star=star;this.more=more;this.otp=otp;this.retry=retry;this.selector=selector;
         }
     }
     private static final class EmptyHolder extends RecyclerView.ViewHolder{
@@ -416,7 +426,14 @@ public class ConversationActivity extends Activity {
     void forwardSelected(){ArrayList<Long> ids=new ArrayList<>(selected);MESSAGE_EXECUTOR.execute(()->{StringBuilder body=new StringBuilder();Cursor c=null;try{c=db.messagesByIds(ids);while(c.moveToNext())body.append(c.getString(c.getColumnIndexOrThrow("body"))).append("\n");}finally{if(c!=null)c.close();}final String forwardedBody=body.toString().trim();runOnUiThread(()->{final EditText to=new EditText(this);to.setHint("رقم المستلم");new AlertDialog.Builder(this).setTitle("إعادة توجيه").setMessage(forwardedBody).setView(to).setPositiveButton("إرسال",(d,w)->sendForwarded(to.getText().toString().trim(),forwardedBody)).setNegativeButton("إلغاء",null).show();});});}
 
     void sendForwarded(String recipient,String body){if(recipient.isEmpty()||body.trim().isEmpty()){Toast.makeText(this,"أدخل رقم المستلم",Toast.LENGTH_SHORT).show();return;}dispatchSms(recipient,body,"FORWARD",7000,8000);}
-    void send(){String body=composer.getText().toString().trim();if(body.isEmpty())return;dispatchSms(address,body,"CONVERSATION",3000,4000,()->composer.setText(""));}
+    void send(){String body=composer.getText().toString().trim();if(pendingImageFile!=null){sendPendingMms(body);return;}if(body.isEmpty())return;dispatchSms(address,body,"CONVERSATION",3000,4000,()->composer.setText(""));}
+    private void onImagePicked(Uri uri){
+        if(uri==null)return;if(pendingImageFile!=null&&pendingImageFile.exists())pendingImageFile.delete();pendingImageFile=null;pendingImageUri=uri;attachmentPreview.setVisibility(View.VISIBLE);attachmentPreviewLabel.setText("جارٍ تجهيز الصورة…");attachmentPreviewImage.setImageURI(uri);
+        MESSAGE_EXECUTOR.execute(()->{java.io.File prepared=null;String error=null;try{MmsImageFit.Result result=MmsImageCompressor.compress(getApplicationContext(),uri,MmsImageFit.budgetFor(0L));java.io.File dir=new java.io.File(getCacheDir(),"mms");if(!dir.exists()&&!dir.mkdirs())throw new java.io.IOException("تعذّر إنشاء مجلد مرفقات MMS");prepared=new java.io.File(dir,"image-"+java.util.UUID.randomUUID().toString()+".jpg");try(java.io.FileOutputStream out=new java.io.FileOutputStream(prepared)){out.write(result.data);out.getFD().sync();}}catch(Exception e){if(prepared!=null&&prepared.exists())prepared.delete();prepared=null;error=e.getMessage()==null?"تعذّر تجهيز الصورة":e.getMessage();android.util.Log.e("HashemSMS","Unable to prepare MMS image",e);}final java.io.File ready=prepared;final String failure=error;runOnUiThread(()->{if(isFinishing()||isDestroyed())return;if(ready==null){clearPendingImage();String message=failure!=null&&failure.contains("under")?"حجم الصورة يتجاوز الحد المسموح حتى بعد الضغط؛ اختر صورة أصغر.":"تعذّر تجهيز الصورة: "+failure;Toast.makeText(this,message,Toast.LENGTH_LONG).show();return;}pendingImageFile=ready;attachmentPreviewLabel.setText("صورة جاهزة للإرسال · "+android.text.format.Formatter.formatShortFileSize(this,ready.length()));attachmentPreviewImage.setImageURI(Uri.fromFile(ready));});});
+    }
+    private void clearPendingImage(){if(pendingImageFile!=null&&!pendingImageFile.delete())android.util.Log.w("HashemSMS","Could not remove unsent MMS image");pendingImageFile=null;pendingImageUri=null;if(attachmentPreview!=null)attachmentPreview.setVisibility(View.GONE);if(attachmentPreviewImage!=null)attachmentPreviewImage.setImageDrawable(null);}
+    private void sendPendingMms(String caption){if(pendingImageFile==null||!pendingImageFile.isFile()){Toast.makeText(this,"الصورة المرفقة غير متاحة؛ أعد اختيارها.",Toast.LENGTH_LONG).show();return;}final java.io.File image=pendingImageFile;final String recipient=address;chooseSmsSubscription(new SubscriptionChoiceCallback(){public void onSelected(int subId){pendingImageFile=null;pendingImageUri=null;attachmentPreview.setVisibility(View.GONE);composer.setText("");SmsSending.SEND_EXECUTOR.execute(()->MmsSending.send(getApplicationContext(),new Db(getApplicationContext()),recipient,caption,image,subId));}public void onCancelled(){}});}
+    private void retryMms(ConversationMessage item){Cursor cursor=null;try{cursor=db.mmsAttachments(item.id);if(!cursor.moveToFirst())throw new java.io.IOException("المرفق غير موجود");String path=cursor.getString(cursor.getColumnIndexOrThrow("local_path"));java.io.File image=new java.io.File(path);if(!image.isFile())throw new java.io.IOException("ملف الصورة غير موجود");String caption="";int split=item.body.indexOf('\n');if(split>=0)caption=item.body.substring(split+1);final String retryCaption=caption;chooseSmsSubscription(new SubscriptionChoiceCallback(){public void onSelected(int subId){SmsSending.SEND_EXECUTOR.execute(()->MmsSending.retry(getApplicationContext(),new Db(getApplicationContext()),item.id,address,image,subId,retryCaption));}public void onCancelled(){}});}catch(Exception e){Toast.makeText(this,"تعذّرت إعادة المحاولة: "+e.getMessage(),Toast.LENGTH_LONG).show();}finally{if(cursor!=null)cursor.close();}}
     void dispatchSms(String recipient,String body,String tag,int sentBase,int deliveredBase){dispatchSms(recipient,body,tag,sentBase,deliveredBase,()->{});}
     void dispatchSms(String recipient,String body,String tag,int sentBase,int deliveredBase,Runnable onSelected){
         final android.content.Context appContext=getApplicationContext();final Db appDb=new Db(appContext);chooseSmsSubscription(new SubscriptionChoiceCallback(){public void onSelected(int subId){onSelected.run();SmsSending.SEND_EXECUTOR.execute(()->SmsSending.sendSmsInBackground(appContext,appDb,recipient,body,tag,sentBase,deliveredBase,subId,true));}public void onCancelled(){}});

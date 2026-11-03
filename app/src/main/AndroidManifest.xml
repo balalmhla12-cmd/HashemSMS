@@ -28,5 +28,7 @@
   <receiver android:name=".TimeChangeReceiver" android:exported="false"><intent-filter><action android:name="android.intent.action.TIME_SET"/><action android:name="android.intent.action.TIMEZONE_CHANGED"/></intent-filter></receiver>
   <receiver android:name=".ExactAlarmPermissionReceiver" android:exported="false"><intent-filter><action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED"/></intent-filter></receiver>
   <service android:name=".HeadlessSmsSendService" android:exported="true" android:permission="android.permission.SEND_RESPOND_VIA_MESSAGE"><intent-filter><action android:name="android.intent.action.RESPOND_VIA_MESSAGE"/><category android:name="android.intent.category.DEFAULT"/><data android:scheme="sms"/><data android:scheme="smsto"/><data android:scheme="mms"/><data android:scheme="mmsto"/></intent-filter></service>
+  <receiver android:name=".MmsSendReceiver" android:exported="false"/>
+  <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.fileprovider" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/mms_file_paths"/></provider>
  </application>
 </manifest>
