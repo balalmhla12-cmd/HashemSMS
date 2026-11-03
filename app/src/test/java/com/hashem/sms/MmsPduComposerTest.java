@@ -29,10 +29,10 @@ public class MmsPduComposerTest {
                         new byte[]{0x01, 0x02}, "image/jpeg", "a.jpg")));
 
         byte[] expected = bytes(
-                "8C 80 98 54 31 00 8D 92 89 81 " +
+                "8C 80 98 54 31 00 8D 92 89 01 81 " +
                 "97 2B 31 32 33 2F 54 59 50 45 3D 50 4C 4D 4E 00 " +
                 "84 61 70 70 6C 69 63 61 74 69 6F 6E 2F 76 6E 64 2E " +
-                "77 61 70 2E 6D 75 6C 74 69 70 61 72 74 2E 72 65 6C 61 74 65 64 00 " +
+                "77 61 70 2E 6D 75 6C 74 69 70 61 72 74 2E 6D 69 78 65 64 00 " +
                 "01 12 02 " +
                 "69 6D 61 67 65 2F 6A 70 65 67 00 8E 61 2E 6A 70 67 00 01 02");
         assertArrayEquals(expected, actual);
@@ -48,11 +48,11 @@ public class MmsPduComposerTest {
                         new byte[]{0x01, 0x02}, "image/jpeg", "a.jpg")));
 
         byte[] expected = bytes(
-                "8C 80 98 54 31 00 8D 92 89 81 " +
+                "8C 80 98 54 31 00 8D 92 89 01 81 " +
                 "97 2B 31 32 33 2F 54 59 50 45 3D 50 4C 4D 4E 00 " +
                 "97 2B 34 35 36 2F 54 59 50 45 3D 50 4C 4D 4E 00 " +
                 "84 61 70 70 6C 69 63 61 74 69 6F 6E 2F 76 6E 64 2E " +
-                "77 61 70 2E 6D 75 6C 74 69 70 61 72 74 2E 72 65 6C 61 74 65 64 00 " +
+                "77 61 70 2E 6D 75 6C 74 69 70 61 72 74 2E 6D 69 78 65 64 00 " +
                 "01 12 02 " +
                 "69 6D 61 67 65 2F 6A 70 65 67 00 8E 61 2E 6A 70 67 00 01 02");
         assertArrayEquals(expected, actual);
@@ -69,10 +69,10 @@ public class MmsPduComposerTest {
                         new MmsPduComposer.ImagePart(new byte[]{0x03}, "image/png", "b.png")));
 
         byte[] expected = bytes(
-                "8C 80 98 54 31 00 8D 92 89 81 " +
+                "8C 80 98 54 31 00 8D 92 89 01 81 " +
                 "97 2B 31 32 33 2F 54 59 50 45 3D 50 4C 4D 4E 00 " +
                 "84 61 70 70 6C 69 63 61 74 69 6F 6E 2F 76 6E 64 2E " +
-                "77 61 70 2E 6D 75 6C 74 69 70 61 72 74 2E 72 65 6C 61 74 65 64 00 " +
+                "77 61 70 2E 6D 75 6C 74 69 70 61 72 74 2E 6D 69 78 65 64 00 " +
                 "02 " +
                 "12 02 69 6D 61 67 65 2F 6A 70 65 67 00 8E 61 2E 6A 70 67 00 01 02 " +
                 "11 01 69 6D 61 67 65 2F 70 6E 67 00 8E 62 2E 70 6E 67 00 03");
@@ -89,11 +89,11 @@ public class MmsPduComposerTest {
                         new byte[]{0x01}, "image/jpeg", "a.jpg")));
 
         byte[] expected = bytes(
-                "8C 80 98 54 31 00 8D 92 89 81 " +
+                "8C 80 98 54 31 00 8D 92 89 01 81 " +
                 "97 2B 31 32 33 2F 54 59 50 45 3D 50 4C 4D 4E 00 " +
                 "96 04 EA 48 69 00 " +
                 "84 61 70 70 6C 69 63 61 74 69 6F 6E 2F 76 6E 64 2E " +
-                "77 61 70 2E 6D 75 6C 74 69 70 61 72 74 2E 72 65 6C 61 74 65 64 00 " +
+                "77 61 70 2E 6D 75 6C 74 69 70 61 72 74 2E 6D 69 78 65 64 00 " +
                 "01 12 01 69 6D 61 67 65 2F 6A 70 65 67 00 8E 61 2E 6A 70 67 00 01");
         assertArrayEquals(expected, actual);
     }
@@ -107,4 +107,46 @@ public class MmsPduComposerTest {
             assertEquals("Only JPEG and PNG images are supported", expected.getMessage());
         }
     }
+    @Test
+    public void sendRequestHeaderStartsWithRequiredBytes() {
+        byte[] actual = MmsPduComposer.build(
+                "T1",
+                Collections.singletonList("+123"),
+                null,
+                Collections.singletonList(new MmsPduComposer.ImagePart(
+                        new byte[]{0x01}, "image/jpeg", "a.jpg")));
+        assertArrayEquals(
+                bytes("8C 80 98 54 31 00 8D 92 89 01 81"),
+                Arrays.copyOf(actual, 11));
+    }
+
+    @Test
+    public void rejectsArabicImageFilename() {
+        try {
+            new MmsPduComposer.ImagePart(new byte[]{0x01}, "image/jpeg", "صورة.jpg");
+            fail("Arabic filename must be rejected");
+        } catch (IllegalArgumentException expected) {
+            assertEquals(
+                    "Filename must contain ASCII letters, digits, dot, or hyphen only",
+                    expected.getMessage());
+        }
+    }
+
+    @Test
+    public void rejectsSubjectContainingNewline() {
+        try {
+            MmsPduComposer.build(
+                    "T1",
+                    Collections.singletonList("+123"),
+                    "first\nsecond",
+                    Collections.singletonList(new MmsPduComposer.ImagePart(
+                            new byte[]{0x01}, "image/jpeg", "a.jpg")));
+            fail("Subject containing newline must be rejected");
+        } catch (IllegalArgumentException expected) {
+            assertEquals(
+                    "MMS text contains a forbidden control character",
+                    expected.getMessage());
+        }
+    }
+
 }

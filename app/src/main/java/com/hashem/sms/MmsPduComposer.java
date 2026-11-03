@@ -3,14 +3,12 @@ package com.hashem.sms;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
  * Builds the binary MMS M-Send.req PDU consumed by SmsManager.sendMultimediaMessage.
  *
- * This class deliberately implements only image-only multipart/related messages.
+ * This class deliberately implements only image-only multipart/mixed messages.
  * It does not perform network I/O or write files.
  */
 public final class MmsPduComposer {
@@ -23,7 +21,7 @@ public final class MmsPduComposer {
     private static final int HEADER_CONTENT_TYPE = 0x84;
     private static final int HEADER_CONTENT_LOCATION = 0x8E;
 
-    private static final String MULTIPART_RELATED = "application/vnd.wap.multipart.related";
+    private static final String MULTIPART_MIXED = "application/vnd.wap.multipart.mixed";
     private static final int MMS_VERSION_1_2 = 0x92;
     private static final int FROM_INSERT_ADDRESS = 0x81;
     private static final int UTF8_MIB_ENUM = 0xEA;
@@ -49,7 +47,7 @@ public final class MmsPduComposer {
             }
             this.data = data.clone();
             this.contentType = contentType;
-            this.fileName = safeText(fileName);
+            this.fileName = validateFileName(fileName);
         }
     }
 
@@ -65,6 +63,7 @@ public final class MmsPduComposer {
     public static byte[] build(String transactionId, List<String> recipients,
             String subject, List<ImagePart> images) {
         String tx = safeText(transactionId);
+        String safeSubject = safeText(subject);
         if (tx.isEmpty()) {
             throw new IllegalArgumentException("Transaction ID is required");
         }
@@ -83,6 +82,7 @@ public final class MmsPduComposer {
         writeByte(out, HEADER_MMS_VERSION);
         writeByte(out, MMS_VERSION_1_2);
         writeByte(out, HEADER_FROM);
+        writeByte(out, 0x01); // value-length for insert-address-token
         writeByte(out, FROM_INSERT_ADDRESS);
 
         for (String recipient : recipients) {
@@ -91,13 +91,13 @@ public final class MmsPduComposer {
             writeTextString(out, address);
         }
 
-        if (subject != null && !subject.isEmpty()) {
+        if (!safeSubject.isEmpty()) {
             writeByte(out, HEADER_SUBJECT);
-            writeEncodedString(out, subject);
+            writeEncodedString(out, safeSubject);
         }
 
         writeByte(out, HEADER_CONTENT_TYPE);
-        writeTextString(out, MULTIPART_RELATED);
+        writeTextString(out, MULTIPART_MIXED);
         writeUintvar(out, images.size());
 
         for (ImagePart image : images) {
@@ -116,6 +116,25 @@ public final class MmsPduComposer {
         writeByte(headers, HEADER_CONTENT_LOCATION);
         writeTextString(headers, image.fileName);
         return headers.toByteArray();
+    }
+
+    private static String validateFileName(String fileName) {
+        String value = safeText(fileName);
+        if (value.trim().isEmpty()) {
+            throw new IllegalArgumentException("Image filename is required");
+        }
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            boolean allowed = (c >= 'A' && c <= 'Z')
+                    || (c >= 'a' && c <= 'z')
+                    || (c >= '0' && c <= '9')
+                    || c == '.' || c == '-';
+            if (!allowed) {
+                throw new IllegalArgumentException(
+                        "Filename must contain ASCII letters, digits, dot, or hyphen only");
+            }
+        }
+        return value;
     }
 
     private static String normalizeRecipient(String recipient) {
