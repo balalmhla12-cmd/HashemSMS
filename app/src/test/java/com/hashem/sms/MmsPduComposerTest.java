@@ -123,6 +123,25 @@ public class MmsPduComposerTest {
     }
 
     @Test
+    public void preservesOriginalGifPayloadBytesWithoutReencoding() {
+        byte[] originalGif = new byte[]{
+                0x47, 0x49, 0x46, 0x38, 0x39, 0x61,
+                0x01, 0x00, 0x01, 0x00, (byte) 0x80, 0x00, 0x00
+        };
+        byte[] pdu = MmsPduComposer.build(
+                "GIF1",
+                Collections.singletonList("+123"),
+                null,
+                Collections.singletonList(new MmsPduComposer.ImagePart(
+                        originalGif, "image/gif", "original.gif")));
+
+        assertTrue(new String(pdu, java.nio.charset.StandardCharsets.ISO_8859_1)
+                .contains("image/gif"));
+        assertArrayEquals(originalGif,
+                Arrays.copyOfRange(pdu, pdu.length - originalGif.length, pdu.length));
+    }
+
+    @Test
     public void sendRequestHeaderStartsWithRequiredBytes() {
         byte[] actual = MmsPduComposer.build(
                 "T1",
