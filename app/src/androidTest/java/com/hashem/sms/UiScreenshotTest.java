@@ -67,8 +67,6 @@ public final class UiScreenshotTest {
 
     private void captureTheme(Context target, int mode, String theme, File output)
             throws Exception {
-        target.getSharedPreferences(HashemUi.PREFS, Context.MODE_PRIVATE)
-                .edit().putInt(HashemUi.KEY_NIGHT, mode).commit();
         InstrumentationRegistry.getInstrumentation().runOnMainSync(
                 () -> AppCompatDelegate.setDefaultNightMode(mode));
         SystemClock.sleep(700);
