@@ -121,7 +121,12 @@ public final class MmsPduComposer {
         switch (type.toLowerCase(java.util.Locale.ROOT)) {
             case "image/jpeg": case "image/png": case "image/gif": case "image/webp":
             case "application/pdf": case "text/plain": case "text/vcard":
-            case "application/octet-stream": return true;
+            case "application/octet-stream": case "application/zip": case "application/msword":
+            case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+            case "application/vnd.ms-excel": case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+            case "application/vnd.ms-powerpoint": case "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+            case "application/rtf": case "application/json": case "text/csv":
+            case "audio/mpeg": case "audio/mp4": case "video/mp4": return true;
             default: return false;
         }
     }
