@@ -2,16 +2,16 @@ package com.hashem.sms;
 import android.content.*;import android.database.sqlite.*;import android.database.*;import android.net.Uri;import java.io.File;import android.provider.Telephony;import android.util.Log;import java.util.*;import java.util.concurrent.locks.ReentrantLock;
 public class Db extends SQLiteOpenHelper{
  public static final ReentrantLock PROVIDER_SYNC_LOCK = new ReentrantLock();
- public Db(Context c){super(c,"hashem.db",null,10);} 
+ public Db(Context c){super(c,"hashem.db",null,11);} 
  @Override public void onConfigure(SQLiteDatabase d){super.onConfigure(d);d.setForeignKeyConstraintsEnabled(true);}
  public void onCreate(SQLiteDatabase d){
-  d.execSQL("CREATE TABLE messages(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,type TEXT,status TEXT,ts INTEGER,provider_id INTEGER,read INTEGER DEFAULT 0,star INTEGER DEFAULT 0,trash INTEGER NOT NULL DEFAULT 0)");
+  d.execSQL("CREATE TABLE messages(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,type TEXT,status TEXT,ts INTEGER,provider_id INTEGER,read INTEGER DEFAULT 0,star INTEGER DEFAULT 0,trash INTEGER NOT NULL DEFAULT 0,bulk_campaign_id INTEGER)");
   d.execSQL("CREATE TABLE groups(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE)");
   d.execSQL("CREATE TABLE group_members(gid INTEGER,address TEXT,name TEXT,PRIMARY KEY(gid,address))");
   d.execSQL("CREATE TABLE schedules(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,at INTEGER)");
   d.execSQL("CREATE TABLE forward_rules(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL UNIQUE,destination TEXT NOT NULL)");
   d.execSQL("CREATE TABLE conversation_flags(address TEXT PRIMARY KEY,archived INTEGER NOT NULL DEFAULT 0,blocked INTEGER NOT NULL DEFAULT 0)");
-  createPerformanceIndexes(d);d.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_provider_id ON messages(provider_id)");createMmsAttachmentsTable(d);
+  createPerformanceIndexes(d);d.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_provider_id ON messages(provider_id)");createMmsAttachmentsTable(d);createBulkCampaignsTable(d);
  }
  private boolean hasColumn(SQLiteDatabase d,String table,String column){Cursor c=null;try{c=d.rawQuery("PRAGMA table_info("+table+")",null);while(c.moveToNext())if(column.equalsIgnoreCase(c.getString(c.getColumnIndexOrThrow("name"))))return true;return false;}finally{if(c!=null)c.close();}}
  private void createPerformanceIndexes(SQLiteDatabase d){d.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_address_ts ON messages(address,ts DESC)");d.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_trash_type_ts ON messages(trash,type,ts DESC)");d.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_type_read_trash_address ON messages(type,read,trash,address)");d.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_star_ts ON messages(star,ts DESC)");}
@@ -24,10 +24,34 @@ public class Db extends SQLiteOpenHelper{
   if(oldVersion<7&&!hasColumn(d,"messages","provider_id"))d.execSQL("ALTER TABLE messages ADD COLUMN provider_id INTEGER");
   if(oldVersion<9)rebuildMessagesWithoutThread(d);
   if(oldVersion<10)createMmsAttachmentsTable(d);
+  if(oldVersion<11){if(!hasColumn(d,"messages","bulk_campaign_id"))d.execSQL("ALTER TABLE messages ADD COLUMN bulk_campaign_id INTEGER");createBulkCampaignsTable(d);}
  }
  private void createMmsAttachmentsTable(SQLiteDatabase d){
   d.execSQL("CREATE TABLE IF NOT EXISTS message_attachments(id INTEGER PRIMARY KEY AUTOINCREMENT,message_id INTEGER NOT NULL,local_path TEXT NOT NULL,content_type TEXT NOT NULL,size_bytes INTEGER NOT NULL,transaction_id TEXT NOT NULL,FOREIGN KEY(message_id) REFERENCES messages(id) ON DELETE CASCADE)");
   d.execSQL("CREATE INDEX IF NOT EXISTS idx_message_attachments_message_id ON message_attachments(message_id)");
+ }
+
+ private void createBulkCampaignsTable(SQLiteDatabase d){
+  d.execSQL("CREATE TABLE IF NOT EXISTS bulk_campaigns(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,created_at INTEGER NOT NULL,recipient_count INTEGER NOT NULL CHECK(recipient_count>=0))");
+  d.execSQL("CREATE INDEX IF NOT EXISTS idx_bulk_campaigns_created_at ON bulk_campaigns(created_at DESC)");
+  d.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_bulk_campaign_id ON messages(bulk_campaign_id)");
+ }
+ public long createBulkCampaign(String name,int recipientCount){
+  if(name==null||name.trim().isEmpty()||recipientCount<1)throw new IllegalArgumentException("Invalid bulk campaign");
+  ContentValues row=new ContentValues();row.put("name",name.trim());row.put("created_at",System.currentTimeMillis());row.put("recipient_count",recipientCount);
+  return getWritableDatabase().insertOrThrow("bulk_campaigns",null,row);
+ }
+ public long addBulkMessage(String address,String body,String status,long campaignId){
+  if(campaignId<=0)throw new IllegalArgumentException("Invalid bulk campaign id");
+  ContentValues row=cv(address,body,"out",status);row.put("bulk_campaign_id",campaignId);
+  return getWritableDatabase().insert("messages",null,row);
+ }
+ public Cursor listBulkCampaigns(){
+  return getReadableDatabase().rawQuery("SELECT c.id,c.name,c.created_at,c.recipient_count,"
+    +"SUM(CASE WHEN m.status IN ('تم الإرسال','تم التسليم','sent','delivered') THEN 1 ELSE 0 END) AS sent_count,"
+    +"SUM(CASE WHEN m.status IN ('لم يتم الإرسال','فشل','failed') THEN 1 ELSE 0 END) AS failed_count,"
+    +"MAX(0,c.recipient_count-SUM(CASE WHEN m.status IN ('تم الإرسال','تم التسليم','sent','delivered') THEN 1 ELSE 0 END)-SUM(CASE WHEN m.status IN ('لم يتم الإرسال','فشل','failed') THEN 1 ELSE 0 END)) AS pending_count "
+    +"FROM bulk_campaigns c LEFT JOIN messages m ON m.bulk_campaign_id=c.id GROUP BY c.id ORDER BY c.created_at DESC,c.id DESC",null);
  }
  public long addMmsAttachment(long messageId,String localPath,String contentType,long sizeBytes,String transactionId){
   if(messageId<=0||localPath==null||localPath.trim().isEmpty()||(!"image/jpeg".equals(contentType)&&!"image/png".equals(contentType))||sizeBytes<=0||transactionId==null||transactionId.trim().isEmpty())throw new IllegalArgumentException("Invalid MMS attachment metadata");
