@@ -66,7 +66,6 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
         final LinearLayout[] chips = new LinearLayout[6];
         final TextView[] chipTexts = new TextView[6];
         final ImageView[] chipIcons = new ImageView[6];
-        TextView unreadBadge, failedBadge;
         Typeface bold, regular;
         String lastKey = "";
         long lastCount = 0;
@@ -123,12 +122,6 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                     == Configuration.UI_MODE_NIGHT_YES;
         }
 
-        void setNight(boolean night) {
-            int mode = night ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO;
-            m.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putInt(KEY_NIGHT, mode).apply();
-            AppCompatDelegate.setDefaultNightMode(mode);
-        }
-
         // ---------- Header: logo + theme toggle ----------
         void header() {
             LinearLayout bar = (LinearLayout) m.root.getChildAt(0);
@@ -146,35 +139,6 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                 if (child instanceof TextView) child.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
             }
 
-            LinearLayout actions = (LinearLayout) bar.getChildAt(bar.getChildCount() - 1);
-            if (actions.getChildCount() > 0) actions.getChildAt(0).setVisibility(View.GONE); // old search icon
-
-            boolean night = isNight();
-            LinearLayout pill = new LinearLayout(m);
-            pill.setOrientation(LinearLayout.HORIZONTAL);
-            pill.setGravity(Gravity.CENTER_VERTICAL);
-            pill.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-            pill.setPadding(dp(3), dp(3), dp(3), dp(3));
-            pill.setBackground(round(col(R.color.surface_variant), col(R.color.search_border), dp(24), dp(1)));
-            ImageView moon = toggleIcon(R.drawable.ic_moon, night, R.string.dark_mode);
-            ImageView sun = toggleIcon(R.drawable.ic_sun, !night, R.string.light_mode);
-            moon.setOnClickListener(v -> setNight(true));
-            sun.setOnClickListener(v -> setNight(false));
-            pill.addView(moon, new LinearLayout.LayoutParams(dp(40), dp(40)));
-            pill.addView(sun, new LinearLayout.LayoutParams(dp(40), dp(40)));
-            LinearLayout.LayoutParams plp = new LinearLayout.LayoutParams(-2, -2);
-            plp.setMarginEnd(dp(8));
-            actions.addView(pill, 0, plp);
-        }
-
-        ImageView toggleIcon(int res, boolean active, int contentDescRes) {
-            ImageView v = new ImageView(m);
-            v.setImageResource(res);
-            v.setScaleType(ImageView.ScaleType.CENTER);
-            try { v.setContentDescription(m.getString(contentDescRes)); } catch (Throwable ignored) {}
-            v.setColorFilter(active ? col(R.color.on_primary) : col(R.color.on_surface_variant));
-            if (active) v.setBackground(oval(col(R.color.accent_cyan), 0, 0));
-            return v;
         }
 
         // ---------- Search bar ----------
@@ -232,21 +196,6 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                 tx.setTextSize(13);
                 if (bold != null) tx.setTypeface(bold);
                 chip.addView(tx);
-                if (i > 0) {
-                    TextView badge = new TextView(m);
-                    badge.setTextSize(12);
-                    badge.setTextColor(Color.WHITE);
-                    badge.setGravity(Gravity.CENTER);
-                    if (bold != null) badge.setTypeface(bold);
-                    badge.setMinWidth(dp(22));
-                    badge.setPadding(dp(5), 0, dp(5), 0);
-                    badge.setBackground(round(i == 1 ? 0xFF2F80FF : col(R.color.error), 0, dp(12), 0));
-                    badge.setVisibility(View.GONE);
-                    LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(-2, dp(20));
-                    blp.setMarginStart(dp(8));
-                    chip.addView(badge, blp);
-                    if (i == 1) unreadBadge = badge; else if (i == 2) failedBadge = badge;
-                }
                 chip.setOnClickListener(v -> { m.filter = f; m.selectedBottomTab = "conversations"; m.render(); });
                 LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(-2, dp(34));
                 clp.setMarginEnd(dp(6));
@@ -262,35 +211,6 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             chips[i].setBackground(round(fill, stroke, dp(24), dp(1)));
             chipTexts[i].setTextColor(fg);
             chipIcons[i].setColorFilter(fg);
-        }
-
-        void setBadge(TextView b, int n) {
-            if (b == null || n < 0) return;
-            if (n == 0) { if (b.getVisibility() != View.GONE) b.setVisibility(View.GONE); return; }
-            String t = n > 99 ? "99+" : String.valueOf(n);
-            if (!t.contentEquals(b.getText())) b.setText(t);
-            if (b.getVisibility() != View.VISIBLE) b.setVisibility(View.VISIBLE);
-        }
-
-        void refreshCounts() {
-            long now = SystemClock.uptimeMillis();
-            if (now - lastCount < 3000) return;
-            lastCount = now;
-            MainActivity.DATA_EXECUTOR.execute(() -> {
-                int u = -1, f = -1;
-                Cursor c = null;
-                try { c = m.db.listThreads("unread"); u = c.getCount(); } catch (Throwable ignored) {}
-                finally { if (c != null) try { c.close(); } catch (Throwable ignored) {} }
-                c = null;
-                try { c = m.db.list("failed"); f = c.getCount(); } catch (Throwable ignored) {}
-                finally { if (c != null) try { c.close(); } catch (Throwable ignored) {} }
-                final int uu = u, ff = f;
-                m.runOnUiThread(() -> {
-                    if (m.isFinishing() || m.isDestroyed()) return;
-                    setBadge(unreadBadge, uu);
-                    setBadge(failedBadge, ff);
-                });
-            });
         }
 
         // ---------- Floating compose button ----------
@@ -338,7 +258,6 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                     styleChip(i, sel);
                 }
             }
-            refreshCounts();
             styleThreads();
         }
 
