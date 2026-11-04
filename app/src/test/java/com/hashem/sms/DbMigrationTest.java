@@ -26,7 +26,7 @@ import android.content.ContentValues;
 public class DbMigrationTest {
     private Context context;
 
-    private static final String[] V11_COLUMNS = {
+    private static final String[] V12_COLUMNS = {
             "id", "address", "body", "type", "status", "ts",
             "provider_id", "read", "star", "trash", "bulk_campaign_id"
     };
@@ -41,7 +41,9 @@ public class DbMigrationTest {
             "idx_messages_type_read_trash_address",
             "idx_messages_star_ts",
             "idx_messages_provider_id",
-            "idx_messages_bulk_campaign_id"
+            "idx_messages_bulk_campaign_id",
+            "idx_bulk_campaign_recipients_campaign_id",
+            "idx_bulk_campaign_recipients_message_id"
     };
     private static final String ATTACHMENT_INDEX = "idx_message_attachments_message_id";
 
@@ -57,7 +59,7 @@ public class DbMigrationTest {
         Db db = new Db(context);
         SQLiteDatabase upgraded = db.getWritableDatabase();
 
-        assertEquals(11, upgraded.getVersion());
+        assertEquals(12, upgraded.getVersion());
         assertEquals(5, countRows(upgraded, "messages"));
         assertArrayEquals(new long[]{101, 102, 103, 104, 105}, messageIds(upgraded));
         assertEquals(987L, providerId(upgraded, 101));
@@ -66,7 +68,7 @@ public class DbMigrationTest {
         assertEquals(-1L, providerId(upgraded, 104));
         assertEquals(321L, providerId(upgraded, 105));
 
-        assertArrayEquals(V11_COLUMNS, columns(upgraded, "messages"));
+        assertArrayEquals(V12_COLUMNS, columns(upgraded, "messages"));
         assertArrayEquals(V10_ATTACHMENT_COLUMNS, columns(upgraded, "message_attachments"));
         assertEquals(0, countRows(upgraded, "message_attachments"));
         assertAttachmentIndex(upgraded);
@@ -92,12 +94,12 @@ public class DbMigrationTest {
     }
 
     @Test
-    public void freshInstallCreatesVersion11ColumnsAndFiveStandardIndexes() {
+    public void freshInstallCreatesVersion12ColumnsAndRequiredIndexes() {
         Db db = new Db(context);
         SQLiteDatabase fresh = db.getWritableDatabase();
 
-        assertEquals(11, fresh.getVersion());
-        assertArrayEquals(V11_COLUMNS, columns(fresh, "messages"));
+        assertEquals(12, fresh.getVersion());
+        assertArrayEquals(V12_COLUMNS, columns(fresh, "messages"));
         assertArrayEquals(V10_ATTACHMENT_COLUMNS, columns(fresh, "message_attachments"));
         assertAttachmentIndex(fresh);
         assertFalse(Arrays.asList(columns(fresh, "messages")).contains("thread"));
@@ -115,7 +117,7 @@ public class DbMigrationTest {
 
         Db second = new Db(context);
         SQLiteDatabase reopened = second.getWritableDatabase();
-        assertEquals(11, reopened.getVersion());
+        assertEquals(12, reopened.getVersion());
         assertEquals(5, countRows(reopened, "messages"));
         assertArrayEquals(new long[]{101, 102, 103, 104, 105}, messageIds(reopened));
         assertEquals(987L, providerId(reopened, 101));
@@ -141,7 +143,7 @@ public class DbMigrationTest {
 
         Db db = new Db(context);
         SQLiteDatabase upgraded = db.getWritableDatabase();
-        assertEquals(11, upgraded.getVersion());
+        assertEquals(12, upgraded.getVersion());
         assertEquals(1, countRows(upgraded, "messages"));
         assertMessage(upgraded, 77, "legacy MMS row", "out", "sent", 1, 1, 0);
         assertEquals(456L, providerId(upgraded, 77));
@@ -261,11 +263,11 @@ public class DbMigrationTest {
 
         Db db = new Db(context);
         SQLiteDatabase upgraded = db.getWritableDatabase();
-        assertEquals(11, upgraded.getVersion());
+        assertEquals(12, upgraded.getVersion());
         assertEquals(1, countRows(upgraded, "messages"));
-        assertArrayEquals(V11_COLUMNS, columns(upgraded, "messages"));
+        assertArrayEquals(V12_COLUMNS, columns(upgraded, "messages"));
         assertMessage(upgraded, 88, "version 10 message", "out", "sent", 1, 0, 0);
-        long campaignId = db.createBulkCampaign("حملة اختبار الترحيل", 1);
+        long campaignId = db.createBulkCampaign("حملة اختبار الترحيل", new ArrayList<>(Collections.singletonList(new String[]{"+1008", ""})));
         assertTrue(campaignId > 0);
         db.close();
     }
@@ -273,14 +275,16 @@ public class DbMigrationTest {
     @Test
     public void bulkCampaignHistoryCountsOnlyConfirmedSentAndFailedMessages() {
         Db db = new Db(context);
-        long campaignId = db.createBulkCampaign("تعميم بداية الاختبارات", 3);
+        long campaignId = db.createBulkCampaign("تعميم بداية الاختبارات", new ArrayList<>(Arrays.asList(new String[]{"+1001", ""}, new String[]{"+1002", ""}, new String[]{"+1003", ""})));
         assertTrue(campaignId > 0);
         long sentId = db.addBulkMessage("+1001", "رسالة 1", "sending", campaignId);
         long failedId = db.addBulkMessage("+1002", "رسالة 2", "sending", campaignId);
         assertTrue(sentId > 0);
         assertTrue(failedId > 0);
         db.status(sentId, "تم الإرسال");
+        db.updateBulkRecipientStatus(sentId, "تم الإرسال");
         db.status(failedId, "لم يتم الإرسال");
+        db.updateBulkRecipientStatus(failedId, "لم يتم الإرسال");
         try (Cursor campaigns = db.listBulkCampaigns()) {
             assertTrue(campaigns.moveToFirst());
             assertEquals("تعميم بداية الاختبارات", campaigns.getString(campaigns.getColumnIndexOrThrow("name")));
@@ -289,13 +293,18 @@ public class DbMigrationTest {
             assertEquals(1, campaigns.getInt(campaigns.getColumnIndexOrThrow("failed_count")));
             assertEquals(1, campaigns.getInt(campaigns.getColumnIndexOrThrow("pending_count")));
         }
+        db.getWritableDatabase().delete("messages", "id=?", new String[]{String.valueOf(sentId)});
+        try (Cursor campaigns = db.listBulkCampaigns()) {
+            assertTrue(campaigns.moveToFirst());
+            assertEquals(1, campaigns.getInt(campaigns.getColumnIndexOrThrow("sent_count")));
+        }
         db.close();
     }
 
     @Test
     public void deliveryFailureDoesNotOverwriteConfirmedSmsSendFailure() {
         Db db = new Db(context);
-        long campaignId = db.createBulkCampaign("حملة حالات الإرسال", 1);
+        long campaignId = db.createBulkCampaign("حملة حالات الإرسال", new ArrayList<>(Collections.singletonList(new String[]{"+1009", ""})));
         long failedId = db.addBulkMessage("+1009", "رسالة فاشلة", "sending", campaignId);
         db.status(failedId, "لم يتم الإرسال");
         db.updateDeliveryStatus(failedId, "لم يتم التسليم");
