@@ -40,7 +40,8 @@ public class DbMigrationTest {
             "idx_messages_trash_type_ts",
             "idx_messages_type_read_trash_address",
             "idx_messages_star_ts",
-            "idx_messages_provider_id"
+            "idx_messages_provider_id",
+            "idx_messages_bulk_campaign_id"
     };
     private static final String ATTACHMENT_INDEX = "idx_message_attachments_message_id";
 
