@@ -12,7 +12,7 @@ jobs:
   screenshots:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[screenshots]') || contains(github.event.head_commit.message, '[batch-complete]')
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 50
     steps:
       - name: Checkout phase1-ui
         uses: actions/checkout@v4
@@ -31,12 +31,14 @@ jobs:
       - name: Run UI screenshot tests on Android emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 30
           target: google_apis
           arch: x86_64
           profile: pixel_2
+          cores: 4
+          ram-size: 4096
           force-avd-creation: true
-          emulator-boot-timeout: 600
+          emulator-boot-timeout: 900
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -wipe-data -camera-back none -camera-front none
           disable-animations: true
           disable-spellchecker: true
