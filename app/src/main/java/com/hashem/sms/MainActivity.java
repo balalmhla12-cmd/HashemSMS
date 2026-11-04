@@ -192,48 +192,68 @@ public class MainActivity extends androidx.appcompat.app.AppCompatActivity{
  void trashScreen(){list.addView(tv("المهملات",22));list.addView(tv("استعد الرسائل المحذوفة أو احذفها نهائيًا.",14));android.database.Cursor c=db.listTrash();int n=0;while(c.moveToNext()){long id=c.getLong(c.getColumnIndexOrThrow("id"));String a=c.getString(c.getColumnIndexOrThrow("address")),body=c.getString(c.getColumnIndexOrThrow("body")),status=c.getString(c.getColumnIndexOrThrow("status"));if(!search.getText().toString().trim().isEmpty()&&!a.contains(search.getText().toString().trim())&&!body.contains(search.getText().toString().trim()))continue;LinearLayout card=new LinearLayout(this);card.setOrientation(LinearLayout.VERTICAL);styleScreenCard(card);card.addView(tv("من/إلى: "+a,16));card.addView(tv(body,16));card.addView(tv("الحالة السابقة: "+status,13));LinearLayout actions=new LinearLayout(this);Button restore=button("استعادة");restore.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("استعادة الرسالة").setMessage("ستعود الرسالة إلى المحادثة الأصلية.").setNegativeButton("إلغاء",null).setPositiveButton("استعادة",(d,w)->{db.restoreTrashMessage(id);render();}).show());Button remove=button("حذف نهائي");remove.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("حذف نهائي").setMessage("لا يمكن التراجع عن حذف هذه الرسالة نهائيًا.").setNegativeButton("إلغاء",null).setPositiveButton("حذف نهائي",(d,w)->{db.permanentlyDeleteTrashMessage(id);render();}).show());actions.addView(restore,new LinearLayout.LayoutParams(0,-2,1));actions.addView(remove,new LinearLayout.LayoutParams(0,-2,1));card.addView(actions);list.addView(card);View line=new View(this);line.setBackgroundColor(UiResources.color(MainActivity.this,R.color.divider));list.addView(line,new LinearLayout.LayoutParams(-1,1));n++;}c.close();if(n==0)list.addView(tv("المهملات فارغة",17));}
  void failedScreen(){
   list.addView(tv("الرسائل التي تعذّر إرسالها",22));
-  list.addView(tv("تُجمع الرسائل حسب المحادثة، وتظهر الأحدث أولًا. يمكنك إعادة إرسال أي رسالة أو توجيهها يدويًا.",14));
+  list.addView(tv("تُعرض الرسائل الأحدث أولًا. أعد إرسال الرسالة إلى رقمها الأصلي، أو وجّهها عبر قاعدة محفوظة.",14));
   android.database.Cursor c=db.list("failed");
-  java.util.LinkedHashMap<String,ArrayList<String[]>> grouped=new java.util.LinkedHashMap<>();
+  ArrayList<String[]> failedRows=new ArrayList<>();
   String query=search.getText().toString().trim().toLowerCase(Locale.ROOT);
   try{
    while(c.moveToNext()){
-    String a=c.getString(c.getColumnIndexOrThrow("address"));
+    String address=c.getString(c.getColumnIndexOrThrow("address"));
     String body=c.getString(c.getColumnIndexOrThrow("body"));
-    String st=c.getString(c.getColumnIndexOrThrow("status"));
-    if(!query.isEmpty()&&!a.toLowerCase(Locale.ROOT).contains(query)&&!body.toLowerCase(Locale.ROOT).contains(query))continue;
-    ArrayList<String[]> rows=grouped.get(a);if(rows==null){rows=new ArrayList<>();grouped.put(a,rows);}rows.add(new String[]{body,st});
+    String status=c.getString(c.getColumnIndexOrThrow("status"));
+    String stamp=c.getString(c.getColumnIndexOrThrow("ts"));
+    if(address==null)address="";
+    if(body==null)body="";
+    if(!query.isEmpty()&&!address.toLowerCase(Locale.ROOT).contains(query)&&!body.toLowerCase(Locale.ROOT).contains(query))continue;
+    failedRows.add(new String[]{address,body,status==null?"":status,stamp==null?"":stamp});
    }
   }finally{c.close();}
-  int total=0;
-  for(java.util.Map.Entry<String,ArrayList<String[]>> entry:grouped.entrySet()){
-   String a=entry.getKey();ArrayList<String[]> rows=entry.getValue();total+=rows.size();
+  android.database.Cursor rulesCursor=db.listForwardRules();
+  boolean hasSavedForwardRules;
+  try{hasSavedForwardRules=rulesCursor.moveToFirst();}finally{rulesCursor.close();}
+  for(String[] failed:failedRows){
+   String address=failed[0],body=failed[1],status=failed[2];
+   long timestamp=0L;try{timestamp=Long.parseLong(failed[3]);}catch(Exception ignored){}
+   ContactData contact=loadContactData(address);
+   String displayName=contact.name.trim().isEmpty()?address:contact.name.trim();
    LinearLayout card=new LinearLayout(this);card.setOrientation(LinearLayout.VERTICAL);styleScreenCard(card);
-   card.addView(tv((contactName(a).isEmpty()?a:contactName(a)+"  ·  "+a)+"  ("+rows.size()+")",17));
-   for(String[] failed:rows){
-    String body=failed[0],st=failed[1];
-    LinearLayout item=new LinearLayout(this);item.setOrientation(LinearLayout.VERTICAL);
-    item.setPadding(UiResources.dp(this,8),UiResources.dp(this,5),UiResources.dp(this,8),UiResources.dp(this,5));
-    item.addView(tv(body,15));item.addView(tv("الحالة: "+st,12));
-    LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.VERTICAL);
-    Button retry=button("إعادة الإرسال إلى الرقم الأصلي");
-    retry.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("إعادة إرسال الرسالة؟").setMessage("سيتم إرسال الرسالة مرة أخرى إلى "+a).setNegativeButton("إلغاء",null).setPositiveButton("إرسال",(d,w)->send(a,body)).show());
-    boolean hasSavedForwardRules=false;
-    android.database.Cursor rulesCursor=db.listForwardRules();
-    try{hasSavedForwardRules=rulesCursor.moveToFirst();}finally{rulesCursor.close();}
-    if(hasSavedForwardRules){
-     Button forward=button("توجيه عبر قاعدة مسماة");
-     forward.setOnClickListener(v->forwardFailedWithRule(a,body));
-     actions.addView(forward);
-    }
-    actions.addView(retry);item.addView(actions);card.addView(item);
-    View divider=new View(this);divider.setBackgroundColor(UiResources.color(MainActivity.this,R.color.divider));card.addView(divider,new LinearLayout.LayoutParams(-1,1));
+   LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.HORIZONTAL);row.setGravity(Gravity.CENTER_VERTICAL);row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+   android.widget.FrameLayout avatarFrame=new android.widget.FrameLayout(this);
+   int avatarSize=UiResources.dp(this,48);
+   GradientDrawable avatarBg=new GradientDrawable();avatarBg.setShape(GradientDrawable.OVAL);avatarBg.setColor(UiResources.color(this,R.color.avatar_container));
+   ImageView avatar=new ImageView(this);avatar.setScaleType(ImageView.ScaleType.CENTER_CROP);avatar.setBackground(avatarBg);avatar.setClipToOutline(true);
+   android.widget.FrameLayout.LayoutParams avatarLp=new android.widget.FrameLayout.LayoutParams(avatarSize,avatarSize);
+   avatarFrame.addView(avatar,avatarLp);
+   TextView fallback=tv(displayName.isEmpty()?"؟":displayName.substring(0,1),17);fallback.setGravity(Gravity.CENTER);fallback.setPadding(0,0,0,0);fallback.setBackground(avatarBg);
+   android.widget.FrameLayout.LayoutParams fallbackLp=new android.widget.FrameLayout.LayoutParams(avatarSize,avatarSize);
+   avatarFrame.addView(fallback,fallbackLp);
+   row.addView(avatarFrame,new LinearLayout.LayoutParams(avatarSize,avatarSize));
+   if(contact.photoUri!=null)loadContactPhotoAsync(address,contact.photoUri,avatar,fallback);
+   LinearLayout details=new LinearLayout(this);details.setOrientation(LinearLayout.VERTICAL);details.setPadding(UiResources.dp(this,10),0,UiResources.dp(this,10),0);
+   TextView name=tv(displayName,15);name.setPadding(0,0,0,UiResources.dp(this,2));name.setTypeface(androidx.core.content.res.ResourcesCompat.getFont(this,R.font.almarai_bold));
+   TextView preview=tv(body,14);preview.setPadding(0,0,0,UiResources.dp(this,3));preview.setMaxLines(2);preview.setEllipsize(android.text.TextUtils.TruncateAt.END);
+   LinearLayout meta=new LinearLayout(this);meta.setOrientation(LinearLayout.HORIZONTAL);meta.setGravity(Gravity.CENTER_VERTICAL);
+   TextView failedLabel=tv("لم يتم الإرسال",12);failedLabel.setTextColor(UiResources.color(this,R.color.error));failedLabel.setPadding(0,0,UiResources.dp(this,8),0);
+   TextView time=tv(timestamp>0?android.text.format.DateFormat.getTimeFormat(this).format(new java.util.Date(timestamp)):"",12);time.setPadding(0,0,0,0);time.setTextColor(UiResources.color(this,R.color.timestamp));
+   meta.addView(failedLabel);meta.addView(time);
+   details.addView(name);details.addView(preview);details.addView(meta);
+   row.addView(details,new LinearLayout.LayoutParams(0,-2,1));
+   ImageButton retry=headerIconButton(android.R.drawable.ic_menu_rotate,"إعادة الإرسال إلى الرقم الأصلي");
+   retry.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("إعادة إرسال الرسالة؟").setMessage("سيتم إرسال الرسالة مرة أخرى إلى "+address).setNegativeButton("إلغاء",null).setPositiveButton("إرسال",(d,w)->send(address,body)).show());
+   row.addView(retry,new LinearLayout.LayoutParams(UiResources.dp(this,42),UiResources.dp(this,42)));
+   card.addView(row);
+   if(hasSavedForwardRules){
+    Button forward=button("توجيه عبر قاعدة محفوظة");
+    forward.setOnClickListener(v->forwardFailedWithRule(address,body));
+    LinearLayout.LayoutParams forwardLp=new LinearLayout.LayoutParams(-1,-2);forwardLp.topMargin=UiResources.dp(this,8);card.addView(forward,forwardLp);
    }
-   card.setOnClickListener(v->{Intent i=new Intent(this,ConversationActivity.class);i.putExtra("address",a);startActivity(i);});
+   card.setOnClickListener(v->{Intent i=new Intent(this,ConversationActivity.class);i.putExtra("address",address);startActivity(i);});
    list.addView(card);
+   View divider=new View(this);divider.setBackgroundColor(UiResources.color(MainActivity.this,R.color.divider));list.addView(divider,new LinearLayout.LayoutParams(-1,UiResources.dp(this,1)));
   }
-  if(total==0)list.addView(tv("لا توجد رسائل فاشلة حاليًا",17));
+  if(failedRows.isEmpty())list.addView(tv("لا توجد رسائل فاشلة حاليًا",17));
  }
+
  void forwardFailedWithRule(String originalAddress,String body){android.database.Cursor c=db.listForwardRules();ArrayList<Long> ids=new ArrayList<>();ArrayList<String> labels=new ArrayList<>();ArrayList<String> destinations=new ArrayList<>();while(c.moveToNext()){ids.add(c.getLong(c.getColumnIndexOrThrow("id")));labels.add(c.getString(c.getColumnIndexOrThrow("name"))+" — "+c.getString(c.getColumnIndexOrThrow("destination")));destinations.add(c.getString(c.getColumnIndexOrThrow("destination")));}c.close();if(ids.isEmpty()){new AlertDialog.Builder(this).setMessage("لا توجد قواعد توجيه").setPositiveButton("حسنًا",null).show();return;}new AlertDialog.Builder(this).setTitle("اختر قاعدة التوجيه").setItems(labels.toArray(new String[0]),(dialog,which)->new AlertDialog.Builder(this).setTitle("تأكيد التوجيه").setMessage("ستُرسل نسخة من نص الرسالة الفاشلة إلى "+destinations.get(which)+" عبر القاعدة: "+labels.get(which)+". لن تُرسل إلى المستلم الأصلي بهذه الخطوة.").setNegativeButton("إلغاء",null).setPositiveButton("توجيه الآن",(d,w)->send(destinations.get(which),body)).show()).setNegativeButton("إلغاء",null).show();}
   void openNewConversationScreen(){new ComposeFlow("").show();}
   void composeDialog(){openNewConversationScreen();}
