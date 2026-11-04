@@ -292,6 +292,22 @@ public class DbMigrationTest {
     }
 
     @Test
+    public void deliveryFailureDoesNotOverwriteConfirmedSmsSendFailure() {
+        Db db = new Db(context);
+        long campaignId = db.createBulkCampaign("حملة حالات الإرسال", 1);
+        long failedId = db.addBulkMessage("+1009", "رسالة فاشلة", "sending", campaignId);
+        db.status(failedId, "لم يتم الإرسال");
+        db.updateDeliveryStatus(failedId, "لم يتم التسليم");
+        try (Cursor campaigns = db.listBulkCampaigns()) {
+            assertTrue(campaigns.moveToFirst());
+            assertEquals(1, campaigns.getInt(campaigns.getColumnIndexOrThrow("failed_count")));
+            assertEquals(0, campaigns.getInt(campaigns.getColumnIndexOrThrow("sent_count")));
+            assertEquals(0, campaigns.getInt(campaigns.getColumnIndexOrThrow("pending_count")));
+        }
+        db.close();
+    }
+
+    @Test
     public void permanentlyDeletingMessageRemovesAttachmentRowsAndLocalFiles() throws Exception {
         Db db = new Db(context);
         SQLiteDatabase writable = db.getWritableDatabase();

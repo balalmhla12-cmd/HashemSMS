@@ -99,6 +99,12 @@ public class Db extends SQLiteOpenHelper{
  private void copyColumnOrDefault(Cursor c,ContentValues v,String column,int fallback){int i=c.getColumnIndex(column);if(i<0)v.put(column,fallback);else copyColumn(c,v,column);}
  public long addMessage(String a,String b,String t,String s){ContentValues v=cv(a,b,t,s);return getWritableDatabase().insert("messages",null,v);}
  public void status(long id,String s){ContentValues v=new ContentValues();v.put("status",s);getWritableDatabase().update("messages",v,"id=?",new String[]{""+id});}
+ public void updateDeliveryStatus(long id,String deliveryStatus){
+  Cursor c=null;boolean sendFailed=false;
+  try{c=getReadableDatabase().query("messages",new String[]{"status"},"id=?",new String[]{String.valueOf(id)},null,null,null);if(c.moveToFirst()){String current=c.getString(0);sendFailed=current!=null&&(current.toLowerCase(java.util.Locale.ROOT).contains("fail")||current.contains("لم يتم الإرسال")||current.contains("فشل"));}}
+  finally{if(c!=null)c.close();}
+  if(!sendFailed)status(id,deliveryStatus);
+ }
  public void saveOutgoingToSystemProvider(Context context,long id){
   PROVIDER_SYNC_LOCK.lock();Cursor c=null;
   try{c=getReadableDatabase().query("messages",new String[]{"address","body","ts"},"id=?",new String[]{String.valueOf(id)},null,null,null);if(!c.moveToFirst())return;
