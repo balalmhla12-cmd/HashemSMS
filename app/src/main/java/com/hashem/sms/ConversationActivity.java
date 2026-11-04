@@ -55,6 +55,8 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
     private androidx.activity.result.ActivityResultLauncher<Intent> contactPicker;
     private Uri pendingCameraUri;
     private String pendingAttachmentMime = "image/jpeg";
+    private float messageTextScale = 1f;
+    private android.view.ScaleGestureDetector messageScaleDetector;
     private LinearLayout attachmentPreview;
     private ImageView attachmentPreviewImage;
     private TextView attachmentPreviewLabel;
@@ -179,6 +181,18 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
         messages.setLayoutManager(new LinearLayoutManager(this));
         messageAdapter=new ConversationAdapter();
         messages.setAdapter(messageAdapter);
+        messageTextScale=getSharedPreferences("hashem_ui",MODE_PRIVATE).getFloat("message_text_scale",1f);
+        messageScaleDetector=new android.view.ScaleGestureDetector(this,new android.view.ScaleGestureDetector.SimpleOnScaleGestureListener(){
+            @Override public boolean onScale(android.view.ScaleGestureDetector detector){
+                float next=Math.max(0.8f,Math.min(1.8f,messageTextScale*detector.getScaleFactor()));
+                if(Math.abs(next-messageTextScale)>0.015f){messageTextScale=next;messageAdapter.notifyDataSetChanged();}
+                return true;
+            }
+            @Override public void onScaleEnd(android.view.ScaleGestureDetector detector){
+                getSharedPreferences("hashem_ui",MODE_PRIVATE).edit().putFloat("message_text_scale",messageTextScale).apply();
+            }
+        });
+        messages.setOnTouchListener((view,event)->{messageScaleDetector.onTouchEvent(event);return false;});
         root.addView(messages,new LinearLayout.LayoutParams(-1,0,1));
         LinearLayout composerRow=new LinearLayout(this);composerRow.setGravity(Gravity.CENTER_VERTICAL);composerRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);composerRow.setPadding(UiResources.dp(this,4),UiResources.dp(this,5),UiResources.dp(this,6),UiResources.dp(this,5));composerRow.setBackground(rounded(UiResources.color(ConversationActivity.this,R.color.surface_variant),UiResources.color(ConversationActivity.this,R.color.search_border),30));
         LinearLayout leftTools=new LinearLayout(this);leftTools.setOrientation(LinearLayout.VERTICAL);leftTools.setGravity(Gravity.CENTER);
@@ -312,7 +326,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
             if(holder instanceof DateHolder){((DateHolder)holder).text.setText(dateLabel(item.timestamp));return;}
             MessageHolder h=(MessageHolder)holder;boolean outgoing="out".equals(item.type);
             h.line.setGravity(outgoing?Gravity.RIGHT:Gravity.LEFT);h.column.setGravity(outgoing?Gravity.RIGHT:Gravity.LEFT);
-            h.body.setText(item.body);h.body.setGravity(outgoing?Gravity.RIGHT:Gravity.LEFT);h.body.setTextIsSelectable(false);if(item.attachmentPath!=null){android.graphics.BitmapFactory.Options options=new android.graphics.BitmapFactory.Options();options.inSampleSize=4;android.graphics.Bitmap thumbnail=android.graphics.BitmapFactory.decodeFile(item.attachmentPath,options);if(thumbnail!=null){h.media.setImageBitmap(thumbnail);h.media.setVisibility(View.VISIBLE);}else h.media.setVisibility(View.GONE);}else h.media.setVisibility(View.GONE);
+            h.body.setText(item.body);h.body.setTextSize(17f*messageTextScale);h.meta.setTextSize(11f*messageTextScale);h.body.setGravity(outgoing?Gravity.RIGHT:Gravity.LEFT);h.body.setTextIsSelectable(false);if(item.attachmentPath!=null){android.graphics.BitmapFactory.Options options=new android.graphics.BitmapFactory.Options();options.inSampleSize=4;android.graphics.Bitmap thumbnail=android.graphics.BitmapFactory.decodeFile(item.attachmentPath,options);if(thumbnail!=null){h.media.setImageBitmap(thumbnail);h.media.setVisibility(View.VISIBLE);}else h.media.setVisibility(View.GONE);}else h.media.setVisibility(View.GONE);
             h.body.setTextColor(UiResources.color(ConversationActivity.this,outgoing?R.color.on_bubble_out:R.color.on_bubble_in));
             String state=outgoing?displayStatus(item.status):"";String time=new java.text.SimpleDateFormat("hh:mm a",new Locale("ar")).format(new Date(item.timestamp));h.meta.setText(outgoing?(state.isEmpty()?time:state+" · "+time):time);h.meta.setGravity(outgoing?Gravity.RIGHT:Gravity.LEFT);
             h.meta.setTextColor(UiResources.color(ConversationActivity.this,outgoing?R.color.on_bubble_out:R.color.on_bubble_in));
@@ -321,7 +335,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
             boolean isSelected=selected.contains(item.id);
             if(isSelected)bubbleBackground.setStroke(UiResources.dp(ConversationActivity.this,2),UiResources.color(ConversationActivity.this,R.color.primary_variant));
             h.bubble.setBackground(bubbleBackground);
-            h.actions.setVisibility(item.id==activeActionMessageId&&actionMode==null?View.VISIBLE:View.GONE);h.actions.setContentDescription("إجراءات الرسالة");
+            h.actions.setVisibility(item.id==activeActionMessageId&&actionMode==null?View.VISIBLE:View.GONE);h.actions.setContentDescription("إجراءات الرسالة");for(int actionIndex=0;actionIndex<h.actions.getChildCount();actionIndex++){View action=h.actions.getChildAt(actionIndex);action.setScaleX(messageTextScale);action.setScaleY(messageTextScale);}
             h.selector.setVisibility(actionMode!=null?View.VISIBLE:View.GONE);h.selector.setText(isSelected?"✓":"");h.selector.setTextColor(UiResources.color(ConversationActivity.this,isSelected?R.color.on_primary:R.color.primary_variant));GradientDrawable selectorBackground=new GradientDrawable();selectorBackground.setShape(GradientDrawable.OVAL);selectorBackground.setColor(UiResources.color(ConversationActivity.this,isSelected?R.color.primary:R.color.surface_variant));selectorBackground.setStroke(UiResources.dp(ConversationActivity.this,1),UiResources.color(ConversationActivity.this,isSelected?R.color.primary:R.color.outline));h.selector.setBackground(selectorBackground);h.selector.setContentDescription(isSelected?"رسالة محددة":"تحديد الرسالة");
             h.selector.setOnClickListener(v->{if(actionMode!=null)toggleSelection(item.id);});
             h.otp.setVisibility(View.GONE);h.retry.setVisibility(View.GONE);
