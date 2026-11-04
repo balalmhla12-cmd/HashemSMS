@@ -398,7 +398,7 @@ void pickContactsForCompose(EditText destination){
       new AlertDialog.Builder(MainActivity.this).setTitle("إذن المنبّه الدقيق")
        .setMessage("لم يُمنح إذن المنبّه الدقيق. ستعمل الرسالة الآن بموعد تقريبي. يمكنك فتح إعدادات الإذن لتحسين دقة الموعد.")
        .setPositiveButton("فتح إعدادات المنبّه الدقيق",(d,w)->{
-        try{MainActivity.this.MainActivity.this.startActivity(new Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,android.net.Uri.parse("package:"+MainActivity.this.MainActivity.this.getPackageName())));}
+        try{MainActivity.this.startActivity(new Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,android.net.Uri.parse("package:"+MainActivity.this.getPackageName())));}
         catch(Exception e){AlarmScheduler.clearPendingExactRequest(MainActivity.this);Toast.makeText(MainActivity.this,"تعذّر فتح إعدادات الإذن؛ ستبقى الجدولة تقريبية",Toast.LENGTH_LONG).show();}
        })
        .setNegativeButton("استخدام موعد تقريبي",(d,w)->{AlarmScheduler.clearPendingExactRequest(MainActivity.this);Toast.makeText(MainActivity.this,"تمت الجدولة بموعد تقريبي",Toast.LENGTH_LONG).show();})
