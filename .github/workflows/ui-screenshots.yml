@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   screenshots:
-    if: github.event_name == 'workflow_dispatch' || (contains(github.event.head_commit.message, '[batch-complete]') || contains(github.event.head_commit.message, '[screenshots]'))
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[screenshots]') || contains(github.event.head_commit.message, '[batch-complete]')
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -37,6 +37,7 @@ jobs:
           profile: pixel_2
           disable-animations: true
           script: |
+            set -euo pipefail
             chmod +x gradlew
             ./gradlew --no-daemon installDebug
             adb shell cmd role add-role-holder --user 0 android.app.role.SMS com.hashem.sms || true
@@ -45,21 +46,34 @@ jobs:
             adb shell pm grant com.hashem.sms android.permission.READ_SMS
             adb shell pm grant com.hashem.sms android.permission.READ_CONTACTS
             adb shell pm grant com.hashem.sms android.permission.POST_NOTIFICATIONS
+            mkdir -p ui-screenshots
             set +e
             ./gradlew --no-daemon connectedDebugAndroidTest
             test_status=$?
-            mkdir -p ui-screenshots
-            mkdir -p ui-screenshots
-            adb exec-out run-as com.hashem.sms.test sh -c 'cd files && tar -cf - HashemSMS-Screenshots' > ui-screenshots.tar || true
-            if [ -s ui-screenshots.tar ]; then tar -xf ui-screenshots.tar -C ui-screenshots; fi
+            set -e
+            adb exec-out run-as com.hashem.sms.test sh -c 'cd files && tar -cf - HashemSMS-Screenshots' > ui-screenshots.tar
+            test -s ui-screenshots.tar
+            tar -tf ui-screenshots.tar
+            tar -xf ui-screenshots.tar -C ui-screenshots
             rm -f ui-screenshots.tar
-            exit $test_status
+            screenshot_dir="ui-screenshots/HashemSMS-Screenshots"
+            test -d "$screenshot_dir"
+            screenshot_count="$(find "$screenshot_dir" -maxdepth 1 -type f -name '*.png' | wc -l)"
+            test "$screenshot_count" -eq 10
+            for theme in light dark; do
+              for screen in 01-home 02-conversation 03-composer 04-bulk 05-sidebar; do
+                test -s "$screenshot_dir/$screen-$theme.png"
+              done
+            done
+            if [ "$test_status" -ne 0 ]; then
+              exit "$test_status"
+            fi
 
-      - name: Upload light and dark screenshots
+      - name: Upload light and dark screenshots only
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: HashemSMS-UI-Screenshots-${{ github.sha }}
-          path: ui-screenshots/
-          if-no-files-found: warn
+          path: ui-screenshots/HashemSMS-Screenshots/*.png
+          if-no-files-found: error
           retention-days: 30
