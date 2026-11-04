@@ -62,7 +62,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
         static final SimpleDateFormat DAY = new SimpleDateFormat("EEEE", new Locale("ar"));
 
         final MainActivity m;
-        final String[] filters = {"all", "unread", "failed", "bulk", "unknown", "starred"};
+        final String[] filters = {"all", "unread", "failed", "bulk", "unknown", "scheduled"};
         final LinearLayout[] chips = new LinearLayout[6];
         final TextView[] chipTexts = new TextView[6];
         final ImageView[] chipIcons = new ImageView[6];
@@ -212,8 +212,8 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
         void buildChips() {
             LinearLayout tabs = (LinearLayout) m.filtersScroll.getChildAt(0);
             tabs.removeAllViews();
-            String[] labels = { m.getString(R.string.chip_all), m.getString(R.string.chip_unread), m.getString(R.string.chip_failed), m.getString(R.string.chip_bulk), m.getString(R.string.chip_unknown), m.getString(R.string.chip_starred) };
-            int[] icons = {R.drawable.ic_chip_all, R.drawable.ic_chip_eye, R.drawable.ic_chip_warning, R.drawable.ic_nav_messages, R.drawable.ic_nav_contacts, R.drawable.ic_star};
+            String[] labels = { m.getString(R.string.chip_all), m.getString(R.string.chip_unread), m.getString(R.string.chip_failed), m.getString(R.string.chip_bulk), m.getString(R.string.chip_unknown), "مجدولة" };
+            int[] icons = {R.drawable.ic_chip_all, R.drawable.ic_chip_eye, R.drawable.ic_chip_warning, R.drawable.ic_group, R.drawable.ic_nav_contacts, R.drawable.ic_schedule};
             ViewGroup.LayoutParams old = m.filtersScroll.getLayoutParams();
             if (old != null) { old.height = dp(34); m.filtersScroll.setLayoutParams(old); }
             for (int i = 0; i < filters.length; i++) {
