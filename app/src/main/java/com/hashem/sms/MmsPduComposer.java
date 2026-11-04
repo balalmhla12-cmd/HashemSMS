@@ -27,7 +27,7 @@ public final class MmsPduComposer {
     private MmsPduComposer() {
     }
 
-    /** A single JPEG or PNG attachment. */
+    /** A single allowlisted image or document attachment. */
     public static final class ImagePart {
         public final byte[] data;
         public final String contentType;
