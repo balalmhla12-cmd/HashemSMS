@@ -2,6 +2,7 @@ package com.hashem.sms;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.junit.Test;
@@ -104,9 +105,23 @@ public class MmsPduComposerTest {
             new MmsPduComposer.ImagePart(new byte[]{0x01}, "video/mp4", "clip.mp4");
             fail("video parts must be rejected");
         } catch (IllegalArgumentException expected) {
-            assertEquals("Only JPEG and PNG images are supported", expected.getMessage());
+            assertEquals("Unsupported MMS attachment type: video/mp4", expected.getMessage());
         }
     }
+    @Test
+    public void acceptsGifAndPdfAttachmentParts() {
+        byte[] gif = MmsPduComposer.build("T2", Collections.singletonList("+123"), null,
+                Collections.singletonList(new MmsPduComposer.ImagePart(
+                        new byte[]{0x47, 0x49, 0x46}, "image/gif", "sticker.gif")));
+        byte[] pdf = MmsPduComposer.build("T3", Collections.singletonList("+123"), null,
+                Collections.singletonList(new MmsPduComposer.ImagePart(
+                        new byte[]{0x25, 0x50, 0x44, 0x46}, "application/pdf", "document.pdf")));
+        assertTrue(gif.length > 20);
+        assertTrue(pdf.length > 20);
+        assertTrue(new String(gif, java.nio.charset.StandardCharsets.ISO_8859_1).contains("image/gif"));
+        assertTrue(new String(pdf, java.nio.charset.StandardCharsets.ISO_8859_1).contains("application/pdf"));
+    }
+
     @Test
     public void sendRequestHeaderStartsWithRequiredBytes() {
         byte[] actual = MmsPduComposer.build(
