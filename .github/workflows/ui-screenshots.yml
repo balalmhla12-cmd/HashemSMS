@@ -51,7 +51,7 @@ jobs:
           disable-animations: true
           disable-spellchecker: true
           script: |
-            set -euo pipefail
+            set -eu
             chmod +x gradlew
             ./gradlew --no-daemon installDebug
             adb shell cmd role add-role-holder --user 0 android.app.role.SMS com.hashem.sms || true
