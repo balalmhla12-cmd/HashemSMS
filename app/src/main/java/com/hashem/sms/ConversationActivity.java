@@ -201,7 +201,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
         TextView quickReplies=tv("الردود السريعة",10);quickReplies.setGravity(Gravity.CENTER);quickReplies.setPadding(UiResources.dp(this,2),0,UiResources.dp(this,2),0);quickReplies.setOnClickListener(v->showQuickReplies());leftTools.addView(quickReplies,new LinearLayout.LayoutParams(-2,-2));composerRow.addView(leftTools,new LinearLayout.LayoutParams(-2,-2));
         composer=new EditText(this);composer.setHint("رسالة نصية");composer.setTextSize(16);composer.setMinLines(1);composer.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE|android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);composer.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);composer.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG);composer.setGravity(Gravity.BOTTOM|Gravity.END);composer.setPadding(UiResources.dp(this,12),UiResources.dp(this,6),UiResources.dp(this,12),UiResources.dp(this,6));composer.setTextColor(UiResources.color(this,R.color.on_surface));composer.setHintTextColor(UiResources.color(this,R.color.on_surface_variant));composer.setBackgroundColor(UiResources.color(ConversationActivity.this,android.R.color.transparent));composerRow.addView(composer,new LinearLayout.LayoutParams(0,-2,1));
         ImageButton emoji=iconActionButton(R.drawable.ic_emoji,"إدراج رمز تعبيري",false);emoji.setOnClickListener(v->showEmojiPicker());composerRow.addView(emoji,new LinearLayout.LayoutParams(UiResources.dp(this,36),UiResources.dp(this,40)));
-        Button send=actionButton("إرسال",true);send.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_send,0,0,0);send.setCompoundDrawablePadding(UiResources.dp(ConversationActivity.this,6));send.setOnClickListener(v->send());send.setOnLongClickListener(v->{chooseSmsSubscription(new SubscriptionChoiceCallback(){public void onSelected(int id){getSharedPreferences("hashem_ui",MODE_PRIVATE).edit().putInt(preferredSimKey(),id).apply();Toast.makeText(ConversationActivity.this,"تم حفظ شريحة الإرسال لهذه المحادثة",Toast.LENGTH_SHORT).show();}public void onCancelled(){}} ,true);return true;});send.setContentDescription("إرسال الرسالة؛ اضغط مطولاً لاختيار شريحة SIM");LinearLayout.LayoutParams sendLp=new LinearLayout.LayoutParams(-2,UiResources.dp(this,40));sendLp.setMargins(UiResources.dp(this,4),0,0,0);composerRow.addView(send,sendLp);
+        Button send=actionButton("إرسال",true);send.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_send,0,0,0);send.setCompoundDrawablePadding(UiResources.dp(ConversationActivity.this,6));send.setOnClickListener(v->send());send.setOnLongClickListener(v->{chooseSmsSubscription(new SubscriptionChoiceCallback(){public void onSelected(int id){getSharedPreferences("hashem_ui",MODE_PRIVATE).edit().putInt(SimPreferenceKey.forAddress(address),id).apply();Toast.makeText(ConversationActivity.this,"تم حفظ شريحة الإرسال لهذه المحادثة",Toast.LENGTH_SHORT).show();}public void onCancelled(){}} ,true);return true;});send.setContentDescription("إرسال الرسالة؛ اضغط مطولاً لاختيار شريحة SIM");LinearLayout.LayoutParams sendLp=new LinearLayout.LayoutParams(-2,UiResources.dp(this,40));sendLp.setMargins(UiResources.dp(this,4),0,0,0);composerRow.addView(send,sendLp);
         composer.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int st,int count,int after){}public void onTextChanged(CharSequence s,int st,int before,int count){attachment.setImageResource(s.length()==0?R.drawable.ic_add:android.R.drawable.ic_menu_close_clear_cancel);attachment.setContentDescription(s.length()==0?"المرفقات":"مسح النص");}public void afterTextChanged(Editable e){}});
         attachment.setOnClickListener(v->{if(composer.length()>0){composer.setText("");return;}showAttachmentMenu(v);});
         attachmentPreview=new LinearLayout(this);attachmentPreview.setGravity(Gravity.CENTER_VERTICAL);attachmentPreview.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);attachmentPreview.setPadding(UiResources.dp(this,8),UiResources.dp(this,6),UiResources.dp(this,8),UiResources.dp(this,6));attachmentPreview.setVisibility(View.GONE);attachmentPreview.setBackground(rounded(UiResources.color(this,R.color.card_surface),UiResources.color(this,R.color.card_stroke),16));attachmentPreviewImage=new ImageView(this);attachmentPreviewImage.setScaleType(ImageView.ScaleType.CENTER_CROP);attachmentPreview.addView(attachmentPreviewImage,new LinearLayout.LayoutParams(UiResources.dp(this,64),UiResources.dp(this,64)));attachmentPreviewLabel=tv("صورة مرفقة",13);attachmentPreview.addView(attachmentPreviewLabel,new LinearLayout.LayoutParams(0,-2,1));Button removeAttachment=actionButton("إزالة",false);removeAttachment.setOnClickListener(v->clearPendingImage());attachmentPreview.addView(removeAttachment);LinearLayout.LayoutParams previewLp=new LinearLayout.LayoutParams(-1,-2);previewLp.bottomMargin=UiResources.dp(this,6);root.addView(attachmentPreview,previewLp);
@@ -561,27 +561,29 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
     void dispatchSms(String recipient,String body,String tag,int sentBase,int deliveredBase,Runnable onSelected){
         final android.content.Context appContext=getApplicationContext();final Db appDb=new Db(appContext);choosePreferredOrPrompt(new SubscriptionChoiceCallback(){public void onSelected(int subId){onSelected.run();SmsSending.SEND_EXECUTOR.execute(()->SmsSending.sendSmsInBackground(appContext,appDb,recipient,body,tag,sentBase,deliveredBase,subId,true));}public void onCancelled(){}});
     }
-    private String preferredSimKey(){
-        String raw=address==null?"":address;
-        String normalized=android.telephony.PhoneNumberUtils.normalizeNumber(raw);
-        if(normalized==null||normalized.isEmpty())normalized=raw.replaceAll("[^0-9]","");
-        return "preferred_sms_subscription_"+normalized;
-    }
     private void choosePreferredOrPrompt(SubscriptionChoiceCallback callback){
         android.content.SharedPreferences prefs=getSharedPreferences("hashem_ui",MODE_PRIVATE);
-        String key=preferredSimKey();
+        String key=SimPreferenceKey.forAddress(address);
         if(prefs.contains(key)){
             int preferred=prefs.getInt(key,-1);
             if(preferred<0){callback.onSelected(-1);return;}
             try{
-                if(checkSelfPermission("android.permission.READ_PHONE_STATE")!=PackageManager.PERMISSION_GRANTED){chooseSmsSubscription(callback);return;}
+                if(checkSelfPermission("android.permission.READ_PHONE_STATE")!=PackageManager.PERMISSION_GRANTED){
+                    chooseSmsSubscription(rememberSimChoice(prefs,key,callback));return;
+                }
                 java.util.List<android.telephony.SubscriptionInfo> active=android.telephony.SubscriptionManager.from(this).getActiveSubscriptionInfoList();
                 if(active!=null)for(android.telephony.SubscriptionInfo info:active)if(info.getSubscriptionId()==preferred){callback.onSelected(preferred);return;}
                 prefs.edit().remove(key).apply();
                 Toast.makeText(this,"الشريحة المحفوظة لم تعد متاحة؛ اختر شريحة أخرى.",Toast.LENGTH_SHORT).show();
             }catch(Exception e){android.util.Log.w("HashemSMS","Unable to validate preferred SIM",e);}
         }
-        chooseSmsSubscription(callback);
+        chooseSmsSubscription(rememberSimChoice(prefs,key,callback));
+    }
+    private SubscriptionChoiceCallback rememberSimChoice(android.content.SharedPreferences prefs,String key,SubscriptionChoiceCallback callback){
+        return new SubscriptionChoiceCallback(){
+            public void onSelected(int id){prefs.edit().putInt(key,id).apply();callback.onSelected(id);}
+            public void onCancelled(){callback.onCancelled();}
+        };
     }
 
     void chooseSmsSubscription(SubscriptionChoiceCallback callback){chooseSmsSubscription(callback,false);}
