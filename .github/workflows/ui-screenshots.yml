@@ -3,9 +3,6 @@ name: HashemSMS UI screenshots
 on:
   push:
     branches: [phase1-ui]
-    paths:
-      - 'app/**'
-      - '.github/workflows/ui-screenshots.yml'
   workflow_dispatch:
 
 permissions:
