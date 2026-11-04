@@ -348,18 +348,12 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
         button.setColorFilter(UiResources.color(this,R.color.primary_variant));button.setBackground(rounded(UiResources.color(this,R.color.primary_container),0,22));button.setPadding(0,0,0,0);button.setStateListAnimator(null);return button;
     }
     private void showAttachmentMenu(View anchor){
-        PopupMenu menu=new PopupMenu(this,anchor);
-        menu.getMenu().add("معرض الصور").setIcon(R.drawable.ic_attachment);
-        menu.getMenu().add("الكاميرا");
-        menu.getMenu().add("صور GIF");
-        menu.getMenu().add("الملصقات");
-        menu.getMenu().add("الملفات");
-        menu.getMenu().add("الموقع الجغرافي المباشر");
-        menu.getMenu().add("جهات الاتصال");
-        menu.getMenu().add("تحديد وقت للإرسال");
-        menu.getMenu().add("الموقع الجغرافي لمرة واحدة");
-        menu.setOnMenuItemClickListener(item->{String title=item.getTitle().toString();if(title.equals("معرض الصور")){imagePicker.launch(new androidx.activity.result.PickVisualMediaRequest.Builder().setMediaType(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE).build());return true;}Toast.makeText(this,"هذا النوع من المرفقات يحتاج استكمال دعمه قبل إتاحته.",Toast.LENGTH_SHORT).show();return true;});
-        menu.show();
+        String[] labels={"معرض الصور","الكاميرا","صور GIF","الملصقات","الملفات","الموقع الجغرافي المباشر","جهات الاتصال","تحديد وقت للإرسال","الموقع الجغرافي لمرة واحدة"};
+        int[] icons={R.drawable.ic_attachment,android.R.drawable.ic_menu_camera,R.drawable.ic_emoji,android.R.drawable.ic_menu_gallery,android.R.drawable.ic_menu_save,R.drawable.ic_location,R.drawable.ic_nav_contacts,R.drawable.ic_schedule,R.drawable.ic_location};
+        android.widget.GridLayout grid=new android.widget.GridLayout(this);grid.setColumnCount(3);grid.setRowCount(3);grid.setPadding(UiResources.dp(this,8),UiResources.dp(this,8),UiResources.dp(this,8),UiResources.dp(this,8));grid.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle("إضافة مرفق").setView(grid).setNegativeButton("إغلاق",null).create();
+        for(int i=0;i<labels.length;i++){final String label=labels[i];LinearLayout cell=new LinearLayout(this);cell.setOrientation(LinearLayout.VERTICAL);cell.setGravity(Gravity.CENTER);cell.setPadding(UiResources.dp(this,4),UiResources.dp(this,10),UiResources.dp(this,4),UiResources.dp(this,10));ImageView icon=new ImageView(this);icon.setImageResource(icons[i]);icon.setColorFilter(UiResources.color(this,R.color.primary_variant));cell.addView(icon,new LinearLayout.LayoutParams(UiResources.dp(this,28),UiResources.dp(this,28)));TextView text=tv(label,11);text.setGravity(Gravity.CENTER);text.setMaxLines(2);cell.addView(text,new LinearLayout.LayoutParams(-1,-2));cell.setBackground(rounded(UiResources.color(this,R.color.surface_variant),UiResources.color(this,R.color.card_stroke),14));cell.setOnClickListener(v->{dialog.dismiss();if(label.equals("معرض الصور"))imagePicker.launch(new androidx.activity.result.PickVisualMediaRequest.Builder().setMediaType(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE).build());else Toast.makeText(this,"خيار "+label+" يحتاج ربط خدمة الإرفاق المناسبة قبل الاستخدام.",Toast.LENGTH_LONG).show();});android.widget.GridLayout.LayoutParams lp=new android.widget.GridLayout.LayoutParams();lp.width=0;lp.height=UiResources.dp(this,86);lp.columnSpec=android.widget.GridLayout.spec(i%3,1f);lp.rowSpec=android.widget.GridLayout.spec(i/3);lp.setMargins(UiResources.dp(this,3),UiResources.dp(this,3),UiResources.dp(this,3),UiResources.dp(this,3));grid.addView(cell,lp);}
+        dialog.show();
     }
 
     private String[] loadQuickReplies(){
