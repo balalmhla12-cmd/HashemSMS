@@ -331,7 +331,27 @@ void pickContactsForCompose(EditText destination){
 
  void send(String a,String b){
   final String recipient=a==null?"":a.trim(),body=b==null?"":b;if(recipient.isEmpty()||body.trim().isEmpty()){Toast.makeText(this,"أدخل رقم الهاتف ونص الرسالة",Toast.LENGTH_SHORT).show();return;}
-  final android.content.Context appContext=getApplicationContext();final Db appDb=new Db(appContext);chooseSmsSubscription(new SubscriptionChoiceCallback(){public void onSelected(int subId){SmsSending.SEND_EXECUTOR.execute(()->SmsSending.sendSmsInBackground(appContext,appDb,recipient,body,"MAIN",1000,2000,subId,true));}public void onCancelled(){}});
+  final android.content.Context appContext=getApplicationContext();final Db appDb=new Db(appContext);choosePreferredOrPrompt(recipient,new SubscriptionChoiceCallback(){public void onSelected(int subId){SmsSending.SEND_EXECUTOR.execute(()->SmsSending.sendSmsInBackground(appContext,appDb,recipient,body,"MAIN",1000,2000,subId,true));}public void onCancelled(){}});
+ }
+ private void choosePreferredOrPrompt(String recipient,SubscriptionChoiceCallback callback){
+  android.content.SharedPreferences prefs=getSharedPreferences("hashem_ui",MODE_PRIVATE);
+  String key=SimPreferenceKey.forAddress(recipient);
+  if(prefs.contains(key)){
+   int preferred=prefs.getInt(key,-1);
+   if(preferred<0){callback.onSelected(-1);return;}
+   try{
+    if(checkSelfPermission("android.permission.READ_PHONE_STATE")==PackageManager.PERMISSION_GRANTED){
+     java.util.List<android.telephony.SubscriptionInfo> active=android.telephony.SubscriptionManager.from(this).getActiveSubscriptionInfoList();
+     if(active!=null)for(android.telephony.SubscriptionInfo info:active)if(info.getSubscriptionId()==preferred){callback.onSelected(preferred);return;}
+     prefs.edit().remove(key).apply();
+     Toast.makeText(this,"الشريحة المحفوظة لم تعد متاحة؛ اختر شريحة أخرى.",Toast.LENGTH_SHORT).show();
+    }
+   }catch(Exception e){android.util.Log.w("HashemSMS","Unable to validate preferred SIM",e);}
+  }
+  chooseSmsSubscription(new SubscriptionChoiceCallback(){
+   public void onSelected(int id){prefs.edit().putInt(key,id).apply();callback.onSelected(id);}
+   public void onCancelled(){callback.onCancelled();}
+  });
  }
  void chooseSmsSubscription(SubscriptionChoiceCallback action){
   try{android.telephony.TelephonyManager tm=(android.telephony.TelephonyManager)getSystemService(TELEPHONY_SERVICE);if(tm==null||tm.getPhoneCount()<=1){action.onSelected(-1);return;}}catch(SecurityException e){action.onCancelled();return;}
