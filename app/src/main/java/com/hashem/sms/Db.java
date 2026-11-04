@@ -2,7 +2,7 @@ package com.hashem.sms;
 import android.content.*;import android.database.sqlite.*;import android.database.*;import android.net.Uri;import java.io.File;import android.provider.Telephony;import android.util.Log;import java.util.*;import java.util.concurrent.locks.ReentrantLock;
 public class Db extends SQLiteOpenHelper{
  public static final ReentrantLock PROVIDER_SYNC_LOCK = new ReentrantLock();
- public Db(Context c){super(c,"hashem.db",null,11);} 
+ public Db(Context c){super(c,"hashem.db",null,12);} 
  @Override public void onConfigure(SQLiteDatabase d){super.onConfigure(d);d.setForeignKeyConstraintsEnabled(true);}
  public void onCreate(SQLiteDatabase d){
   d.execSQL("CREATE TABLE messages(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,type TEXT,status TEXT,ts INTEGER,provider_id INTEGER,read INTEGER DEFAULT 0,star INTEGER DEFAULT 0,trash INTEGER NOT NULL DEFAULT 0,bulk_campaign_id INTEGER)");
@@ -24,7 +24,8 @@ public class Db extends SQLiteOpenHelper{
   if(oldVersion<7&&!hasColumn(d,"messages","provider_id"))d.execSQL("ALTER TABLE messages ADD COLUMN provider_id INTEGER");
   if(oldVersion<9)rebuildMessagesWithoutThread(d);
   if(oldVersion<10)createMmsAttachmentsTable(d);
-  if(oldVersion<11){if(!hasColumn(d,"messages","bulk_campaign_id"))d.execSQL("ALTER TABLE messages ADD COLUMN bulk_campaign_id INTEGER");createBulkCampaignsTable(d);}
+  if(oldVersion<11&&!hasColumn(d,"messages","bulk_campaign_id"))d.execSQL("ALTER TABLE messages ADD COLUMN bulk_campaign_id INTEGER");
+  if(oldVersion<12)createBulkCampaignsTable(d);
  }
  private void createMmsAttachmentsTable(SQLiteDatabase d){
   d.execSQL("CREATE TABLE IF NOT EXISTS message_attachments(id INTEGER PRIMARY KEY AUTOINCREMENT,message_id INTEGER NOT NULL,local_path TEXT NOT NULL,content_type TEXT NOT NULL,size_bytes INTEGER NOT NULL,transaction_id TEXT NOT NULL,FOREIGN KEY(message_id) REFERENCES messages(id) ON DELETE CASCADE)");
@@ -35,23 +36,43 @@ public class Db extends SQLiteOpenHelper{
   d.execSQL("CREATE TABLE IF NOT EXISTS bulk_campaigns(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,created_at INTEGER NOT NULL,recipient_count INTEGER NOT NULL CHECK(recipient_count>=0))");
   d.execSQL("CREATE INDEX IF NOT EXISTS idx_bulk_campaigns_created_at ON bulk_campaigns(created_at DESC)");
   d.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_bulk_campaign_id ON messages(bulk_campaign_id)");
+  d.execSQL("CREATE TABLE IF NOT EXISTS bulk_campaign_recipients(id INTEGER PRIMARY KEY AUTOINCREMENT,campaign_id INTEGER NOT NULL,address TEXT NOT NULL,display_name TEXT NOT NULL DEFAULT '',message_id INTEGER,status TEXT NOT NULL DEFAULT 'pending',FOREIGN KEY(campaign_id) REFERENCES bulk_campaigns(id) ON DELETE CASCADE,UNIQUE(campaign_id,address))");
+  d.execSQL("CREATE INDEX IF NOT EXISTS idx_bulk_campaign_recipients_campaign_id ON bulk_campaign_recipients(campaign_id)");
+  d.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_bulk_campaign_recipients_message_id ON bulk_campaign_recipients(message_id)");
  }
- public long createBulkCampaign(String name,int recipientCount){
-  if(name==null||name.trim().isEmpty()||recipientCount<1)throw new IllegalArgumentException("Invalid bulk campaign");
-  ContentValues row=new ContentValues();row.put("name",name.trim());row.put("created_at",System.currentTimeMillis());row.put("recipient_count",recipientCount);
-  return getWritableDatabase().insertOrThrow("bulk_campaigns",null,row);
+ public long createBulkCampaign(String name,ArrayList<String[]> recipients){
+  if(name==null||name.trim().isEmpty()||recipients==null||recipients.isEmpty())throw new IllegalArgumentException("Invalid bulk campaign");
+  SQLiteDatabase d=getWritableDatabase();d.beginTransaction();long campaignId=-1;
+  try{
+   ContentValues row=new ContentValues();row.put("name",name.trim());row.put("created_at",System.currentTimeMillis());row.put("recipient_count",recipients.size());
+   campaignId=d.insertOrThrow("bulk_campaigns",null,row);
+   for(String[] recipient:recipients){
+    if(recipient==null||recipient.length<2||recipient[0]==null||recipient[0].trim().isEmpty())throw new IllegalArgumentException("Invalid bulk campaign recipient");
+    ContentValues member=new ContentValues();member.put("campaign_id",campaignId);member.put("address",recipient[0].trim());member.put("display_name",recipient[1]==null?"":recipient[1].trim());member.put("status","pending");
+    d.insertOrThrow("bulk_campaign_recipients",null,member);
+   }
+   d.setTransactionSuccessful();return campaignId;
+  }finally{d.endTransaction();}
  }
  public long addBulkMessage(String address,String body,String status,long campaignId){
   if(campaignId<=0)throw new IllegalArgumentException("Invalid bulk campaign id");
-  ContentValues row=cv(address,body,"out",status);row.put("bulk_campaign_id",campaignId);
-  return getWritableDatabase().insert("messages",null,row);
+  SQLiteDatabase d=getWritableDatabase();ContentValues row=cv(address,body,"out",status);row.put("bulk_campaign_id",campaignId);
+  long messageId=d.insert("messages",null,row);if(messageId<=0)return messageId;
+  ContentValues update=new ContentValues();update.put("message_id",messageId);update.put("status",status);
+  int changed=d.update("bulk_campaign_recipients",update,"campaign_id=? AND address=?",new String[]{String.valueOf(campaignId),address});
+  if(changed==0){ContentValues member=new ContentValues();member.put("campaign_id",campaignId);member.put("address",address);member.put("display_name","");member.put("message_id",messageId);member.put("status",status);d.insertOrThrow("bulk_campaign_recipients",null,member);}
+  return messageId;
+ }
+ public void updateBulkRecipientStatus(long messageId,String status){
+  if(messageId<=0||status==null)return;ContentValues values=new ContentValues();values.put("status",status);
+  getWritableDatabase().update("bulk_campaign_recipients",values,"message_id=?",new String[]{String.valueOf(messageId)});
  }
  public Cursor listBulkCampaigns(){
   return getReadableDatabase().rawQuery("SELECT c.id,c.name,c.created_at,c.recipient_count,"
-    +"SUM(CASE WHEN m.status IN ('تم الإرسال','تم التسليم','لم يتم التسليم','sent','delivered') THEN 1 ELSE 0 END) AS sent_count,"
-    +"SUM(CASE WHEN m.status IN ('لم يتم الإرسال','فشل','failed') THEN 1 ELSE 0 END) AS failed_count,"
-    +"MAX(0,c.recipient_count-SUM(CASE WHEN m.status IN ('تم الإرسال','تم التسليم','لم يتم التسليم','sent','delivered') THEN 1 ELSE 0 END)-SUM(CASE WHEN m.status IN ('لم يتم الإرسال','فشل','failed') THEN 1 ELSE 0 END)) AS pending_count "
-    +"FROM bulk_campaigns c LEFT JOIN messages m ON m.bulk_campaign_id=c.id GROUP BY c.id ORDER BY c.created_at DESC,c.id DESC",null);
+    +"SUM(CASE WHEN r.status IN ('تم الإرسال','تم التسليم','لم يتم التسليم','sent','delivered') THEN 1 ELSE 0 END) AS sent_count,"
+    +"SUM(CASE WHEN r.status IN ('لم يتم الإرسال','فشل','failed') THEN 1 ELSE 0 END) AS failed_count,"
+    +"MAX(0,c.recipient_count-SUM(CASE WHEN r.status IN ('تم الإرسال','تم التسليم','لم يتم التسليم','sent','delivered') THEN 1 ELSE 0 END)-SUM(CASE WHEN r.status IN ('لم يتم الإرسال','فشل','failed') THEN 1 ELSE 0 END)) AS pending_count "
+    +"FROM bulk_campaigns c LEFT JOIN bulk_campaign_recipients r ON r.campaign_id=c.id GROUP BY c.id ORDER BY c.created_at DESC,c.id DESC",null);
  }
  public long addMmsAttachment(long messageId,String localPath,String contentType,long sizeBytes,String transactionId){
   if(messageId<=0||localPath==null||localPath.trim().isEmpty()||(!"image/jpeg".equals(contentType)&&!"image/png".equals(contentType))||sizeBytes<=0||transactionId==null||transactionId.trim().isEmpty())throw new IllegalArgumentException("Invalid MMS attachment metadata");
@@ -103,7 +124,7 @@ public class Db extends SQLiteOpenHelper{
   Cursor c=null;boolean sendFailed=false;
   try{c=getReadableDatabase().query("messages",new String[]{"status"},"id=?",new String[]{String.valueOf(id)},null,null,null);if(c.moveToFirst()){String current=c.getString(0);sendFailed=current!=null&&(current.toLowerCase(java.util.Locale.ROOT).contains("fail")||current.contains("لم يتم الإرسال")||current.contains("فشل"));}}
   finally{if(c!=null)c.close();}
-  if(!sendFailed)status(id,deliveryStatus);
+  if(!sendFailed){status(id,deliveryStatus);updateBulkRecipientStatus(id,deliveryStatus);}
  }
  public void saveOutgoingToSystemProvider(Context context,long id){
   PROVIDER_SYNC_LOCK.lock();Cursor c=null;
