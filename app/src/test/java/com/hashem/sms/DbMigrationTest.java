@@ -41,9 +41,7 @@ public class DbMigrationTest {
             "idx_messages_type_read_trash_address",
             "idx_messages_star_ts",
             "idx_messages_provider_id",
-            "idx_messages_bulk_campaign_id",
-            "idx_bulk_campaign_recipients_campaign_id",
-            "idx_bulk_campaign_recipients_message_id"
+            "idx_messages_bulk_campaign_id"
     };
     private static final String ATTACHMENT_INDEX = "idx_message_attachments_message_id";
 
@@ -252,6 +250,12 @@ public class DbMigrationTest {
             while (c.moveToNext()) actual.add(c.getString(0));
         }
         for (String index : REQUIRED_INDEXES) assertTrue("missing index " + index, actual.contains(index));
+        Set<String> campaignIndexes = new HashSet<>();
+        try (Cursor c = db.rawQuery("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='bulk_campaign_recipients'", null)) {
+            while (c.moveToNext()) campaignIndexes.add(c.getString(0));
+        }
+        assertTrue(campaignIndexes.contains("idx_bulk_campaign_recipients_campaign_id"));
+        assertTrue(campaignIndexes.contains("idx_bulk_campaign_recipients_message_id"));
     }
     @Test
     public void upgradesVersion10WithoutLosingMessagesAndAddsCampaignColumn() {
