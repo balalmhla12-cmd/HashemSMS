@@ -244,6 +244,11 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             h.name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
             h.body.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
             h.row.setPadding(dp(2), dp(6), dp(2), dp(6));
+            if (h.avatar.getLayoutParams() instanceof LinearLayout.LayoutParams) {
+                LinearLayout.LayoutParams avatarParams = (LinearLayout.LayoutParams) h.avatar.getLayoutParams();
+                avatarParams.setMargins(0, 0, dp(4), 0);
+                h.avatar.setLayoutParams(avatarParams);
+            }
         }
 
     }
