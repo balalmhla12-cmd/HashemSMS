@@ -266,6 +266,7 @@ public class DbMigrationTest {
         old.execSQL("CREATE TABLE schedules(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,at INTEGER)");
         old.execSQL("CREATE TABLE forward_rules(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL UNIQUE,destination TEXT NOT NULL)");
         old.execSQL("CREATE TABLE conversation_flags(address TEXT PRIMARY KEY,archived INTEGER NOT NULL DEFAULT 0,blocked INTEGER NOT NULL DEFAULT 0)");
+        old.execSQL("CREATE INDEX idx_messages_provider_id ON messages(provider_id)");
         old.execSQL("INSERT INTO messages(id,address,body,type,status,ts,provider_id,read,star,trash) VALUES(88,'+1008','version 10 message','out','sent',1234,987,1,0,0)");
         old.execSQL("INSERT INTO groups(id,name) VALUES(7,'مجموعة الاختبار')");
         old.execSQL("INSERT INTO group_members(gid,address,name) VALUES(7,'+1008','عضو الاختبار')");
@@ -314,6 +315,11 @@ public class DbMigrationTest {
         old.execSQL("CREATE TABLE bulk_campaigns(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,created_at INTEGER NOT NULL,recipient_count INTEGER NOT NULL CHECK(recipient_count>=0))");
         old.execSQL("CREATE INDEX idx_bulk_campaigns_created_at ON bulk_campaigns(created_at DESC)");
         old.execSQL("CREATE INDEX idx_messages_bulk_campaign_id ON messages(bulk_campaign_id)");
+        old.execSQL("CREATE INDEX idx_messages_address_ts ON messages(address,ts DESC)");
+        old.execSQL("CREATE INDEX idx_messages_trash_type_ts ON messages(trash,type,ts DESC)");
+        old.execSQL("CREATE INDEX idx_messages_type_read_trash_address ON messages(type,read,trash,address)");
+        old.execSQL("CREATE INDEX idx_messages_star_ts ON messages(star,ts DESC)");
+        old.execSQL("CREATE INDEX idx_messages_provider_id ON messages(provider_id)");
         old.execSQL("INSERT INTO messages(id,address,body,type,status,ts,provider_id,read,star,trash,bulk_campaign_id) VALUES(89,'+1011','version 11 message','out','sent',2234,988,1,0,0,4)");
         old.execSQL("INSERT INTO groups(id,name) VALUES(9,'مجموعة الإصدار 11')");
         old.execSQL("INSERT INTO group_members(gid,address,name) VALUES(9,'+1011','عضو الإصدار 11')");
