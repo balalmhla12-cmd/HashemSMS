@@ -6,10 +6,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
- * Builds the binary MMS M-Send.req PDU consumed by SmsManager.sendMultimediaMessage.
- *
- * This class deliberately implements only image-only multipart/mixed messages.
- * It does not perform network I/O or write files.
+ * Builds a binary MMS M-Send.req PDU consumed by SmsManager.sendMultimediaMessage.
+ * Supports an allowlist of image and document MIME types; it does not perform network I/O.
  */
 public final class MmsPduComposer {
     private static final int HEADER_MESSAGE_TYPE = 0x8C;
@@ -39,8 +37,8 @@ public final class MmsPduComposer {
             if (data == null || data.length == 0) {
                 throw new IllegalArgumentException("Image data must not be empty");
             }
-            if (!"image/jpeg".equals(contentType) && !"image/png".equals(contentType)) {
-                throw new IllegalArgumentException("Only JPEG and PNG images are supported");
+            if (!isSupportedContentType(contentType)) {
+                throw new IllegalArgumentException("Unsupported MMS attachment type: " + contentType);
             }
             if (fileName == null || fileName.trim().isEmpty()) {
                 throw new IllegalArgumentException("Image filename is required");
@@ -116,6 +114,16 @@ public final class MmsPduComposer {
         writeByte(headers, HEADER_CONTENT_LOCATION);
         writeTextString(headers, image.fileName);
         return headers.toByteArray();
+    }
+
+    private static boolean isSupportedContentType(String type) {
+        if (type == null) return false;
+        switch (type.toLowerCase(java.util.Locale.ROOT)) {
+            case "image/jpeg": case "image/png": case "image/gif": case "image/webp":
+            case "application/pdf": case "text/plain": case "text/vcard":
+            case "application/octet-stream": return true;
+            default: return false;
+        }
     }
 
     private static String validateFileName(String fileName) {
