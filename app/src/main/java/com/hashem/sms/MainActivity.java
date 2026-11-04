@@ -384,15 +384,32 @@ void pickContactsForCompose(EditText destination){
  void schedule(String a,String b){Calendar cal=Calendar.getInstance();cal.add(Calendar.MINUTE,5);DatePickerDialog datePicker=new DatePickerDialog(this,(view,year,month,day)->{cal.set(Calendar.YEAR,year);cal.set(Calendar.MONTH,month);cal.set(Calendar.DAY_OF_MONTH,day);TimePickerDialog timePicker=new TimePickerDialog(this,(timeView,hour,minute)->{cal.set(Calendar.HOUR_OF_DAY,hour);cal.set(Calendar.MINUTE,minute);cal.set(Calendar.SECOND,0);cal.set(Calendar.MILLISECOND,0);long when=cal.getTimeInMillis();if(when<=System.currentTimeMillis()){Toast.makeText(this,"اختر موعدًا في المستقبل",Toast.LENGTH_LONG).show();return;}confirmSchedule(a,b,when);},cal.get(Calendar.HOUR_OF_DAY),cal.get(Calendar.MINUTE),true);timePicker.setTitle("اختر وقت الإرسال");timePicker.show();},cal.get(Calendar.YEAR),cal.get(Calendar.MONTH),cal.get(Calendar.DAY_OF_MONTH));datePicker.setTitle("اختر تاريخ الإرسال");datePicker.getDatePicker().setMinDate(System.currentTimeMillis());datePicker.show();}
  void confirmSchedule(String a,String b,long when){
   String whenText=new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm",Locale.getDefault()).format(new Date(when));
-  new AlertDialog.Builder(this).setTitle("تأكيد جدولة الرسالة").setMessage("سيتم إرسال الرسالة إلى "+a+" في "+whenText+".").setNegativeButton("إلغاء",null).setPositiveButton("تأكيد الجدولة",(d,w)->choosePreferredOrPrompt(a,new SubscriptionChoiceCallback(){public void onSelected(int subscriptionId){
-   long messageId=db.addMessage(a,b,"out","scheduled");if(messageId<=0){Toast.makeText(this,"تعذّر حفظ الرسالة المجدولة",Toast.LENGTH_LONG).show();return;}db.saveSchedule(messageId,a,b,when);
-   boolean exact=AlarmScheduler.scheduleBestEffort(this,messageId,a,b,when);
-   if(Build.VERSION.SDK_INT>=31&&!exact){AlarmScheduler.rememberPendingExactRequest(this,messageId);
-    new AlertDialog.Builder(this).setTitle("إذن المنبّه الدقيق").setMessage("لم يُمنح إذن المنبّه الدقيق. ستعمل الرسالة الآن بموعد تقريبي. يمكنك فتح إعدادات الإذن لتحسين دقة الموعد.")
-     .setPositiveButton("فتح إعدادات المنبّه الدقيق",(dialog,which)->{try{startActivity(new Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,android.net.Uri.parse("package:"+getPackageName())));}catch(Exception e){AlarmScheduler.clearPendingExactRequest(this);Toast.makeText(this,"تعذّر فتح إعدادات الإذن؛ ستبقى الجدولة تقريبية",Toast.LENGTH_LONG).show();}})
-     .setNegativeButton("استخدام موعد تقريبي",(dialog,which)->{AlarmScheduler.clearPendingExactRequest(this);Toast.makeText(this,"تمت الجدولة بموعد تقريبي",Toast.LENGTH_LONG).show();})
-     .setOnCancelListener(dialog->{AlarmScheduler.clearPendingExactRequest(this);Toast.makeText(this,"تمت الجدولة بموعد تقريبي",Toast.LENGTH_LONG).show();}).show();
-   }else Toast.makeText(MainActivity.this,"تمت جدولة الرسالة بالمنبّه الدقيق",Toast.LENGTH_LONG).show();render();}public void onCancelled(){}})).show();
+  new AlertDialog.Builder(this).setTitle("تأكيد جدولة الرسالة")
+   .setMessage("سيتم إرسال الرسالة إلى "+a+" في "+whenText+".")
+   .setNegativeButton("إلغاء",null)
+   .setPositiveButton("تأكيد الجدولة",(dialog,which)->choosePreferredOrPrompt(a,new SubscriptionChoiceCallback(){
+    @Override public void onSelected(int subscriptionId){
+     long messageId=db.addMessage(a,b,"out","scheduled");
+     if(messageId<=0){Toast.makeText(MainActivity.this,"تعذّر حفظ الرسالة المجدولة",Toast.LENGTH_LONG).show();return;}
+     db.saveSchedule(messageId,a,b,when);
+     boolean exact=AlarmScheduler.scheduleBestEffort(MainActivity.this,messageId,a,b,when);
+     if(Build.VERSION.SDK_INT>=31&&!exact){
+      AlarmScheduler.rememberPendingExactRequest(MainActivity.this,messageId);
+      new AlertDialog.Builder(MainActivity.this).setTitle("إذن المنبّه الدقيق")
+       .setMessage("لم يُمنح إذن المنبّه الدقيق. ستعمل الرسالة الآن بموعد تقريبي. يمكنك فتح إعدادات الإذن لتحسين دقة الموعد.")
+       .setPositiveButton("فتح إعدادات المنبّه الدقيق",(d,w)->{
+        try{MainActivity.this.startActivity(new Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,android.net.Uri.parse("package:"+MainActivity.this.getPackageName())));}
+        catch(Exception e){AlarmScheduler.clearPendingExactRequest(MainActivity.this);Toast.makeText(MainActivity.this,"تعذّر فتح إعدادات الإذن؛ ستبقى الجدولة تقريبية",Toast.LENGTH_LONG).show();}
+       })
+       .setNegativeButton("استخدام موعد تقريبي",(d,w)->{AlarmScheduler.clearPendingExactRequest(MainActivity.this);Toast.makeText(MainActivity.this,"تمت الجدولة بموعد تقريبي",Toast.LENGTH_LONG).show();})
+       .setOnCancelListener(d->{AlarmScheduler.clearPendingExactRequest(MainActivity.this);Toast.makeText(MainActivity.this,"تمت الجدولة بموعد تقريبي",Toast.LENGTH_LONG).show();})
+       .show();
+     }else Toast.makeText(MainActivity.this,"تمت جدولة الرسالة بالمنبّه الدقيق",Toast.LENGTH_LONG).show();
+     MainActivity.this.render();
+    }
+    @Override public void onCancelled(){}
+   }))
+   .show();
  }
  void scheduledScreen(){list.addView(tv("الرسائل المجدولة",22));list.addView(tv("راجع الرسائل التي تنتظر الإرسال أو ألغِ جدولتها قبل موعدها.",14));android.database.Cursor c=db.listSchedules();int n=0;while(c.moveToNext()){long id=c.getLong(c.getColumnIndexOrThrow("id"));String a=c.getString(c.getColumnIndexOrThrow("address"));String body=c.getString(c.getColumnIndexOrThrow("body"));long at=c.getLong(c.getColumnIndexOrThrow("at"));LinearLayout card=new LinearLayout(this);card.setOrientation(LinearLayout.VERTICAL);styleScreenCard(card);card.addView(tv("إلى: "+a,16));card.addView(tv(body,16));card.addView(tv("الموعد: "+new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm",Locale.getDefault()).format(new Date(at)),13));Button cancel=button("إلغاء الجدولة");cancel.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("إلغاء الرسالة المجدولة").setMessage("لن تُرسل هذه الرسالة في الموعد المحدد.").setNegativeButton("العودة",null).setPositiveButton("إلغاء الجدولة",(d,w)->{if(db.cancelSchedule(id)){AlarmScheduler.cancel(this,id,a,body);render();Toast.makeText(this,"تم إلغاء الجدولة",Toast.LENGTH_SHORT).show();}else Toast.makeText(this,"تم تنفيذ الرسالة أو إلغاء جدولتها بالفعل",Toast.LENGTH_LONG).show();}).show());card.addView(cancel);list.addView(card);View line=new View(this);line.setBackgroundColor(UiResources.color(MainActivity.this,R.color.divider));list.addView(line,new LinearLayout.LayoutParams(-1,1));n++;}c.close();if(n==0)list.addView(tv("لا توجد رسائل مجدولة حاليًا.",16));}
  void bulkScreen(){list.addView(tv("الرسائل الجماعية",22));LinearLayout createCard=new LinearLayout(this);createCard.setOrientation(LinearLayout.VERTICAL);styleScreenCard(createCard);createCard.addView(tv("إنشاء رسالة جماعية",19));createCard.addView(tv("إرسال رسالة واحدة إلى عدة مستلمين",13));list.addView(createCard);LinearLayout groupsCard=new LinearLayout(this);groupsCard.setOrientation(LinearLayout.VERTICAL);styleScreenCard(groupsCard);groupsCard.addView(tv("المجموعات",19));groupsCard.addView(tv("إدارة مجموعات جهات الاتصال المحفوظة",13));Button manageGroups=button("إدارة المجموعات");manageGroups.setOnClickListener(v->{filter="groups";render();});groupsCard.addView(manageGroups);list.addView(groupsCard);bulkCampaignName=new EditText(this);bulkCampaignName.setHint("اسم الحملة، مثل تعميم بداية الاختبارات");list.addView(bulkCampaignName);list.addView(tv("اكتب رقمًا في كل سطر، ويمكن إضافة الاسم بعد فاصلة: 777123456, أحمد. استخدم {name} داخل نص الرسالة للتخصيص.",14));Button imp=button("استيراد ملف نصي أو CSV");imp.setOnClickListener(v->importFile());list.addView(imp);Button contacts=button("اختيار من جهات الاتصال · بحث وتحديد الكل");contacts.setOnClickListener(v->pickContactsForBulk());list.addView(contacts);bulkNumbers=new EditText(this);bulkNumbers.setHint("الرقم أو الرقم, الاسم — سطر لكل مستلم");bulkNumbers.setMinLines(5);bulkNumbers.setGravity(Gravity.TOP);list.addView(bulkNumbers);bulkBody=new EditText(this);bulkBody.setHint("نص الرسالة. مثال: مرحبًا {name}");bulkBody.setMinLines(4);bulkBody.setGravity(Gravity.TOP);list.addView(bulkBody);Button send=button("مراجعة ثم إرسال");send.setOnClickListener(v->confirmBulk());list.addView(send);renderBulkCampaignHistory();}
