@@ -7,40 +7,26 @@ import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.RecyclerView;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 /** Visual overlay for MainActivity. Touches no messaging logic. On any failure the original UI stays. */
 final class HashemUi implements Application.ActivityLifecycleCallbacks {
-    static final String PREFS = "hashem_ui";
-    static final String KEY_NIGHT = "night_mode";
-
-    HashemUi(Context context) {
-        int mode = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .getInt(KEY_NIGHT, AppCompatDelegate.MODE_NIGHT_YES);
-        AppCompatDelegate.setDefaultNightMode(mode);
-    }
+    HashemUi(Context context) { /* Preserve the user/system-selected appearance. */ }
 
     @Override public void onActivityStarted(Activity a) {
         if (!(a instanceof MainActivity)) return;
@@ -58,9 +44,6 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
     @Override public void onActivityDestroyed(Activity a) {}
 
     static final class Overlay {
-        static final int[] PALETTE = {0xFF29C5F6, 0xFFB39DFF, 0xFF4DD0B1, 0xFFE6C15A, 0xFFF48FB1, 0xFF9CCC65, 0xFFE0A070};
-        static final SimpleDateFormat DAY = new SimpleDateFormat("EEEE", new Locale("ar"));
-
         final MainActivity m;
         final String[] filters = {"all", "unread", "failed", "bulk", "unknown", "scheduled"};
         final LinearLayout[] chips = new LinearLayout[6];
@@ -68,10 +51,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
         final ImageView[] chipIcons = new ImageView[6];
         Typeface bold, regular;
         String lastKey = "";
-        long lastCount = 0;
         int errors = 0;
-        final Drawable[] navMine = new Drawable[6];
-        final boolean[] navSel = new boolean[6];
         ViewTreeObserver.OnPreDrawListener listener;
 
         Overlay(MainActivity m) { this.m = m; }
@@ -99,7 +79,6 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             try { bold = Typeface.create(ResourcesCompat.getFont(m, R.font.almarai_family), Typeface.BOLD); } catch (Throwable ignored) {}
             try { regular = Typeface.create(ResourcesCompat.getFont(m, R.font.almarai_regular), Typeface.NORMAL); } catch (Throwable ignored) {}
             safe(this::header);
-            safe(this::search);
             safe(this::buildChips);
             safe(this::compose);
             listener = () -> {
@@ -139,37 +118,6 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                 if (child instanceof TextView) child.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
             }
 
-        }
-
-        // ---------- Search bar ----------
-        void search() {
-            int idx = m.root.indexOfChild(m.search);
-            if (idx < 0) return;
-            m.root.removeViewAt(idx);
-            LinearLayout box = new LinearLayout(m);
-            box.setOrientation(LinearLayout.HORIZONTAL);
-            box.setGravity(Gravity.CENTER_VERTICAL);
-            box.setPaddingRelative(dp(4), dp(4), dp(12), dp(4));
-            box.setBackground(round(col(R.color.surface_variant), col(R.color.search_border), dp(30), dp(1)));
-            ImageView circle = new ImageView(m);
-            circle.setImageResource(R.drawable.ic_search);
-            circle.setColorFilter(col(R.color.on_primary));
-            circle.setScaleType(ImageView.ScaleType.CENTER);
-            circle.setBackground(oval(col(R.color.accent_cyan), 0, 0));
-            try { circle.setContentDescription(m.getString(R.string.search_cd)); } catch (Throwable ignored) {}
-            circle.setOnClickListener(v -> {
-                m.search.requestFocus();
-                InputMethodManager imm = (InputMethodManager) m.getSystemService(Context.INPUT_METHOD_SERVICE);
-                if (imm != null) imm.showSoftInput(m.search, InputMethodManager.SHOW_IMPLICIT);
-            });
-            box.addView(circle, new LinearLayout.LayoutParams(dp(32), dp(32)));
-            m.search.setBackground(null);
-            m.search.setHint(R.string.search_hint);
-            m.search.setPaddingRelative(dp(14), 0, dp(10), 0);
-            box.addView(m.search, new LinearLayout.LayoutParams(0, -1, 1));
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(40));
-            lp.bottomMargin = dp(8);
-            m.root.addView(box, idx, lp);
         }
 
         // ---------- Filter chips ----------
@@ -248,7 +196,6 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
 
         // ---------- Per-frame consistency (cheap, guarded) ----------
         void tick() {
-            styleNav();
             String key = m.filter + "|" + m.selectedBottomTab + "|" + isNight();
             if (!key.equals(lastKey)) {
                 lastKey = key;
@@ -259,23 +206,6 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                 }
             }
             styleThreads();
-        }
-
-        void styleNav() {
-            LinearLayout nav = m.bottomNavigation;
-            if (nav == null) return;
-            int n = Math.min(nav.getChildCount(), navMine.length);
-            for (int i = 0; i < n; i++) {
-                View c = nav.getChildAt(i);
-                boolean sel = c.getTag() != null && c.getTag().equals(m.selectedBottomTab);
-                if (c.getBackground() != navMine[i] || navSel[i] != sel) {
-                    Drawable d = sel
-                            ? round(col(R.color.primary_container), col(R.color.accent_cyan), dp(24), dp(2))
-                            : round(0x00000000, 0, dp(24), 0);
-                    navMine[i] = d; navSel[i] = sel;
-                    c.setBackground(d);
-                }
-            }
         }
 
         void styleThreads() {
@@ -294,7 +224,6 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
         void styleRow(MainActivity.ThreadViewHolder h, MainActivity.ThreadItem it) {
             if (h.container.getTag() == null) {
                 h.container.setTag("styled");
-                h.container.setBackgroundColor(Color.TRANSPARENT);
                 ViewGroup.LayoutParams lp = h.container.getLayoutParams();
                 if (lp instanceof RecyclerView.LayoutParams) {
                     RecyclerView.LayoutParams rlp = (RecyclerView.LayoutParams) lp;
@@ -302,68 +231,13 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                     rlp.setMargins(0, 0, 0, 0);
                     h.container.setLayoutParams(rlp);
                 }
-                View divider = h.container.getChildAt(1);
-                if (divider != null) divider.setVisibility(View.GONE);
-                // Row weight is set below according to current read state.
             }
-            if (bold != null && regular != null) {
-                h.name.setTypeface(it.unread ? bold : regular);
-                h.body.setTypeface(it.unread ? bold : regular);
-            }
+            // The requested changes are limited to slightly larger conversation text
+            // and removal of the unused trailing row gap.
             h.name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
             h.body.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-            h.time.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
             h.row.setPadding(dp(2), dp(6), dp(2), dp(6));
-            if (h.avatar.getLayoutParams() instanceof LinearLayout.LayoutParams) {
-                LinearLayout.LayoutParams avatarParams = (LinearLayout.LayoutParams) h.avatar.getLayoutParams();
-                avatarParams.setMargins(0, 0, dp(4), 0);
-                h.avatar.setLayoutParams(avatarParams);
-            }
-            String label = it.contact.isEmpty() ? it.address : it.contact;
-            int ring = PALETTE[Math.abs(label.hashCode()) % PALETTE.length];
-            if (!Integer.valueOf(ring).equals(h.avatar.getTag())) {
-                h.avatar.setTag(ring);
-                h.avatar.setBackground(oval((ring & 0x00FFFFFF) | 0x26000000, ring, dp(2)));
-                h.fallback.setTextColor(ring);
-            }
-            String initials = avatarText(label);
-            if (!initials.contentEquals(h.fallback.getText())) {
-                h.fallback.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
-                h.fallback.setMaxLines(2);
-                h.fallback.setText(initials);
-            }
-            String t = dayLabel(it.timestamp);
-            if (!t.isEmpty() && !t.contentEquals(h.time.getText())) h.time.setText(t);
         }
 
-        static String avatarText(String label) {
-            String s = label == null ? "" : label.trim();
-            if (s.isEmpty()) return "?";
-            if (s.matches("[+0-9 ()\\-]+")) {
-                String d = s.replaceAll("[^0-9]", "");
-                return d.length() > 4 ? d.substring(d.length() - 4) : d;
-            }
-            String[] w = s.split("\\s+");
-            return w.length > 1 ? w[0] + "\n" + w[1] : w[0];
-        }
-
-        static boolean sameDay(Calendar a, Calendar b) {
-            return a.get(Calendar.YEAR) == b.get(Calendar.YEAR)
-                    && a.get(Calendar.DAY_OF_YEAR) == b.get(Calendar.DAY_OF_YEAR);
-        }
-
-        static String dayLabel(long ts) {
-            if (ts <= 0) return "";
-            Calendar now = Calendar.getInstance();
-            Calendar t = Calendar.getInstance();
-            t.setTimeInMillis(ts);
-            Calendar y = (Calendar) now.clone();
-            y.add(Calendar.DAY_OF_YEAR, -1);
-            if (sameDay(now, t)) return new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date(ts));
-            if (sameDay(y, t)) return "أمس";
-            long days = (now.getTimeInMillis() - ts) / 86400000L;
-            if (days < 6) return DAY.format(new Date(ts));
-            return new SimpleDateFormat("dd/MM", Locale.getDefault()).format(new Date(ts));
-        }
     }
 }
