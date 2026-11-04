@@ -294,7 +294,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
             int actionSize=UiResources.dp(ConversationActivity.this,34);
             for(ImageButton button:new ImageButton[]{copy,forward,reply,star,more}){LinearLayout.LayoutParams actionLp=new LinearLayout.LayoutParams(actionSize,actionSize);actionLp.setMargins(2,0,2,0);actions.addView(button,actionLp);}
             column.addView(actions,new LinearLayout.LayoutParams(-2,-2));
-            TextView selector=tv("○",22);selector.setGravity(Gravity.CENTER);selector.setTextColor(UiResources.color(ConversationActivity.this,R.color.primary_variant));selector.setVisibility(View.GONE);line.addView(selector,new LinearLayout.LayoutParams(UiResources.dp(ConversationActivity.this,28),UiResources.dp(ConversationActivity.this,28)));line.addView(column,new LinearLayout.LayoutParams(-2,-2));
+            TextView selector=tv("",18);selector.setGravity(Gravity.CENTER);selector.setTypeface(Typeface.DEFAULT,Typeface.BOLD);selector.setTextColor(UiResources.color(ConversationActivity.this,R.color.on_primary));selector.setVisibility(View.GONE);line.addView(selector,new LinearLayout.LayoutParams(UiResources.dp(ConversationActivity.this,28),UiResources.dp(ConversationActivity.this,28)));line.addView(column,new LinearLayout.LayoutParams(-2,-2));
             return new MessageHolder(line,column,bubble,media,body,meta,actions,copy,forward,reply,star,more,otp,retry,selector);
         }
         @android.annotation.SuppressLint("RtlHardcoded")
@@ -314,7 +314,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
             if(isSelected)bubbleBackground.setStroke(UiResources.dp(ConversationActivity.this,2),UiResources.color(ConversationActivity.this,R.color.primary_variant));
             h.bubble.setBackground(bubbleBackground);
             h.actions.setVisibility(item.id==activeActionMessageId&&actionMode==null?View.VISIBLE:View.GONE);h.actions.setContentDescription("إجراءات الرسالة");
-            h.selector.setVisibility(actionMode!=null?View.VISIBLE:View.GONE);h.selector.setText(isSelected?"●":"○");h.selector.setContentDescription(isSelected?"رسالة محددة":"تحديد الرسالة");
+            h.selector.setVisibility(actionMode!=null?View.VISIBLE:View.GONE);h.selector.setText(isSelected?"✓":"");h.selector.setTextColor(UiResources.color(ConversationActivity.this,isSelected?R.color.on_primary:R.color.primary_variant));GradientDrawable selectorBackground=new GradientDrawable();selectorBackground.setShape(GradientDrawable.OVAL);selectorBackground.setColor(UiResources.color(ConversationActivity.this,isSelected?R.color.primary:R.color.surface_variant));selectorBackground.setStroke(UiResources.dp(ConversationActivity.this,1),UiResources.color(ConversationActivity.this,isSelected?R.color.primary:R.color.outline));h.selector.setBackground(selectorBackground);h.selector.setContentDescription(isSelected?"رسالة محددة":"تحديد الرسالة");
             h.selector.setOnClickListener(v->{if(actionMode!=null)toggleSelection(item.id);});
             h.otp.setVisibility(View.GONE);h.retry.setVisibility(View.GONE);
             java.util.regex.Matcher otpMatcher=java.util.regex.Pattern.compile("(?<!\\d)(\\d{4,8})(?!\\d)").matcher(item.body);
@@ -400,9 +400,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
     }
     private void translateMessage(String text){
         if(text==null||text.trim().isEmpty())return;
-        Intent intent=new Intent(Intent.ACTION_PROCESS_TEXT);intent.setType("text/plain");intent.putExtra(Intent.EXTRA_PROCESS_TEXT,text);intent.putExtra(Intent.EXTRA_PROCESS_TEXT_READONLY,true);
-        if(intent.resolveActivity(getPackageManager())!=null){try{startActivity(Intent.createChooser(intent,"ترجمة الرسالة"));}catch(Exception e){Toast.makeText(this,"تعذّر فتح خدمة الترجمة",Toast.LENGTH_SHORT).show();}}
-        else new AlertDialog.Builder(this).setTitle("ترجمة الرسالة").setMessage("لا يوجد تطبيق ترجمة يدعم استقبال النص حالياً. يمكنك نسخ الرسالة واستخدام خدمة ترجمة.").setPositiveButton("نسخ النص",(d,w)->copyMessage(ConversationMessage.empty(text))).setNegativeButton("إغلاق",null).show();
+        new AlertDialog.Builder(this).setTitle("ترجمة الرسالة").setMessage("واجهة الترجمة جاهزة، وسيتم ربط خدمة الترجمة في دفعة لاحقة.").setPositiveButton("حسنًا",null).show();
     }
 
     void showMessageMenu(View anchor,ConversationMessage item){
