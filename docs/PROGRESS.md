@@ -1,22 +1,76 @@
 # HashemSMS — Progress
 
-## Verified completed stages
-- Stage A — contact permission fallback and AndroidX Activity/build verification: commit `b136bfa89ca3062b46bf7fb5331633e8c4ce4f32`; Actions run [39083276990](https://github.com/balalmhla12-cmd/HashemSMS/actions/runs/39083276990) succeeded.
-- Stage B — palette and contrast adjustments: commits `03a6a6608f401d19bedae6688b0d3917c3c46745`, `68b9df3daa1abd391a81237df6289b6139c3b613`, and `fd2e3a22e050c6b28b4730bb8e805618a6e9e2d5`; final green verification was run [39087432075](https://github.com/balalmhla12-cmd/HashemSMS/actions/runs/39087432075).
-- Stage C — conversation list card treatment: commit `4c57670bce6dcb9b23c7cf5046c918ac9d6ab92d`; Actions run [39087826065](https://github.com/balalmhla12-cmd/HashemSMS/actions/runs/39087826065) succeeded.
-- Stage D — conversation header and message metadata styling: commit `7376b7029338d4795d77aa7f99cf783f9b983ac8`; Actions run [39088935788](https://github.com/balalmhla12-cmd/HashemSMS/actions/runs/39088935788) succeeded.
-- Stage E — shared themed card styling across existing management screens: commits `b34ba2c801dd780e51c8950196deddbf04b0700d` and `99260c53d62df5fcb010e0185dc87a1917e954fc`; latest Actions run [39149736252](https://github.com/balalmhla12-cmd/HashemSMS/actions/runs/39149736252) (run 274) completed successfully, including Android Lint, lint-baseline comparison, tests, debug APK build, and publishing the latest-debug release.
+Last reviewed: 2026-11-05
+Active branch: `phase1-ui`
+PR #6: https://github.com/balalmhla12-cmd/HashemSMS/pull/6 (open, not merged)
+Repository visibility: Private.
 
-## Palette sampling notes
-Previously recorded sample notes: image dimensions 1536×1536; dominant sampled flat-region colors after 8-bit quantization included #001830, #001028, #001838, #002040, #002848, #183860 and #003070. These are prior notes, not a fresh resampling in this stage. Do not infer exact accent colors from anti-aliased edges. The separately discussed design reference file `docs/reference/design_reference.png` was not saved in the repository; the written design specification remains the reference.
+## Current verification evidence
 
-## Current stage
-- Stage F — audit/update release documentation and verify the latest main build/release state. No device-level SMS tests have been performed or claimed.
+The code state `2f4a750c99e94318d2bc66f96b425f4cc91b51d5` passed:
+- Push Android workflow: https://github.com/balalmhla12-cmd/HashemSMS/actions/runs/41927704438
+- Pull-request Android workflow: https://github.com/balalmhla12-cmd/HashemSMS/actions/runs/41927715236
+- Build: PASS
+- Unit tests (including database migration/lifecycle): PASS
+- Android Lint: PASS, 14 warnings, 0 errors (baseline 15 warnings, 0 errors)
+- Java hard-coded color check: PASS
+- Light/dark WCAG contrast check: PASS
 
-## Remaining
-- Stage F: review README/release workflow and ensure progress documentation matches the verified state; run and verify final Actions after any changes.
-- Stage G: ask the user to choose among unimplemented features shown in the reference; do not implement any before their choice.
-- Manual phone checks remain unverified: send/receive, scheduling across reboot, notifications/reply, contacts matching, and light/dark appearance.
+The current branch later advanced to `125df6f861df19b9d68ac7e1ba4c81a7cb3439fd`, which adds a test asserting that original GIF bytes are preserved in MMS PDU composition. The latest-head push and PR workflows must pass before treating that commit as verified. The project limit remains 14 Lint warnings; do not raise the baseline.
 
-## Constraints
-Package `com.hashem.sms`, database version 9, SMS receive/send/schedule/notification behavior, existing features and private repository visibility must remain unchanged. No device testing is claimed.
+## Batch A — implementation status
+
+Implemented:
+- Six main tabs in the required order: الكل، غير مقروءة، لم يتم الإرسال، جماعية، غير معروف، مجدولة.
+- Horizontal tab scrolling and corrected scheduled-tab mapping.
+- Hidden standalone starred/routing-rules destinations while preserving star and routing data/actions.
+- Home title/logo and conversation-row typography/spacing refinements.
+- Failed-message search/contact details/preview/status/time/retry/conditional routing.
+- Conversation grouping and latest-failed-message ordering restored.
+- Unrequested README.md and README-TERMUX.md edits reverted.
+
+Sign-off is not yet final because screenshot evidence remains unresolved and the latest head still needs CI verification.
+
+### HashemUi audit
+
+Commit `12f5036933cc31285acc749651b782b0fa3332b3` removes the unrequested header theme toggle and tab count badges/periodic count refresh, and restores the header search icon. Theme selection remains in Settings.
+
+Remaining visual treatments retained for final review: search-field styling, bottom-navigation styling, floating compose-button appearance/placement, avatar fallback/ring styling, and conversation-row styling. Do not claim these are separately specified functions.
+
+## Screenshot evidence
+
+Two emulator attempts have been made; neither produced screenshots:
+1. Stable emulator configuration: emulator booted, then ADB disconnected (Broken pipe/protocol fault).
+2. KVM-enabled configuration: KVM and emulator boot succeeded, but the script failed before instrumentation because `pipefail` was not supported by the POSIX shell.
+
+The workflow was corrected to use `set -eu`. One corrected retry of the second attempt is permitted because the previous run never reached screenshot tests. If it fails, stop and wait for the user's choice of Robolectric or Paparazzi; do not silently defer screenshots and do not start a third independent emulator attempt.
+
+## Batch B — in progress
+
+- Composer text field has no short eight-line cap.
+- Plus/clear-text behavior is implemented.
+- Quick replies support defaults, add/edit/delete, unlimited saved entries, and insertion without sending.
+- Attachment menu covers gallery, camera, GIF, stickers/emoji, files, live-location notice, contacts, scheduling, and one-time location.
+- GIF warning and original MIME/payload preservation are implemented; a PDU unit test verifies original GIF bytes.
+- Per-recipient normalized SIM preference is used for conversation sends and MMS retry; unavailable saved subscriptions trigger a fresh selection.
+- Long-press SIM picker displays subscription labels/numbers when available.
+- Pinch scaling updates message text and action buttons.
+- Translation replaces the star icon; star remains in More.
+
+Still to verify in B: visual/accessibility details, SMS/MMS regressions, quick-reply persistence, SIM cancellation/permission paths, and latest CI.
+
+## Batches C and D
+
+- C: bulk-message screen, groups, history, sidebar, settings sections, unified color picker, backup/restore safety.
+- Before C, present the user with the on-device versus online translation comparison and wait for the user's choice.
+- D: performance, permissions, background sync, final regression tests and real-device checklist.
+
+## Non-negotiable constraints
+
+- Preserve the existing Java application, package, data, SMS/MMS/scheduling behavior, and existing features.
+- No unsafe DB schema changes.
+- Do not modify `android.yml` or `Db.java` for the audited UI changes.
+- Keep the repository Private; work only on `phase1-ui`.
+- Do not merge PR #6 or related PRs into `main` without explicit approval.
+- No final APK/Release/install request before all four batches are complete and verified.
+- No real-device test is claimed until it is actually performed.
