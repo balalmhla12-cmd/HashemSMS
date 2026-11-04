@@ -45,9 +45,11 @@ public final class ScheduleReceiver extends BroadcastReceiver {
                         return;
                     }
 
+                    int subscriptionId = app.getSharedPreferences("hashem_ui", Context.MODE_PRIVATE)
+                            .getInt(SimPreferenceKey.forAddress(row.address), -1);
                     boolean started = SmsSending.sendSmsInBackground(
                             app, db, row.address, row.body, "SCHEDULED",
-                            11000, 12000, -1, false, id);
+                            11000, 12000, subscriptionId, false, id);
                     if (!started) db.status(id, "لم يتم الإرسال");
                 } catch (Exception e) {
                     Log.e("HashemSMS", "Scheduled SMS execution failed", e);
