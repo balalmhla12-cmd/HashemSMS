@@ -514,11 +514,23 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
     void send(){String body=composer.getText().toString().trim();if(pendingImageFile!=null){sendPendingMms(body);return;}if(body.isEmpty())return;dispatchSms(address,body,"CONVERSATION",3000,4000,()->composer.setText(""));}
     private void onImagePicked(Uri uri){
         if(uri==null)return;
-        if(pendingImageFile!=null&&pendingImageFile.exists())pendingImageFile.delete();
-        pendingImageFile=null;pendingImageUri=uri;attachmentPreview.setVisibility(View.VISIBLE);attachmentPreviewLabel.setText("جارٍ تجهيز المرفق…");
         String detected=getContentResolver().getType(uri);
         if(detected==null&&pendingCameraUri!=null&&pendingCameraUri.equals(uri))detected="image/jpeg";
-        final String selectedMime=normalizeAttachmentMime(detected);final String mime=selectedMime.startsWith("image/")&&!selectedMime.equals("image/gif")?"image/jpeg":selectedMime;pendingAttachmentMime=mime;
+        String mime=normalizeAttachmentMime(detected);
+        if("image/gif".equals(mime)){
+            new AlertDialog.Builder(this).setTitle("إرسال صورة GIF الأصلية؟")
+                    .setMessage("سيُرسل ملف GIF بصيغته الأصلية دون تحويل. قد لا تدعم بعض الأجهزة أو شركات الاتصالات عرضه كصورة متحركة.")
+                    .setNegativeButton("إلغاء",null)
+                    .setPositiveButton("متابعة",(dialog,which)->preparePickedAttachment(uri,mime)).show();
+            return;
+        }
+        preparePickedAttachment(uri,mime);
+    }
+    private void preparePickedAttachment(Uri uri,String detectedMime){
+        if(uri==null)return;
+        if(pendingImageFile!=null&&pendingImageFile.exists())pendingImageFile.delete();
+        pendingImageFile=null;pendingImageUri=uri;attachmentPreview.setVisibility(View.VISIBLE);attachmentPreviewLabel.setText("جارٍ تجهيز المرفق…");
+        final String selectedMime=normalizeAttachmentMime(detectedMime);final String mime=selectedMime.startsWith("image/")&&!selectedMime.equals("image/gif")?"image/jpeg":selectedMime;pendingAttachmentMime=mime;
         attachmentPreviewImage.setImageURI(uri);
         MESSAGE_EXECUTOR.execute(()->{
             java.io.File prepared=null;String error=null;
@@ -556,7 +568,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
     private void shareLocation(android.location.Location location){if(location==null){Toast.makeText(this,"تعذّر تحديد موقعك؛ تحقق من تشغيل خدمات الموقع",Toast.LENGTH_LONG).show();return;}String link="https://maps.google.com/?q="+location.getLatitude()+","+location.getLongitude();composer.setText("موقعي الحالي: "+link);composer.setSelection(composer.length());Toast.makeText(this,"أُضيف رابط موقعك الحالي إلى الرسالة؛ اضغط إرسال لمشاركته",Toast.LENGTH_LONG).show();}
     private void clearPendingImage(){if(pendingImageFile!=null&&!pendingImageFile.delete())android.util.Log.w("HashemSMS","Could not remove unsent MMS image");pendingImageFile=null;pendingImageUri=null;pendingAttachmentMime="image/jpeg";if(attachmentPreview!=null)attachmentPreview.setVisibility(View.GONE);if(attachmentPreviewImage!=null)attachmentPreviewImage.setImageDrawable(null);}
     private void sendPendingMms(String caption){if(pendingImageFile==null||!pendingImageFile.isFile()){Toast.makeText(this,"المرفق غير متاح؛ أعد اختياره.",Toast.LENGTH_LONG).show();return;}final java.io.File file=pendingImageFile;final String mime=pendingAttachmentMime;final String recipient=address;choosePreferredOrPrompt(new SubscriptionChoiceCallback(){public void onSelected(int subId){pendingImageFile=null;pendingImageUri=null;attachmentPreview.setVisibility(View.GONE);composer.setText("");SmsSending.SEND_EXECUTOR.execute(()->MmsSending.sendAttachment(getApplicationContext(),new Db(getApplicationContext()),recipient,caption,file,mime,subId));}public void onCancelled(){}});}
-    private void retryMms(ConversationMessage item){Cursor cursor=null;try{cursor=db.mmsAttachments(item.id);if(!cursor.moveToFirst())throw new java.io.IOException("المرفق غير موجود");String path=cursor.getString(cursor.getColumnIndexOrThrow("local_path"));String mime=cursor.getString(cursor.getColumnIndexOrThrow("content_type"));java.io.File image=new java.io.File(path);if(!image.isFile())throw new java.io.IOException("ملف المرفق غير موجود");String caption="";int split=item.body.indexOf('\n');if(split>=0)caption=item.body.substring(split+1);final String retryCaption=caption;final String retryMime=mime;chooseSmsSubscription(new SubscriptionChoiceCallback(){public void onSelected(int subId){SmsSending.SEND_EXECUTOR.execute(()->MmsSending.retryAttachment(getApplicationContext(),new Db(getApplicationContext()),item.id,address,image,retryMime,subId,retryCaption));}public void onCancelled(){}});}catch(Exception e){Toast.makeText(this,"تعذّرت إعادة المحاولة: "+e.getMessage(),Toast.LENGTH_LONG).show();}finally{if(cursor!=null)cursor.close();}}
+    private void retryMms(ConversationMessage item){Cursor cursor=null;try{cursor=db.mmsAttachments(item.id);if(!cursor.moveToFirst())throw new java.io.IOException("المرفق غير موجود");String path=cursor.getString(cursor.getColumnIndexOrThrow("local_path"));String mime=cursor.getString(cursor.getColumnIndexOrThrow("content_type"));java.io.File image=new java.io.File(path);if(!image.isFile())throw new java.io.IOException("ملف المرفق غير موجود");String caption="";int split=item.body.indexOf('\n');if(split>=0)caption=item.body.substring(split+1);final String retryCaption=caption;final String retryMime=mime;choosePreferredOrPrompt(new SubscriptionChoiceCallback(){public void onSelected(int subId){SmsSending.SEND_EXECUTOR.execute(()->MmsSending.retryAttachment(getApplicationContext(),new Db(getApplicationContext()),item.id,address,image,retryMime,subId,retryCaption));}public void onCancelled(){}});}catch(Exception e){Toast.makeText(this,"تعذّرت إعادة المحاولة: "+e.getMessage(),Toast.LENGTH_LONG).show();}finally{if(cursor!=null)cursor.close();}}
     void dispatchSms(String recipient,String body,String tag,int sentBase,int deliveredBase){dispatchSms(recipient,body,tag,sentBase,deliveredBase,()->{});}
     void dispatchSms(String recipient,String body,String tag,int sentBase,int deliveredBase,Runnable onSelected){
         final android.content.Context appContext=getApplicationContext();final Db appDb=new Db(appContext);choosePreferredOrPrompt(new SubscriptionChoiceCallback(){public void onSelected(int subId){onSelected.run();SmsSending.SEND_EXECUTOR.execute(()->SmsSending.sendSmsInBackground(appContext,appDb,recipient,body,tag,sentBase,deliveredBase,subId,true));}public void onCancelled(){}});
