@@ -278,7 +278,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
         @Override public RecyclerView.ViewHolder onCreateViewHolder(android.view.ViewGroup parent,int viewType){
             if(viewType==TYPE_EMPTY){TextView empty=tv("ابدأ المحادثة",16);empty.setGravity(Gravity.CENTER);empty.setCompoundDrawablesWithIntrinsicBounds(0,android.R.drawable.ic_dialog_email,0,0);empty.setCompoundDrawablePadding(UiResources.dp(ConversationActivity.this,12));return new EmptyHolder(empty);}
             if(viewType==TYPE_DATE){TextView date=tv("",12);date.setGravity(Gravity.CENTER);date.setTextColor(UiResources.color(ConversationActivity.this,R.color.on_surface_variant));date.setPadding(0,UiResources.dp(ConversationActivity.this,10),0,UiResources.dp(ConversationActivity.this,8));return new DateHolder(date);}
-            LinearLayout line=new LinearLayout(ConversationActivity.this);line.setGravity(Gravity.START);line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);line.setPadding(8,3,8,3);
+            LinearLayout line=new LinearLayout(ConversationActivity.this);line.setGravity(Gravity.START);line.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);line.setPadding(8,3,8,3);
             LinearLayout column=new LinearLayout(ConversationActivity.this);column.setOrientation(LinearLayout.VERTICAL);column.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
             LinearLayout bubble=new LinearLayout(ConversationActivity.this);bubble.setOrientation(LinearLayout.VERTICAL);bubble.setPadding(16,8,16,8);
             ImageView media=new ImageView(ConversationActivity.this);media.setAdjustViewBounds(true);media.setMaxWidth(UiResources.dp(ConversationActivity.this,240));media.setMaxHeight(UiResources.dp(ConversationActivity.this,240));media.setScaleType(ImageView.ScaleType.CENTER_CROP);media.setVisibility(View.GONE);bubble.addView(media,new LinearLayout.LayoutParams(UiResources.dp(ConversationActivity.this,220),UiResources.dp(ConversationActivity.this,180)));
@@ -290,7 +290,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
             column.addView(otp,new LinearLayout.LayoutParams(-2,UiResources.dp(ConversationActivity.this,32)));
             column.addView(retry,new LinearLayout.LayoutParams(-2,UiResources.dp(ConversationActivity.this,32)));
             LinearLayout actions=new LinearLayout(ConversationActivity.this);actions.setOrientation(LinearLayout.HORIZONTAL);actions.setGravity(Gravity.CENTER_VERTICAL);actions.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);actions.setVisibility(View.GONE);
-            ImageButton copy=messageActionIcon(R.drawable.ic_content_copy,"نسخ"),forward=messageActionIcon(R.drawable.ic_forward,"إعادة توجيه"),reply=messageActionIcon(android.R.drawable.ic_menu_edit,"تعديل"),star=messageActionIcon(R.drawable.ic_star,"نجمة"),more=messageActionIcon(R.drawable.ic_more_vert,"خيارات");
+            ImageButton copy=messageActionIcon(R.drawable.ic_content_copy,"نسخ"),forward=messageActionIcon(R.drawable.ic_forward,"إعادة توجيه"),reply=messageActionIcon(android.R.drawable.ic_menu_edit,"تعديل"),star=messageActionIcon(android.R.drawable.ic_menu_search,"ترجمة"),more=messageActionIcon(R.drawable.ic_more_vert,"خيارات");
             int actionSize=UiResources.dp(ConversationActivity.this,34);
             for(ImageButton button:new ImageButton[]{copy,forward,reply,star,more}){LinearLayout.LayoutParams actionLp=new LinearLayout.LayoutParams(actionSize,actionSize);actionLp.setMargins(2,0,2,0);actions.addView(button,actionLp);}
             column.addView(actions,new LinearLayout.LayoutParams(-2,-2));
@@ -326,7 +326,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
             h.bubble.setOnClickListener(tap);h.body.setOnClickListener(tap);h.meta.setOnClickListener(tap);
             h.copy.setOnClickListener(v->copyMessage(item));h.forward.setOnClickListener(v->forwardMessage(item));
             h.reply.setVisibility(outgoing?View.VISIBLE:View.GONE);h.reply.setOnClickListener(v->{if(outgoing){composer.setText(item.body);composer.setSelection(composer.length());composer.requestFocus();}});
-            h.star.setOnClickListener(v->{MESSAGE_EXECUTOR.execute(()->{db.starMessages(new ArrayList<>(Collections.singletonList(item.id)));mainHandler.post(()->loadMessages(false));});});
+            h.star.setOnClickListener(v->translateMessage(item.body));
             h.more.setOnClickListener(v->showMessageMenu(v,item));
         }
     }
@@ -404,11 +404,18 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
             .setPositiveButton("إرسال",(dialog,which)->sendForwarded(recipient.getText().toString().trim(),item.body))
             .setNegativeButton("إلغاء",null).show();
     }
+    private void translateMessage(String text){
+        if(text==null||text.trim().isEmpty())return;
+        Intent intent=new Intent(Intent.ACTION_PROCESS_TEXT);intent.setType("text/plain");intent.putExtra(Intent.EXTRA_PROCESS_TEXT,text);intent.putExtra(Intent.EXTRA_PROCESS_TEXT_READONLY,true);
+        if(intent.resolveActivity(getPackageManager())!=null){try{startActivity(Intent.createChooser(intent,"ترجمة الرسالة"));}catch(Exception e){Toast.makeText(this,"تعذّر فتح خدمة الترجمة",Toast.LENGTH_SHORT).show();}}
+        else new AlertDialog.Builder(this).setTitle("ترجمة الرسالة").setMessage("لا يوجد تطبيق ترجمة يدعم استقبال النص حالياً. يمكنك نسخ الرسالة واستخدام خدمة ترجمة.").setPositiveButton("نسخ النص",(d,w)->copyMessage(ConversationMessage.empty(text))).setNegativeButton("إغلاق",null).show();
+    }
+
     void showMessageMenu(View anchor,ConversationMessage item){
         PopupMenu menu=new PopupMenu(this,anchor);menu.setForceShowIcon(true);
-        menu.getMenu().add("حذف").setIcon(R.drawable.ic_delete);menu.getMenu().add("تفاصيل الرسالة").setIcon(R.drawable.ic_more_vert);
+        menu.getMenu().add("تمييز بنجمة").setIcon(R.drawable.ic_star);menu.getMenu().add("حذف").setIcon(R.drawable.ic_delete);menu.getMenu().add("تفاصيل الرسالة").setIcon(R.drawable.ic_more_vert);
         menu.setOnMenuItemClickListener(choice->{
-            if("تفاصيل الرسالة".contentEquals(choice.getTitle())){
+            if("تمييز بنجمة".contentEquals(choice.getTitle())){MESSAGE_EXECUTOR.execute(()->{db.starMessages(new ArrayList<>(Collections.singletonList(item.id)));mainHandler.post(()->loadMessages(false));});return true;}if("تفاصيل الرسالة".contentEquals(choice.getTitle())){
                 String direction="out".equals(item.type)?"صادرة":"واردة",status=displayStatus(item.status);if(status.isEmpty())status="غير معروفة";
                 new AlertDialog.Builder(this).setTitle("تفاصيل الرسالة").setMessage(direction+"\n"+status+"\n\n"+item.body).setPositiveButton("إغلاق",null).show();
             }else new AlertDialog.Builder(this).setTitle("حذف الرسالة؟").setMessage("هل تريد حذف هذه الرسالة؟").setNegativeButton("إلغاء",null).setPositiveButton("حذف",(dialog,which)->{
