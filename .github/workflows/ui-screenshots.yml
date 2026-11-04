@@ -1,0 +1,61 @@
+name: HashemSMS UI screenshots
+
+on:
+  push:
+    branches: [phase1-ui]
+    paths:
+      - 'app/**'
+      - '.github/workflows/ui-screenshots.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[batch-complete]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout phase1-ui
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Run UI screenshot tests on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          script: |
+            chmod +x gradlew
+            ./gradlew --no-daemon installDebug
+            adb shell pm grant com.hashem.sms android.permission.SEND_SMS
+            adb shell pm grant com.hashem.sms android.permission.RECEIVE_SMS
+            adb shell pm grant com.hashem.sms android.permission.READ_SMS
+            adb shell pm grant com.hashem.sms android.permission.READ_CONTACTS
+            adb shell pm grant com.hashem.sms android.permission.POST_NOTIFICATIONS
+            ./gradlew --no-daemon connectedDebugAndroidTest
+            mkdir -p ui-screenshots
+            adb pull /sdcard/Android/data/com.hashem.sms/files/Pictures/HashemSMS-Screenshots ui-screenshots/
+
+      - name: Upload light and dark screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HashemSMS-UI-Screenshots-${{ github.sha }}
+          path: ui-screenshots/
+          if-no-files-found: warn
+          retention-days: 30
