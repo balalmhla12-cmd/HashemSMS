@@ -14,6 +14,8 @@ final class SmsSending {
   if(id<=0){Db.PROVIDER_SYNC_LOCK.lock();try{id=bulkCampaignId>0?db.addBulkMessage(recipient,body,"sending",bulkCampaignId):db.addMessage(recipient,body,"out","sending");}finally{Db.PROVIDER_SYNC_LOCK.unlock();}}else db.status(id,"جارٍ الإرسال");
   if(id<=0){android.util.Log.e("HashemSMS","Could not save outgoing SMS for recipient "+recipient);if(showProgress)postToast(app,"تعذّر حفظ الرسالة محليًا",Toast.LENGTH_LONG);return false;}
   try{
+   if(recipient==null||recipient.trim().isEmpty())throw new IllegalArgumentException("SMS recipient is empty");
+   if(body==null||body.isEmpty())throw new IllegalArgumentException("SMS body is empty");
    db.saveOutgoingToSystemProvider(app,id);SmsManager sm;
    if(subscriptionId>=0){if(android.os.Build.VERSION.SDK_INT>=31)sm=SmsManager.getDefault().createForSubscriptionId(subscriptionId);else sm=SmsManager.getSmsManagerForSubscriptionId(subscriptionId);}else sm=SmsManager.getDefault();
    ArrayList<String> parts=sm.divideMessage(body);ArrayList<PendingIntent> sent=new ArrayList<>(),delivered=new ArrayList<>();
