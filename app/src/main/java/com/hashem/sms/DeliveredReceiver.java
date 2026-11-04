@@ -16,6 +16,7 @@ public class DeliveredReceiver extends BroadcastReceiver {
    SharedPreferences.Editor e=prefs.edit().putBoolean(prefix+"done_"+index,true).putInt(prefix+"completed",completed).putInt(prefix+"failures",failures);
    if(finished){if(failures>0)android.util.Log.e("HashemSMS","Multipart SMS delivery failed for message id="+id+" partsFailed="+failures);new Db(context).status(id,failures==0?"تم التسليم":"لم يتم التسليم");e.remove(prefix+"completed").remove(prefix+"failures");for(int i=0;i<total;i++)e.remove(prefix+"done_"+i);}
    e.commit();
+   if(finished)context.sendBroadcast(new Intent(SmsReceiver.ACTION_SMS_UPDATED).setPackage(context.getPackageName()));
   }
  }
 }
