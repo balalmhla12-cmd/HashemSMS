@@ -4,9 +4,9 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.res.Configuration;
-import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.util.TypedValue;
@@ -49,7 +49,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
         final LinearLayout[] chips = new LinearLayout[6];
         final TextView[] chipTexts = new TextView[6];
         final ImageView[] chipIcons = new ImageView[6];
-        Typeface bold, regular;
+        Typeface bold;
         String lastKey = "";
         int errors = 0;
         ViewTreeObserver.OnPreDrawListener listener;
@@ -77,7 +77,6 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
 
         void install() {
             try { bold = Typeface.create(ResourcesCompat.getFont(m, R.font.almarai_family), Typeface.BOLD); } catch (Throwable ignored) {}
-            try { regular = Typeface.create(ResourcesCompat.getFont(m, R.font.almarai_regular), Typeface.NORMAL); } catch (Throwable ignored) {}
             safe(this::header);
             safe(this::buildChips);
             safe(this::compose);
@@ -101,7 +100,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                     == Configuration.UI_MODE_NIGHT_YES;
         }
 
-        // ---------- Header: logo + theme toggle ----------
+        // ---------- Header: requested logo sizing and alignment ----------
         void header() {
             LinearLayout bar = (LinearLayout) m.root.getChildAt(0);
             ImageView logo = new ImageView(m);
