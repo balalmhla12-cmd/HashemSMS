@@ -102,10 +102,10 @@ public class MmsPduComposerTest {
     @Test
     public void rejectsNonImageParts() {
         try {
-            new MmsPduComposer.ImagePart(new byte[]{0x01}, "video/mp4", "clip.mp4");
+            new MmsPduComposer.ImagePart(new byte[]{0x01}, "video/x-msvideo", "clip.avi");
             fail("video parts must be rejected");
         } catch (IllegalArgumentException expected) {
-            assertEquals("Unsupported MMS attachment type: video/mp4", expected.getMessage());
+            assertEquals("Unsupported MMS attachment type: video/x-msvideo", expected.getMessage());
         }
     }
     @Test
