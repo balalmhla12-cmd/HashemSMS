@@ -580,11 +580,12 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
     private void retryMms(ConversationMessage item){Cursor cursor=null;try{cursor=db.mmsAttachments(item.id);if(!cursor.moveToFirst())throw new java.io.IOException("المرفق غير موجود");String path=cursor.getString(cursor.getColumnIndexOrThrow("local_path"));String mime=cursor.getString(cursor.getColumnIndexOrThrow("content_type"));java.io.File image=new java.io.File(path);if(!image.isFile())throw new java.io.IOException("ملف المرفق غير موجود");String caption="";int split=item.body.indexOf('\n');if(split>=0)caption=item.body.substring(split+1);final String retryCaption=caption;final String retryMime=mime;choosePreferredOrPrompt(new SubscriptionChoiceCallback(){public void onSelected(int subId){SmsSending.SEND_EXECUTOR.execute(()->MmsSending.retryAttachment(getApplicationContext(),new Db(getApplicationContext()),item.id,address,image,retryMime,subId,retryCaption));}public void onCancelled(){}});}catch(Exception e){Toast.makeText(this,"تعذّرت إعادة المحاولة: "+e.getMessage(),Toast.LENGTH_LONG).show();}finally{if(cursor!=null)cursor.close();}}
     void dispatchSms(String recipient,String body,String tag,int sentBase,int deliveredBase){dispatchSms(recipient,body,tag,sentBase,deliveredBase,()->{});}
     void dispatchSms(String recipient,String body,String tag,int sentBase,int deliveredBase,Runnable onSelected){
-        final android.content.Context appContext=getApplicationContext();final Db appDb=new Db(appContext);choosePreferredOrPrompt(new SubscriptionChoiceCallback(){public void onSelected(int subId){onSelected.run();SmsSending.SEND_EXECUTOR.execute(()->SmsSending.sendSmsInBackground(appContext,appDb,recipient,body,tag,sentBase,deliveredBase,subId,true));}public void onCancelled(){}});
+        final android.content.Context appContext=getApplicationContext();final Db appDb=new Db(appContext);choosePreferredOrPrompt(recipient,new SubscriptionChoiceCallback(){public void onSelected(int subId){onSelected.run();SmsSending.SEND_EXECUTOR.execute(()->SmsSending.sendSmsInBackground(appContext,appDb,recipient,body,tag,sentBase,deliveredBase,subId,true));}public void onCancelled(){}});
     }
-    private void choosePreferredOrPrompt(SubscriptionChoiceCallback callback){
+    private void choosePreferredOrPrompt(SubscriptionChoiceCallback callback){choosePreferredOrPrompt(address,callback);}
+    private void choosePreferredOrPrompt(String recipient,SubscriptionChoiceCallback callback){
         android.content.SharedPreferences prefs=getSharedPreferences("hashem_ui",MODE_PRIVATE);
-        String key=SimPreferenceKey.forAddress(address);
+        String key=SimPreferenceKey.forAddress(recipient);
         if(prefs.contains(key)){
             int preferred=prefs.getInt(key,-1);
             if(preferred<0){callback.onSelected(-1);return;}
