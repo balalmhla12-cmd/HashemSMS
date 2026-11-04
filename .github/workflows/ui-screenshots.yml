@@ -42,14 +42,18 @@ jobs:
           script: |
             chmod +x gradlew
             ./gradlew --no-daemon installDebug
+            adb shell cmd role add-role-holder --user 0 android.app.role.SMS com.hashem.sms || true
             adb shell pm grant com.hashem.sms android.permission.SEND_SMS
             adb shell pm grant com.hashem.sms android.permission.RECEIVE_SMS
             adb shell pm grant com.hashem.sms android.permission.READ_SMS
             adb shell pm grant com.hashem.sms android.permission.READ_CONTACTS
             adb shell pm grant com.hashem.sms android.permission.POST_NOTIFICATIONS
+            set +e
             ./gradlew --no-daemon connectedDebugAndroidTest
+            test_status=$?
             mkdir -p ui-screenshots
-            adb pull /sdcard/Android/data/com.hashem.sms/files/Pictures/HashemSMS-Screenshots ui-screenshots/
+            adb pull /sdcard/Android/data/com.hashem.sms/files/Pictures/HashemSMS-Screenshots ui-screenshots/ || true
+            exit $test_status
 
       - name: Upload light and dark screenshots
         if: always()

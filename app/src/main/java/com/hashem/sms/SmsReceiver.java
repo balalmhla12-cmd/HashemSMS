@@ -88,20 +88,9 @@ public class SmsReceiver extends BroadcastReceiver {
             } catch (Exception e) {
                 Log.e(TAG, "Failed to insert incoming SMS into Android SMS provider", e);
             }
-            if (providerId <= 0) {
-                long existingId = db.findRecentIncomingMessage(address, body, effectiveTimestamp, 10000L);
-                if (existingId > 0) {
-                    duplicateFallback = true;
-                    Log.i(TAG, "Skipped likely duplicate incoming SMS after provider insert failure; local id=" + existingId);
-                }
-            }
-            if (!duplicateFallback) {
-                long localId = db.addMessage(address, body, "in", "received");
-                if (localId <= 0) {
-                    Log.e(TAG, "Failed to save incoming SMS to local database");
-                    return;
-                }
-                if (providerId > 0) db.linkProviderMessage(localId, providerId);
+            duplicateFallback = !persistIncomingMessage(db, address, body, effectiveTimestamp, providerId);
+            if (duplicateFallback) {
+                Log.i(TAG, "Skipped likely duplicate incoming SMS after provider insert failure");
             }
         } catch (Exception e) {
             Log.e(TAG, "Failed to save/link incoming SMS in local database", e);
@@ -122,4 +111,25 @@ public class SmsReceiver extends BroadcastReceiver {
         context.sendBroadcast(new Intent(ACTION_SMS_UPDATED).setPackage(context.getPackageName()));
     }
 
+
+    static boolean persistIncomingMessage(Db db, String address, String body,
+                                          long timestamp, long providerId) {
+        if (db == null || address == null || address.trim().isEmpty()
+                || body == null || body.isEmpty()) return false;
+        Db.PROVIDER_SYNC_LOCK.lock();
+        try {
+            if (providerId <= 0) {
+                long existingId = db.findRecentIncomingMessage(address, body, timestamp, 10000L);
+                if (existingId > 0) return false;
+            }
+            long localId = db.addMessage(address, body, "in", "received");
+            if (localId <= 0) {
+                throw new IllegalStateException("Failed to save incoming SMS to local database");
+            }
+            if (providerId > 0) db.linkProviderMessage(localId, providerId);
+            return true;
+        } finally {
+            Db.PROVIDER_SYNC_LOCK.unlock();
+        }
+    }
 }

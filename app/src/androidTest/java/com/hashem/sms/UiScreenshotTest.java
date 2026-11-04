@@ -44,6 +44,9 @@ public final class UiScreenshotTest {
 
         captureTheme(target, AppCompatDelegate.MODE_NIGHT_NO, "light", output);
         captureTheme(target, AppCompatDelegate.MODE_NIGHT_YES, "dark", output);
+        String[] screenshots = output.list((dir, name) -> name.endsWith(".png"));
+        assertNotNull("Screenshot directory could not be listed", screenshots);
+        assertTrue("Expected ten screenshots, found " + screenshots.length, screenshots.length == 10);
     }
 
     private void seedPreviewData(Context context) {
@@ -72,6 +75,7 @@ public final class UiScreenshotTest {
 
         try (ActivityScenario<MainActivity> main = ActivityScenario.launch(MainActivity.class)) {
             waitForUi();
+            device.wait(Until.hasObject(By.text("رسالة صادرة تجريبية")), 5000);
             save(output, "01-home-" + theme + ".png");
 
             UiObject2 menu = device.wait(Until.findObject(By.desc("القائمة")), 5000);
