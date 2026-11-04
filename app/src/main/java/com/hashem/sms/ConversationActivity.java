@@ -175,7 +175,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
         ImageButton more=iconActionButton(R.drawable.ic_more_vert,"الخيارات",false);more.setOnClickListener(v->conversationMenu(v)); top.addView(more,new LinearLayout.LayoutParams(UiResources.dp(this,40),UiResources.dp(this,44))); root.addView(top);
         search=new EditText(this); search.setHint("بحث في هذه المحادثة"); search.setSingleLine(); search.setTextSize(14);search.setPadding(UiResources.dp(this,16),UiResources.dp(this,4),UiResources.dp(this,16),UiResources.dp(this,4));search.setMinHeight(UiResources.dp(this,48));search.setTextColor(UiResources.color(this,R.color.on_surface));search.setHintTextColor(UiResources.color(this,R.color.on_surface_variant));search.setBackground(rounded(UiResources.color(ConversationActivity.this,R.color.surface_variant),UiResources.color(ConversationActivity.this,R.color.search_border),26));search.setVisibility(View.GONE);
         search.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int c,int d){} public void onTextChanged(CharSequence s,int a,int b,int c){mainHandler.removeCallbacks(searchDebounce);mainHandler.postDelayed(searchDebounce,275L);} public void afterTextChanged(Editable e){}}); root.addView(search);
-        messages=new RecyclerView(this);
+        messages=new ScaleAwareRecyclerView(this);
         messages.setClipToPadding(false);
         messages.setPadding(0,4,0,4);
         messages.setLayoutManager(new LinearLayoutManager(this));
@@ -185,14 +185,14 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
         messageScaleDetector=new android.view.ScaleGestureDetector(this,new android.view.ScaleGestureDetector.SimpleOnScaleGestureListener(){
             @Override public boolean onScale(android.view.ScaleGestureDetector detector){
                 float next=Math.max(0.8f,Math.min(1.8f,messageTextScale*detector.getScaleFactor()));
-                if(Math.abs(next-messageTextScale)>0.015f){messageTextScale=next;messageAdapter.notifyDataSetChanged();}
+                if(Math.abs(next-messageTextScale)>0.015f){messageTextScale=next;messageAdapter.notifyItemRangeChanged(0,messageAdapter.getItemCount());}
                 return true;
             }
             @Override public void onScaleEnd(android.view.ScaleGestureDetector detector){
                 getSharedPreferences("hashem_ui",MODE_PRIVATE).edit().putFloat("message_text_scale",messageTextScale).apply();
             }
         });
-        messages.setOnTouchListener((view,event)->{messageScaleDetector.onTouchEvent(event);return false;});
+        
         root.addView(messages,new LinearLayout.LayoutParams(-1,0,1));
         LinearLayout composerRow=new LinearLayout(this);composerRow.setGravity(Gravity.CENTER_VERTICAL);composerRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);composerRow.setPadding(UiResources.dp(this,4),UiResources.dp(this,5),UiResources.dp(this,6),UiResources.dp(this,5));composerRow.setBackground(rounded(UiResources.color(ConversationActivity.this,R.color.surface_variant),UiResources.color(ConversationActivity.this,R.color.search_border),30));
         LinearLayout leftTools=new LinearLayout(this);leftTools.setOrientation(LinearLayout.VERTICAL);leftTools.setGravity(Gravity.CENTER);
@@ -256,6 +256,14 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
                 });
             });
         });
+    }
+
+    private final class ScaleAwareRecyclerView extends RecyclerView {
+        ScaleAwareRecyclerView(Context context){super(context);}
+        @Override public boolean dispatchTouchEvent(MotionEvent event){
+            if(messageScaleDetector!=null)messageScaleDetector.onTouchEvent(event);
+            return super.dispatchTouchEvent(event);
+        }
     }
 
     static final class ConversationMessage {
