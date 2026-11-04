@@ -28,6 +28,14 @@ jobs:
         with:
           packages: platform-tools
 
+      - name: Enable KVM acceleration on hosted runner
+        run: |
+          echo "Checking /dev/kvm availability"
+          test -e /dev/kvm
+          sudo chmod 666 /dev/kvm
+          test -r /dev/kvm && test -w /dev/kvm
+          ls -l /dev/kvm
+
       - name: Run UI screenshot tests on Android emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
