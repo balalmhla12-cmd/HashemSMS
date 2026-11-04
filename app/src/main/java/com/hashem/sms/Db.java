@@ -74,9 +74,21 @@ public class Db extends SQLiteOpenHelper{
     +"MAX(0,c.recipient_count-SUM(CASE WHEN r.status IN ('تم الإرسال','تم التسليم','لم يتم التسليم','sent','delivered') THEN 1 ELSE 0 END)-SUM(CASE WHEN r.status IN ('لم يتم الإرسال','فشل','failed') THEN 1 ELSE 0 END)) AS pending_count "
     +"FROM bulk_campaigns c LEFT JOIN bulk_campaign_recipients r ON r.campaign_id=c.id GROUP BY c.id ORDER BY c.created_at DESC,c.id DESC",null);
  }
+ private boolean isSupportedMmsAttachmentType(String contentType){
+  if(contentType==null)return false;
+  switch(contentType.toLowerCase(Locale.ROOT)){
+   case "image/jpeg":case "image/png":case "image/gif":case "image/webp":
+   case "application/pdf":case "text/plain":case "text/vcard":case "application/octet-stream":
+   case "application/zip":case "application/msword":case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+   case "application/vnd.ms-excel":case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+   case "application/vnd.ms-powerpoint":case "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+   case "application/rtf":case "application/json":case "text/csv":case "audio/mpeg":case "audio/mp4":case "video/mp4":return true;
+   default:return false;
+  }
+ }
  public long addMmsAttachment(long messageId,String localPath,String contentType,long sizeBytes,String transactionId){
-  if(messageId<=0||localPath==null||localPath.trim().isEmpty()||(!"image/jpeg".equals(contentType)&&!"image/png".equals(contentType))||sizeBytes<=0||transactionId==null||transactionId.trim().isEmpty())throw new IllegalArgumentException("Invalid MMS attachment metadata");
-  ContentValues row=new ContentValues();row.put("message_id",messageId);row.put("local_path",localPath);row.put("content_type",contentType);row.put("size_bytes",sizeBytes);row.put("transaction_id",transactionId);
+  if(messageId<=0||localPath==null||localPath.trim().isEmpty()||!isSupportedMmsAttachmentType(contentType)||sizeBytes<=0||transactionId==null||transactionId.trim().isEmpty())throw new IllegalArgumentException("Invalid MMS attachment metadata");
+  ContentValues row=new ContentValues();row.put("message_id",messageId);row.put("local_path",localPath);row.put("content_type",contentType.toLowerCase(Locale.ROOT));row.put("size_bytes",sizeBytes);row.put("transaction_id",transactionId);
   return getWritableDatabase().insertOrThrow("message_attachments",null,row);
  }
  public Cursor mmsAttachments(long messageId){
