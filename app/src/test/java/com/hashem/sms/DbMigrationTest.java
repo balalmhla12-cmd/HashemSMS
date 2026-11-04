@@ -266,6 +266,10 @@ public class DbMigrationTest {
         old.execSQL("CREATE TABLE schedules(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,at INTEGER)");
         old.execSQL("CREATE TABLE forward_rules(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL UNIQUE,destination TEXT NOT NULL)");
         old.execSQL("CREATE TABLE conversation_flags(address TEXT PRIMARY KEY,archived INTEGER NOT NULL DEFAULT 0,blocked INTEGER NOT NULL DEFAULT 0)");
+        old.execSQL("CREATE INDEX idx_messages_address_ts ON messages(address,ts DESC)");
+        old.execSQL("CREATE INDEX idx_messages_trash_type_ts ON messages(trash,type,ts DESC)");
+        old.execSQL("CREATE INDEX idx_messages_type_read_trash_address ON messages(type,read,trash,address)");
+        old.execSQL("CREATE INDEX idx_messages_star_ts ON messages(star,ts DESC)");
         old.execSQL("CREATE INDEX idx_messages_provider_id ON messages(provider_id)");
         old.execSQL("INSERT INTO messages(id,address,body,type,status,ts,provider_id,read,star,trash) VALUES(88,'+1008','version 10 message','out','sent',1234,987,1,0,0)");
         old.execSQL("INSERT INTO groups(id,name) VALUES(7,'مجموعة الاختبار')");
