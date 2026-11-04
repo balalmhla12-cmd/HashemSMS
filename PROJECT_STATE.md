@@ -1,58 +1,72 @@
 # HashemSMS — Project State
 
-Last reviewed: 2026-10-21
-Branch: `phase1-ui`
+Last reviewed: 2026-11-05
+Repository: `balalmhla12-cmd/HashemSMS` (must remain Private)
+Active branch: `phase1-ui`
 Package invariant: `com.hashem.sms`
-Main branch: not modified; PR #6 remains open and unmerged.
+Main branch: unchanged by this work; PR #6 remains open and unmerged.
 
-## Settings screen
+## Current branch and CI
 
-- Settings screen is implemented in `app/src/main/java/com/hashem/sms/SettingsActivity.java`, introduced by commit `6164497ede5246dfff6eb9871c4067361a215671` (`Add internal HashemSMS settings screen`).
-- `MainActivity.openApplicationSettings()` now opens the internal settings activity.
-- Implemented UI sections: live default-SMS status, permission summary, active SIM count/details, settings search, appearance choices (system/light/dark) with message-bubble preview, notification settings shortcut, exact-alarm/scheduling shortcut, privacy/system app settings, expandable advanced shortcuts, and About dialog using the installed version and package ID.
-- SIM information is read from Android's active subscriptions when the required phone-state permission is granted. This screen does not silently select or change the sending SIM; sending selection remains in the conversation flow.
-- The screen uses existing HashemSMS resources/theme and RTL layout. No database schema or SMS sending logic change was included in the settings-screen commit.
-- Limitation: Android system settings shortcuts hand off to Android; they are not custom in-app permission editors. SIM display and behavior still require real-device verification. No device test is claimed.
+- Current branch HEAD at the time of this update: `125df6f861df19b9d68ac7e1ba4c81a7cb3439fd`.
+- The immediately preceding code state `2f4a750c99e94318d2bc66f96b425f4cc91b51d5` passed both push and pull-request Android workflows:
+  - Push run: https://github.com/balalmhla12-cmd/HashemSMS/actions/runs/41927704438
+  - Pull-request run: https://github.com/balalmhla12-cmd/HashemSMS/actions/runs/41927715236
+- Both runs passed database migration/lifecycle unit tests, debug build, Android Lint, Java color-constructor check, and light/dark WCAG contrast check.
+- Lint at `2f4a750`: baseline 15 warnings / 0 errors; current 14 warnings / 0 errors. The project limit is 14 warnings. No baseline was raised or regenerated.
+- Commit `125df6f` adds a unit test asserting original GIF payload bytes survive MMS PDU composition unchanged. Its new push and PR workflows must pass before this latest head is considered verified.
+- Do not describe any pending workflow as PASS.
 
-## CI evidence at review
+## Batch A — implementation and remaining sign-off
 
-- Pull-request Actions run #396 for commit `6164497ede5246dfff6eb9871c4067361a215671`: completed successfully.
-- Run #396 reported baseline Lint warnings: 15; current warnings: 14; errors: 0. Contrast checks, database migration/lifecycle unit tests, debug APK build and artifact uploads completed. Stable release publishing was skipped.
-- Push Actions run #395 for the same commit was still in progress when this review was recorded; refresh Actions before treating the commit as fully verified across both triggers.
-- Run link: https://github.com/balalmhla12-cmd/HashemSMS/actions/runs/39664271062
-- Push run link: https://github.com/balalmhla12-cmd/HashemSMS/actions/runs/39664265131
+Implemented on `phase1-ui`:
+- Main tabs are ordered: الكل، غير مقروءة، لم يتم الإرسال، جماعية، غير معروف، مجدولة.
+- The tabs remain horizontally scrollable; the obsolete starred tab is not shown.
+- The «مميزة» and «قواعد التوجيه» standalone UI destinations are hidden; the star action and routing data/logic are retained.
+- The home title/logo sizing, tab density, conversation row text sizing and spacing were adjusted.
+- Failed-message list was updated for search, contact name/photo fallback, preview, state/time, retry and conditional routing.
+- A follow-up fix restored grouping by conversation and latest-failure ordering.
+- README.md and README-TERMUX.md edits were reverted; they are not part of the requested project-state documentation.
 
+A sign-off remains conditional on:
+1. Confirming the latest head's Actions are green with 14 or fewer Lint warnings.
+2. Completing the two-attempt screenshot procedure described below or receiving the user's choice of a no-emulator alternative.
+3. Final review of remaining cosmetic overlay changes against the reference UI.
 
-## UI work: Google Messages-inspired secondary screens
+### HashemUi audit
 
-Reviewed implementation commits on `phase1-ui`:
-- `0c2f1bac0c39baf04be9550b9d295e9e1782f32b`: conversation header/layout sizing, icon-oriented message selection actions, and a confirmation before deleting selected messages.
-- `5ab50733bfad49d8a6172230ddb99fd40e7587aa`: contact thumbnail photo loading in the conversation header, with an initials fallback.
-- `62b9a584553539e87efaf5826ea148f1668c1e9e` and `2d2545db5f54bb9f45fc5dd995abc8d9e4129b2c`: shared spacing/input sizing for secondary management screens only.
-- `fa3349706def468feb3cb56a9db5dd943434049a`: CI workflow publishes a `phase1-ui-debug` release after a successful push build.
+The overlay had additional UI behavior beyond the six-tab correction. The unrequested header theme toggle, hidden header search icon, and unread/failed tab count badges (including their periodic DB count refresh) were removed in commit `12f5036`. The header search icon is restored. Theme selection remains available in Settings.
 
-**Protected main screen:** no redesign was applied to the conversations home. The new secondary-screen styling is invoked only for starred, trash, bulk, groups, routing rules, scheduled, and failed-message screens. MainActivity's home-building code and HashemUi overlay were not changed by these UI commits.
+Other styling retained for review: search-field treatment, bottom-navigation surface styling, floating compose-button appearance/placement, avatar fallback/ring styling, and conversation-row typography/spacing. Typography/spacing and logo/tab work correspond to the stated home-screen requirements; purely decorative treatment should not be represented as separately requested functionality.
 
-## Verification and download
+## Screenshot attempts
 
-- Push Actions for implementation commit `fa3349706def468feb3cb56a9db5dd943434049a` passed: [run #413](https://github.com/balalmhla12-cmd/HashemSMS/actions/runs/39671491353).
-- The run passed baseline/current Lint comparison, hard-coded Java color check, light/dark contrast check, database migration/lifecycle unit tests, APK build, APK artifact upload, and publication of the private branch release.
-- The PR-triggered run for the same commit must also be checked in Actions before final sign-off. Use the newest run at the current branch HEAD; documentation-only commits also trigger CI.
-- Release URL: https://github.com/balalmhla12-cmd/HashemSMS/releases/tag/phase1-ui-debug
-- Direct APK asset: https://github.com/balalmhla12-cmd/HashemSMS/releases/download/phase1-ui-debug/HashemSMS-debug.apk
-- The repository is private, so downloading the release requires an account with repository access. This is a debug APK, not a production-signed release.
-- **No real-device test is claimed.** SMS/MMS behavior, SIM selection, contact-photo rendering, notification reply, and scheduling still need verification on a physical Android device.
+Exactly two emulator attempts were made:
+1. Stable emulator-runner configuration: emulator booted, then ADB disconnected with Broken pipe/protocol errors; no screenshots or artifact were produced.
+2. KVM-enabled runner: KVM check and emulator boot succeeded, but the script stopped before instrumentation tests because `set -euo pipefail` was run under POSIX `sh`; no screenshots or artifact were produced.
 
-## Guardrails
+The shell issue was corrected to POSIX-compatible `set -eu` in the screenshot workflow. The second attempt is eligible for one corrected retry because its failure occurred before screenshot tests began; do not start a third independent emulator attempt. If the corrected retry fails, stop and ask the user to choose between Robolectric screenshots and Paparazzi. No screenshot artifact currently exists.
 
-- Keep package `com.hashem.sms`, existing features, database and send/receive behavior intact unless separately approved.
-- Do not raise or regenerate the Lint baseline to hide warnings.
-- Do not merge to `main` without explicit approval.
-- Build success is not proof of real-device SMS, SIM, notification, scheduling, or theme behavior.
+No emulator screenshots, real-device tests, or device-level SMS/MMS/SIM verification are claimed.
 
-## Guardrails
+## Batch B — conversation and composer
 
-- Keep package `com.hashem.sms`, existing features, database and send/receive behavior intact unless separately approved.
-- Do not raise or regenerate the Lint baseline to hide warnings.
-- Do not merge to `main` without explicit approval.
-- Build success is not proof of real-device SMS, SIM, notification, scheduling, or theme behavior.
+Work is underway; not yet signed off:
+- The composer no longer has the former eight-line cap.
+- Plus changes to clear-text (×) when text exists; tapping it clears only the text.
+- Quick replies include «كيف حالك»، «السلام عليكم»، and «إضافة رد جديد»; user replies can be added, edited, deleted, and inserted without auto-send.
+- The attachment menu includes gallery, camera, GIF, stickers/emoji, files, live-location notice (live location remains deferred), contacts, scheduling, and one-time location.
+- GIF selection warns before sending and retains original GIF MIME/payload; a unit test checks the original GIF bytes in the MMS PDU.
+- SIM selection is stored per normalized recipient number, reused for later sends and MMS retry, and re-requested if the saved subscription is no longer active. Long-press SIM picker exposes active subscription names/numbers when Android provides them.
+- Pinch scaling affects message text and action buttons; the translation action replaces the star icon, while star remains in More.
+
+Remaining Batch B checks include UI layout/accessibility, SMS/MMS composer regression tests, quick-reply persistence behavior, SIM permission/cancel paths, and final Actions verification.
+
+## Protected project rules
+
+- Do not rewrite the application or remove existing features/data.
+- Do not modify database schema without a safe migration and tests.
+- Do not change `android.yml` or `Db.java` as part of the UI workflow work. In the specifically audited commits `b9f0124`, `60dc03c`, and `b152dc4`, only `ui-screenshots.yml` changed.
+- Do not merge PR #6 or any related PR into `main` without explicit approval.
+- No final APK, final Release, or installation request before all four batches are complete and verified.
+- Any manual phone checks must be delivered as a checklist with the final build.
