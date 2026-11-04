@@ -1,76 +1,34 @@
 # HashemSMS — Progress
 
-Last reviewed: 2026-11-05
-Active branch: `phase1-ui`
-PR #6: https://github.com/balalmhla12-cmd/HashemSMS/pull/6 (open, not merged)
-Repository visibility: Private.
+## آخر مراجعة
+- الفرع `phase1-ui`، PR #6 مفتوح وغير مدمج، والمستودع Private.
+- رأس الكود قبل تنظيف الموارد: `4ad058fd5eadb0cf310a009a891420f498623003`.
 
-## Current verification evidence
+## A
+- التبويبات الستة المعتمدة وشاشة الرسائل الفاشلة بعد استعادة التجميع حسب المحادثة.
+- HashemUi خُفف لإزالة فرض الوضع الداكن وشريط البحث المكرر وتغييرات التنقل والصور الرمزية والشارات غير المطلوبة.
+- README.md وREADME-TERMUX.md أُعيدا إلى محتواهما السابق.
+- A غير معتمدة حتى نجاح CI النهائي وتسوية بديل الصور.
 
-The code state `2f4a750c99e94318d2bc66f96b425f4cc91b51d5` passed:
-- Push Android workflow: https://github.com/balalmhla12-cmd/HashemSMS/actions/runs/41927704438
-- Pull-request Android workflow: https://github.com/balalmhla12-cmd/HashemSMS/actions/runs/41927715236
-- Build: PASS
-- Unit tests (including database migration/lifecycle): PASS
-- Android Lint: PASS, 14 warnings, 0 errors (baseline 15 warnings, 0 errors)
-- Java hard-coded color check: PASS
-- Light/dark WCAG contrast check: PASS
+## لقطات الشاشة
+محاولتان فقط، دون Artifact: الأولى انقطاع ADB بعد الإقلاع؛ الثانية نجح فيها KVM والإقلاع ثم فشل السكربت عند pipefail في POSIX sh. أُصلح السكربت إلى set -eu دون محاولة ثالثة. ينتظر اختيار المستخدم بين Robolectric وPaparazzi.
 
-The current branch later advanced to `125df6f861df19b9d68ac7e1ba4c81a7cb3439fd`, which adds a test asserting that original GIF bytes are preserved in MMS PDU composition. The latest-head push and PR workflows must pass before treating that commit as verified. The project limit remains 14 Lint warnings; do not raise the baseline.
+## B
+- شريط كتابة مرن، زر (+)/(×)، وردود سريعة قابلة للإضافة والتعديل والحذف والحفظ.
+- المعرض والكاميرا وGIF الأصلي والملفات وجهات الاتصال والموقع لمرة واحدة والجدولة؛ الموقع المباشر مؤجل.
+- الملصقات تدرج الرموز التعبيرية في الحقل.
+- حفظ SIM لكل رقم؛ الإرسال العادي وإعادة التوجيه وMMS والجماعي والجدولة تستخدم تفضيل المستلم. جدولة المحادثة والرئيسية تطلب SIM وتحفظ سجل الرسالة بمعرّف حقيقي.
+- التكبير بإصبعين يشمل النص والأزرار. جدولة مرفقات MMS غير مدعومة حاليًا ويظهر تنبيه.
+- Db.java: MIME allowlist فقط، دون تغيير المخطط أو الإصدار 12؛ اختبارات حفظ/رفض GIF والوثائق وبايتات GIF الأصلية.
 
-## Batch A — implementation status
+## CI للرأس 4ad058f
+- https://github.com/balalmhla12-cmd/HashemSMS/actions/runs/41930521660
+- البناء والاختبارات وفحوص الألوان/WCAG: PASS.
+- Lint: 20 تحذيرًا مقابل baseline 15، صفر أخطاء. ستة تحذيرات UnusedResources تخص أيقونتي المظهر وأربعة نصوص قديمة؛ تُحذف الآن في commit توثيق/تنظيف واحد، ثم يعاد الفحص على الرأس الجديد.
+- لا تعتمد B قبل نجاح البناء والاختبارات وLint على الرأس النهائي (حد أقصى 14 تحذيرًا).
 
-Implemented:
-- Six main tabs in the required order: الكل، غير مقروءة، لم يتم الإرسال، جماعية، غير معروف، مجدولة.
-- Horizontal tab scrolling and corrected scheduled-tab mapping.
-- Hidden standalone starred/routing-rules destinations while preserving star and routing data/actions.
-- Home title/logo and conversation-row typography/spacing refinements.
-- Failed-message search/contact details/preview/status/time/retry/conditional routing.
-- Conversation grouping and latest-failed-message ordering restored.
-- Unrequested README.md and README-TERMUX.md edits reverted.
-
-Sign-off is not yet final because screenshot evidence remains unresolved and the latest head still needs CI verification.
-
-### HashemUi audit
-
-Commit `12f5036933cc31285acc749651b782b0fa3332b3` removes the unrequested header theme toggle and tab count badges/periodic count refresh, and restores the header search icon. Theme selection remains in Settings.
-
-Remaining visual treatments retained for final review: search-field styling, bottom-navigation styling, floating compose-button appearance/placement, avatar fallback/ring styling, and conversation-row styling. Do not claim these are separately specified functions.
-
-## Screenshot evidence
-
-Two emulator attempts have been made; neither produced screenshots:
-1. Stable emulator configuration: emulator booted, then ADB disconnected (Broken pipe/protocol fault).
-2. KVM-enabled configuration: KVM and emulator boot succeeded, but the script failed before instrumentation because `pipefail` was not supported by the POSIX shell.
-
-The workflow was corrected to use `set -eu`. One corrected retry of the second attempt is permitted because the previous run never reached screenshot tests. If it fails, stop and wait for the user's choice of Robolectric or Paparazzi; do not silently defer screenshots and do not start a third independent emulator attempt.
-
-## Batch B — in progress
-
-- Composer text field has no short eight-line cap.
-- Plus/clear-text behavior is implemented.
-- Quick replies support defaults, add/edit/delete, unlimited saved entries, and insertion without sending.
-- Attachment menu covers gallery, camera, GIF, stickers/emoji, files, live-location notice, contacts, scheduling, and one-time location.
-- GIF warning and original MIME/payload preservation are implemented; a PDU unit test verifies original GIF bytes.
-- Per-recipient normalized SIM preference is used for conversation sends and MMS retry; unavailable saved subscriptions trigger a fresh selection.
-- Long-press SIM picker displays subscription labels/numbers when available.
-- Pinch scaling updates message text and action buttons.
-- Translation replaces the star icon; star remains in More.
-
-Still to verify in B: visual/accessibility details, SMS/MMS regressions, quick-reply persistence, SIM cancellation/permission paths, and latest CI.
-
-## Batches C and D
-
-- C: bulk-message screen, groups, history, sidebar, settings sections, unified color picker, backup/restore safety.
-- Before C, present the user with the on-device versus online translation comparison and wait for the user's choice.
-- D: performance, permissions, background sync, final regression tests and real-device checklist.
-
-## Non-negotiable constraints
-
-- Preserve the existing Java application, package, data, SMS/MMS/scheduling behavior, and existing features.
-- No unsafe DB schema changes.
-- Do not modify `android.yml` or `Db.java` for the audited UI changes.
-- Keep the repository Private; work only on `phase1-ui`.
-- Do not merge PR #6 or related PRs into `main` without explicit approval.
-- No final APK/Release/install request before all four batches are complete and verified.
-- No real-device test is claimed until it is actually performed.
+## المتبقي
+- إعادة فحص الرأس بعد إزالة الموارد غير المستخدمة.
+- C: الجماعي والمجموعات والسجل والقائمة الجانبية والإعدادات ونافذة الألوان والنسخ الاحتياطي. قرار الترجمة على الجهاز أو الإنترنت مطلوب قبل C.
+- D: الأداء والأذونات والمزامنة والاختبارات النهائية.
+- اختبار الهاتف الحقيقي لاحقًا؛ لا APK نهائي أو Release الآن.
