@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   screenshots:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[batch-complete]')
+    if: github.event_name == 'workflow_dispatch' || (contains(github.event.head_commit.message, '[batch-complete]') || contains(github.event.head_commit.message, '[screenshots]'))
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -49,7 +49,10 @@ jobs:
             ./gradlew --no-daemon connectedDebugAndroidTest
             test_status=$?
             mkdir -p ui-screenshots
-            adb pull /sdcard/Android/data/com.hashem.sms/files/Pictures/HashemSMS-Screenshots ui-screenshots/ || true
+            mkdir -p ui-screenshots
+            adb exec-out run-as com.hashem.sms.test sh -c 'cd files && tar -cf - HashemSMS-Screenshots' > ui-screenshots.tar || true
+            if [ -s ui-screenshots.tar ]; then tar -xf ui-screenshots.tar -C ui-screenshots; fi
+            rm -f ui-screenshots.tar
             exit $test_status
 
       - name: Upload light and dark screenshots
