@@ -384,7 +384,7 @@ void pickContactsForCompose(EditText destination){
  void schedule(String a,String b){Calendar cal=Calendar.getInstance();cal.add(Calendar.MINUTE,5);DatePickerDialog datePicker=new DatePickerDialog(this,(view,year,month,day)->{cal.set(Calendar.YEAR,year);cal.set(Calendar.MONTH,month);cal.set(Calendar.DAY_OF_MONTH,day);TimePickerDialog timePicker=new TimePickerDialog(this,(timeView,hour,minute)->{cal.set(Calendar.HOUR_OF_DAY,hour);cal.set(Calendar.MINUTE,minute);cal.set(Calendar.SECOND,0);cal.set(Calendar.MILLISECOND,0);long when=cal.getTimeInMillis();if(when<=System.currentTimeMillis()){Toast.makeText(this,"اختر موعدًا في المستقبل",Toast.LENGTH_LONG).show();return;}confirmSchedule(a,b,when);},cal.get(Calendar.HOUR_OF_DAY),cal.get(Calendar.MINUTE),true);timePicker.setTitle("اختر وقت الإرسال");timePicker.show();},cal.get(Calendar.YEAR),cal.get(Calendar.MONTH),cal.get(Calendar.DAY_OF_MONTH));datePicker.setTitle("اختر تاريخ الإرسال");datePicker.getDatePicker().setMinDate(System.currentTimeMillis());datePicker.show();}
  void confirmSchedule(String a,String b,long when){
   String whenText=new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm",Locale.getDefault()).format(new Date(when));
-  new AlertDialog.Builder(this).setTitle("تأكيد جدولة الرسالة")
+  new AlertDialog.Builder(MainActivity.this).setTitle("تأكيد جدولة الرسالة")
    .setMessage("سيتم إرسال الرسالة إلى "+a+" في "+whenText+".")
    .setNegativeButton("إلغاء",null)
    .setPositiveButton("تأكيد الجدولة",(dialog,which)->choosePreferredOrPrompt(a,new SubscriptionChoiceCallback(){
@@ -398,7 +398,7 @@ void pickContactsForCompose(EditText destination){
       new AlertDialog.Builder(MainActivity.this).setTitle("إذن المنبّه الدقيق")
        .setMessage("لم يُمنح إذن المنبّه الدقيق. ستعمل الرسالة الآن بموعد تقريبي. يمكنك فتح إعدادات الإذن لتحسين دقة الموعد.")
        .setPositiveButton("فتح إعدادات المنبّه الدقيق",(d,w)->{
-        try{MainActivity.this.startActivity(new Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,android.net.Uri.parse("package:"+MainActivity.this.getPackageName())));}
+        try{MainActivity.this.MainActivity.this.startActivity(new Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,android.net.Uri.parse("package:"+MainActivity.this.MainActivity.this.getPackageName())));}
         catch(Exception e){AlarmScheduler.clearPendingExactRequest(MainActivity.this);Toast.makeText(MainActivity.this,"تعذّر فتح إعدادات الإذن؛ ستبقى الجدولة تقريبية",Toast.LENGTH_LONG).show();}
        })
        .setNegativeButton("استخدام موعد تقريبي",(d,w)->{AlarmScheduler.clearPendingExactRequest(MainActivity.this);Toast.makeText(MainActivity.this,"تمت الجدولة بموعد تقريبي",Toast.LENGTH_LONG).show();})
