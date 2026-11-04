@@ -48,9 +48,9 @@ public class Db extends SQLiteOpenHelper{
  }
  public Cursor listBulkCampaigns(){
   return getReadableDatabase().rawQuery("SELECT c.id,c.name,c.created_at,c.recipient_count,"
-    +"SUM(CASE WHEN m.status IN ('تم الإرسال','تم التسليم','sent','delivered') THEN 1 ELSE 0 END) AS sent_count,"
+    +"SUM(CASE WHEN m.status IN ('تم الإرسال','تم التسليم','لم يتم التسليم','sent','delivered') THEN 1 ELSE 0 END) AS sent_count,"
     +"SUM(CASE WHEN m.status IN ('لم يتم الإرسال','فشل','failed') THEN 1 ELSE 0 END) AS failed_count,"
-    +"MAX(0,c.recipient_count-SUM(CASE WHEN m.status IN ('تم الإرسال','تم التسليم','sent','delivered') THEN 1 ELSE 0 END)-SUM(CASE WHEN m.status IN ('لم يتم الإرسال','فشل','failed') THEN 1 ELSE 0 END)) AS pending_count "
+    +"MAX(0,c.recipient_count-SUM(CASE WHEN m.status IN ('تم الإرسال','تم التسليم','لم يتم التسليم','sent','delivered') THEN 1 ELSE 0 END)-SUM(CASE WHEN m.status IN ('لم يتم الإرسال','فشل','failed') THEN 1 ELSE 0 END)) AS pending_count "
     +"FROM bulk_campaigns c LEFT JOIN messages m ON m.bulk_campaign_id=c.id GROUP BY c.id ORDER BY c.created_at DESC,c.id DESC",null);
  }
  public long addMmsAttachment(long messageId,String localPath,String contentType,long sizeBytes,String transactionId){

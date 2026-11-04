@@ -251,6 +251,25 @@ public class DbMigrationTest {
         for (String index : REQUIRED_INDEXES) assertTrue("missing index " + index, actual.contains(index));
     }
     @Test
+    public void upgradesVersion10WithoutLosingMessagesAndAddsCampaignColumn() {
+        SQLiteDatabase old = context.openOrCreateDatabase("hashem.db", Context.MODE_PRIVATE, null);
+        old.execSQL("CREATE TABLE messages(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,type TEXT,status TEXT,ts INTEGER,provider_id INTEGER,read INTEGER DEFAULT 0,star INTEGER DEFAULT 0,trash INTEGER NOT NULL DEFAULT 0)");
+        old.execSQL("INSERT INTO messages(id,address,body,type,status,ts,provider_id,read,star,trash) VALUES(88,'+1008','version 10 message','out','sent',1234,987,1,0,0)");
+        old.setVersion(10);
+        old.close();
+
+        Db db = new Db(context);
+        SQLiteDatabase upgraded = db.getWritableDatabase();
+        assertEquals(11, upgraded.getVersion());
+        assertEquals(1, countRows(upgraded, "messages"));
+        assertArrayEquals(V11_COLUMNS, columns(upgraded, "messages"));
+        assertMessage(upgraded, 88, "version 10 message", "out", "sent", 1, 0, 0);
+        long campaignId = db.createBulkCampaign("حملة اختبار الترحيل", 1);
+        assertTrue(campaignId > 0);
+        db.close();
+    }
+
+    @Test
     public void bulkCampaignHistoryCountsOnlyConfirmedSentAndFailedMessages() {
         Db db = new Db(context);
         long campaignId = db.createBulkCampaign("تعميم بداية الاختبارات", 3);
