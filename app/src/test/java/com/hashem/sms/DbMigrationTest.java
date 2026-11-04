@@ -26,9 +26,9 @@ import android.content.ContentValues;
 public class DbMigrationTest {
     private Context context;
 
-    private static final String[] V10_COLUMNS = {
+    private static final String[] V11_COLUMNS = {
             "id", "address", "body", "type", "status", "ts",
-            "provider_id", "read", "star", "trash"
+            "provider_id", "read", "star", "trash", "bulk_campaign_id"
     };
 
     private static final String[] V10_ATTACHMENT_COLUMNS = {
@@ -56,7 +56,7 @@ public class DbMigrationTest {
         Db db = new Db(context);
         SQLiteDatabase upgraded = db.getWritableDatabase();
 
-        assertEquals(10, upgraded.getVersion());
+        assertEquals(11, upgraded.getVersion());
         assertEquals(5, countRows(upgraded, "messages"));
         assertArrayEquals(new long[]{101, 102, 103, 104, 105}, messageIds(upgraded));
         assertEquals(987L, providerId(upgraded, 101));
@@ -65,7 +65,7 @@ public class DbMigrationTest {
         assertEquals(-1L, providerId(upgraded, 104));
         assertEquals(321L, providerId(upgraded, 105));
 
-        assertArrayEquals(V10_COLUMNS, columns(upgraded, "messages"));
+        assertArrayEquals(V11_COLUMNS, columns(upgraded, "messages"));
         assertArrayEquals(V10_ATTACHMENT_COLUMNS, columns(upgraded, "message_attachments"));
         assertEquals(0, countRows(upgraded, "message_attachments"));
         assertAttachmentIndex(upgraded);
@@ -91,12 +91,12 @@ public class DbMigrationTest {
     }
 
     @Test
-    public void freshInstallCreatesVersion9ColumnsAndFiveStandardIndexes() {
+    public void freshInstallCreatesVersion11ColumnsAndFiveStandardIndexes() {
         Db db = new Db(context);
         SQLiteDatabase fresh = db.getWritableDatabase();
 
-        assertEquals(10, fresh.getVersion());
-        assertArrayEquals(V10_COLUMNS, columns(fresh, "messages"));
+        assertEquals(11, fresh.getVersion());
+        assertArrayEquals(V11_COLUMNS, columns(fresh, "messages"));
         assertArrayEquals(V10_ATTACHMENT_COLUMNS, columns(fresh, "message_attachments"));
         assertAttachmentIndex(fresh);
         assertFalse(Arrays.asList(columns(fresh, "messages")).contains("thread"));
@@ -114,7 +114,7 @@ public class DbMigrationTest {
 
         Db second = new Db(context);
         SQLiteDatabase reopened = second.getWritableDatabase();
-        assertEquals(10, reopened.getVersion());
+        assertEquals(11, reopened.getVersion());
         assertEquals(5, countRows(reopened, "messages"));
         assertArrayEquals(new long[]{101, 102, 103, 104, 105}, messageIds(reopened));
         assertEquals(987L, providerId(reopened, 101));
@@ -140,7 +140,7 @@ public class DbMigrationTest {
 
         Db db = new Db(context);
         SQLiteDatabase upgraded = db.getWritableDatabase();
-        assertEquals(10, upgraded.getVersion());
+        assertEquals(11, upgraded.getVersion());
         assertEquals(1, countRows(upgraded, "messages"));
         assertMessage(upgraded, 77, "legacy MMS row", "out", "sent", 1, 1, 0);
         assertEquals(456L, providerId(upgraded, 77));
@@ -250,6 +250,28 @@ public class DbMigrationTest {
         }
         for (String index : REQUIRED_INDEXES) assertTrue("missing index " + index, actual.contains(index));
     }
+    @Test
+    public void bulkCampaignHistoryCountsOnlyConfirmedSentAndFailedMessages() {
+        Db db = new Db(context);
+        long campaignId = db.createBulkCampaign("تعميم بداية الاختبارات", 3);
+        assertTrue(campaignId > 0);
+        long sentId = db.addBulkMessage("+1001", "رسالة 1", "sending", campaignId);
+        long failedId = db.addBulkMessage("+1002", "رسالة 2", "sending", campaignId);
+        assertTrue(sentId > 0);
+        assertTrue(failedId > 0);
+        db.status(sentId, "تم الإرسال");
+        db.status(failedId, "لم يتم الإرسال");
+        try (Cursor campaigns = db.listBulkCampaigns()) {
+            assertTrue(campaigns.moveToFirst());
+            assertEquals("تعميم بداية الاختبارات", campaigns.getString(campaigns.getColumnIndexOrThrow("name")));
+            assertEquals(3, campaigns.getInt(campaigns.getColumnIndexOrThrow("recipient_count")));
+            assertEquals(1, campaigns.getInt(campaigns.getColumnIndexOrThrow("sent_count")));
+            assertEquals(1, campaigns.getInt(campaigns.getColumnIndexOrThrow("failed_count")));
+            assertEquals(1, campaigns.getInt(campaigns.getColumnIndexOrThrow("pending_count")));
+        }
+        db.close();
+    }
+
     @Test
     public void permanentlyDeletingMessageRemovesAttachmentRowsAndLocalFiles() throws Exception {
         Db db = new Db(context);
