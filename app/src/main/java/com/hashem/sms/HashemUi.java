@@ -19,6 +19,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
@@ -26,7 +27,14 @@ import java.util.Locale;
 
 /** Visual overlay for MainActivity. Touches no messaging logic. On any failure the original UI stays. */
 final class HashemUi implements Application.ActivityLifecycleCallbacks {
-    HashemUi(Context context) { /* Preserve the user/system-selected appearance. */ }
+    static final String PREFS = "hashem_ui";
+    static final String KEY_NIGHT = "night_mode";
+
+    HashemUi(Context context) {
+        int mode = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .getInt(KEY_NIGHT, AppCompatDelegate.MODE_NIGHT_YES);
+        AppCompatDelegate.setDefaultNightMode(mode);
+    }
 
     @Override public void onActivityStarted(Activity a) {
         if (!(a instanceof MainActivity)) return;
