@@ -258,10 +258,18 @@ public class DbMigrationTest {
         assertTrue(campaignIndexes.contains("idx_bulk_campaign_recipients_message_id"));
     }
     @Test
-    public void upgradesVersion10WithoutLosingMessagesAndAddsCampaignColumn() {
+    public void upgradesVersion10PreservingMessagesGroupsMembersAndSchedules() {
         SQLiteDatabase old = context.openOrCreateDatabase("hashem.db", Context.MODE_PRIVATE, null);
         old.execSQL("CREATE TABLE messages(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,type TEXT,status TEXT,ts INTEGER,provider_id INTEGER,read INTEGER DEFAULT 0,star INTEGER DEFAULT 0,trash INTEGER NOT NULL DEFAULT 0)");
+        old.execSQL("CREATE TABLE groups(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE)");
+        old.execSQL("CREATE TABLE group_members(gid INTEGER,address TEXT,name TEXT,PRIMARY KEY(gid,address))");
+        old.execSQL("CREATE TABLE schedules(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,at INTEGER)");
+        old.execSQL("CREATE TABLE forward_rules(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL UNIQUE,destination TEXT NOT NULL)");
+        old.execSQL("CREATE TABLE conversation_flags(address TEXT PRIMARY KEY,archived INTEGER NOT NULL DEFAULT 0,blocked INTEGER NOT NULL DEFAULT 0)");
         old.execSQL("INSERT INTO messages(id,address,body,type,status,ts,provider_id,read,star,trash) VALUES(88,'+1008','version 10 message','out','sent',1234,987,1,0,0)");
+        old.execSQL("INSERT INTO groups(id,name) VALUES(7,'مجموعة الاختبار')");
+        old.execSQL("INSERT INTO group_members(gid,address,name) VALUES(7,'+1008','عضو الاختبار')");
+        old.execSQL("INSERT INTO schedules(id,address,body,at) VALUES(8,'+1008','رسالة مجدولة من v10',987654321)");
         old.setVersion(10);
         old.close();
 
@@ -271,8 +279,72 @@ public class DbMigrationTest {
         assertEquals(1, countRows(upgraded, "messages"));
         assertArrayEquals(V12_COLUMNS, columns(upgraded, "messages"));
         assertMessage(upgraded, 88, "version 10 message", "out", "sent", 1, 0, 0);
-        long campaignId = db.createBulkCampaign("حملة اختبار الترحيل", new ArrayList<>(Collections.singletonList(new String[]{"+1008", ""})));
-        assertTrue(campaignId > 0);
+        assertEquals(987L, providerId(upgraded, 88));
+        assertEquals(1, countRows(upgraded, "groups"));
+        assertEquals(1, countRows(upgraded, "group_members"));
+        assertEquals(1, countRows(upgraded, "schedules"));
+        try (Cursor group = upgraded.rawQuery("SELECT name FROM groups WHERE id=7", null)) {
+            assertTrue(group.moveToFirst());
+            assertEquals("مجموعة الاختبار", group.getString(0));
+        }
+        try (Cursor member = upgraded.rawQuery("SELECT address,name FROM group_members WHERE gid=7", null)) {
+            assertTrue(member.moveToFirst());
+            assertEquals("+1008", member.getString(0));
+            assertEquals("عضو الاختبار", member.getString(1));
+        }
+        try (Cursor schedule = upgraded.rawQuery("SELECT address,body,at FROM schedules WHERE id=8", null)) {
+            assertTrue(schedule.moveToFirst());
+            assertEquals("+1008", schedule.getString(0));
+            assertEquals("رسالة مجدولة من v10", schedule.getString(1));
+            assertEquals(987654321L, schedule.getLong(2));
+        }
+        assertRequiredIndexes(upgraded);
+        db.close();
+    }
+
+    @Test
+    public void upgradesVersion11PreservingMessagesGroupsMembersSchedulesAndCampaigns() {
+        SQLiteDatabase old = context.openOrCreateDatabase("hashem.db", Context.MODE_PRIVATE, null);
+        old.execSQL("CREATE TABLE messages(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,type TEXT,status TEXT,ts INTEGER,provider_id INTEGER,read INTEGER DEFAULT 0,star INTEGER DEFAULT 0,trash INTEGER NOT NULL DEFAULT 0,bulk_campaign_id INTEGER)");
+        old.execSQL("CREATE TABLE groups(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE)");
+        old.execSQL("CREATE TABLE group_members(gid INTEGER,address TEXT,name TEXT,PRIMARY KEY(gid,address))");
+        old.execSQL("CREATE TABLE schedules(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,at INTEGER)");
+        old.execSQL("CREATE TABLE forward_rules(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL UNIQUE,destination TEXT NOT NULL)");
+        old.execSQL("CREATE TABLE conversation_flags(address TEXT PRIMARY KEY,archived INTEGER NOT NULL DEFAULT 0,blocked INTEGER NOT NULL DEFAULT 0)");
+        old.execSQL("CREATE TABLE bulk_campaigns(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,created_at INTEGER NOT NULL,recipient_count INTEGER NOT NULL CHECK(recipient_count>=0))");
+        old.execSQL("CREATE INDEX idx_bulk_campaigns_created_at ON bulk_campaigns(created_at DESC)");
+        old.execSQL("CREATE INDEX idx_messages_bulk_campaign_id ON messages(bulk_campaign_id)");
+        old.execSQL("INSERT INTO messages(id,address,body,type,status,ts,provider_id,read,star,trash,bulk_campaign_id) VALUES(89,'+1011','version 11 message','out','sent',2234,988,1,0,0,4)");
+        old.execSQL("INSERT INTO groups(id,name) VALUES(9,'مجموعة الإصدار 11')");
+        old.execSQL("INSERT INTO group_members(gid,address,name) VALUES(9,'+1011','عضو الإصدار 11')");
+        old.execSQL("INSERT INTO schedules(id,address,body,at) VALUES(10,'+1011','رسالة مجدولة من v11',987654322)");
+        old.execSQL("INSERT INTO bulk_campaigns(id,name,created_at,recipient_count) VALUES(4,'حملة محفوظة من v11',123456,1)");
+        old.setVersion(11);
+        old.close();
+
+        Db db = new Db(context);
+        SQLiteDatabase upgraded = db.getWritableDatabase();
+        assertEquals(12, upgraded.getVersion());
+        assertEquals(1, countRows(upgraded, "messages"));
+        assertArrayEquals(V12_COLUMNS, columns(upgraded, "messages"));
+        assertMessage(upgraded, 89, "version 11 message", "out", "sent", 1, 0, 0);
+        assertEquals(988L, providerId(upgraded, 89));
+        assertEquals(1, countRows(upgraded, "groups"));
+        assertEquals(1, countRows(upgraded, "group_members"));
+        assertEquals(1, countRows(upgraded, "schedules"));
+        assertEquals(1, countRows(upgraded, "bulk_campaigns"));
+        try (Cursor campaign = upgraded.rawQuery("SELECT name,recipient_count FROM bulk_campaigns WHERE id=4", null)) {
+            assertTrue(campaign.moveToFirst());
+            assertEquals("حملة محفوظة من v11", campaign.getString(0));
+            assertEquals(1, campaign.getInt(1));
+        }
+        try (Cursor schedule = upgraded.rawQuery("SELECT address,body,at FROM schedules WHERE id=10", null)) {
+            assertTrue(schedule.moveToFirst());
+            assertEquals("+1011", schedule.getString(0));
+            assertEquals("رسالة مجدولة من v11", schedule.getString(1));
+            assertEquals(987654322L, schedule.getLong(2));
+        }
+        assertRequiredIndexes(upgraded);
         db.close();
     }
 
