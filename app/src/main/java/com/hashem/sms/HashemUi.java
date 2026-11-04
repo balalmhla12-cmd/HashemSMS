@@ -135,7 +135,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             ImageView logo = new ImageView(m);
             logo.setImageResource(R.drawable.ic_launcher_foreground);
             logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(32), dp(32));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(40), dp(40));
             lp.setMarginEnd(dp(8));
             bar.addView(logo, 0, lp);
             bar.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -215,21 +215,21 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             String[] labels = { m.getString(R.string.chip_all), m.getString(R.string.chip_unread), m.getString(R.string.chip_failed), m.getString(R.string.chip_bulk), m.getString(R.string.chip_unknown), m.getString(R.string.chip_starred) };
             int[] icons = {R.drawable.ic_chip_all, R.drawable.ic_chip_eye, R.drawable.ic_chip_warning, R.drawable.ic_nav_messages, R.drawable.ic_nav_contacts, R.drawable.ic_star};
             ViewGroup.LayoutParams old = m.filtersScroll.getLayoutParams();
-            if (old != null) { old.height = dp(30); m.filtersScroll.setLayoutParams(old); }
+            if (old != null) { old.height = dp(34); m.filtersScroll.setLayoutParams(old); }
             for (int i = 0; i < filters.length; i++) {
                 final String f = filters[i];
                 LinearLayout chip = new LinearLayout(m);
                 chip.setOrientation(LinearLayout.HORIZONTAL);
                 chip.setGravity(Gravity.CENTER_VERTICAL);
-                chip.setPaddingRelative(dp(12), 0, dp(12), 0);
+                chip.setPaddingRelative(dp(10), 0, dp(10), 0);
                 ImageView ic = new ImageView(m);
                 ic.setImageResource(icons[i]);
-                LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(dp(18), dp(18));
+                LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(dp(16), dp(16));
                 ilp.setMarginEnd(dp(6));
                 chip.addView(ic, ilp);
                 TextView tx = new TextView(m);
                 tx.setText(labels[i]);
-                tx.setTextSize(14);
+                tx.setTextSize(13);
                 if (bold != null) tx.setTypeface(bold);
                 chip.addView(tx);
                 if (i > 0) {
@@ -248,8 +248,8 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                     if (i == 1) unreadBadge = badge; else if (i == 2) failedBadge = badge;
                 }
                 chip.setOnClickListener(v -> { m.filter = f; m.selectedBottomTab = "conversations"; m.render(); });
-                LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(-2, dp(30));
-                clp.setMarginEnd(dp(8));
+                LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(-2, dp(34));
+                clp.setMarginEnd(dp(6));
                 tabs.addView(chip, clp);
                 chips[i] = chip; chipTexts[i] = tx; chipIcons[i] = ic;
             }
@@ -391,9 +391,15 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                 h.name.setTypeface(it.unread ? bold : regular);
                 h.body.setTypeface(it.unread ? bold : regular);
             }
-            h.name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
-            h.body.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+            h.name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+            h.body.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
             h.time.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+            h.row.setPadding(dp(2), dp(6), dp(2), dp(6));
+            if (h.avatar.getLayoutParams() instanceof LinearLayout.LayoutParams) {
+                LinearLayout.LayoutParams avatarParams = (LinearLayout.LayoutParams) h.avatar.getLayoutParams();
+                avatarParams.setMargins(0, 0, dp(4), 0);
+                h.avatar.setLayoutParams(avatarParams);
+            }
             String label = it.contact.isEmpty() ? it.address : it.contact;
             int ring = PALETTE[Math.abs(label.hashCode()) % PALETTE.length];
             if (!Integer.valueOf(ring).equals(h.avatar.getTag())) {
