@@ -229,18 +229,16 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
         }
 
         void styleRow(MainActivity.ThreadViewHolder h, MainActivity.ThreadItem it) {
-            if (h.container.getTag() == null) {
-                h.container.setTag("styled");
-                ViewGroup.LayoutParams lp = h.container.getLayoutParams();
-                if (lp instanceof RecyclerView.LayoutParams) {
-                    RecyclerView.LayoutParams rlp = (RecyclerView.LayoutParams) lp;
-                    rlp.width = ViewGroup.LayoutParams.MATCH_PARENT;
-                    rlp.setMargins(0, 0, 0, 0);
-                    h.container.setLayoutParams(rlp);
-                }
+            if (h.container.getTag() != null) return;
+            h.container.setTag("styled");
+            ViewGroup.LayoutParams lp = h.container.getLayoutParams();
+            if (lp instanceof RecyclerView.LayoutParams) {
+                RecyclerView.LayoutParams rlp = (RecyclerView.LayoutParams) lp;
+                rlp.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                rlp.setMargins(0, 0, 0, 0);
+                h.container.setLayoutParams(rlp);
             }
-            // The requested changes are limited to slightly larger conversation text
-            // and removal of the unused trailing row gap.
+            // Apply the requested typography and trailing-gap correction once per row view.
             h.name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
             h.body.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
             h.row.setPadding(dp(2), dp(6), dp(2), dp(6));
