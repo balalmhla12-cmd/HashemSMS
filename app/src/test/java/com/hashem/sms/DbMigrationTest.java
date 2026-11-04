@@ -311,6 +311,7 @@ public class DbMigrationTest {
         long campaignId = db.createBulkCampaign("حملة حالات الإرسال", new ArrayList<>(Collections.singletonList(new String[]{"+1009", ""})));
         long failedId = db.addBulkMessage("+1009", "رسالة فاشلة", "sending", campaignId);
         db.status(failedId, "لم يتم الإرسال");
+        db.updateBulkRecipientStatus(failedId, "لم يتم الإرسال");
         db.updateDeliveryStatus(failedId, "لم يتم التسليم");
         try (Cursor campaigns = db.listBulkCampaigns()) {
             assertTrue(campaigns.moveToFirst());
