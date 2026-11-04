@@ -290,7 +290,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
             column.addView(otp,new LinearLayout.LayoutParams(-2,UiResources.dp(ConversationActivity.this,32)));
             column.addView(retry,new LinearLayout.LayoutParams(-2,UiResources.dp(ConversationActivity.this,32)));
             LinearLayout actions=new LinearLayout(ConversationActivity.this);actions.setOrientation(LinearLayout.HORIZONTAL);actions.setGravity(Gravity.CENTER_VERTICAL);actions.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);actions.setVisibility(View.GONE);
-            ImageButton copy=messageActionIcon(R.drawable.ic_content_copy,"نسخ"),forward=messageActionIcon(R.drawable.ic_forward,"إعادة توجيه"),reply=messageActionIcon(android.R.drawable.ic_menu_edit,"تعديل"),star=messageActionIcon(android.R.drawable.ic_menu_search,"ترجمة"),more=messageActionIcon(R.drawable.ic_more_vert,"خيارات");
+            ImageButton copy=messageActionIcon(R.drawable.ic_content_copy,"نسخ"),forward=messageActionIcon(R.drawable.ic_forward,"إعادة توجيه"),reply=messageActionIcon(android.R.drawable.ic_menu_edit,"تعديل"),star=messageActionIcon(R.drawable.ic_translate,"ترجمة"),more=messageActionIcon(R.drawable.ic_more_vert,"خيارات");
             int actionSize=UiResources.dp(ConversationActivity.this,34);
             for(ImageButton button:new ImageButton[]{copy,forward,reply,star,more}){LinearLayout.LayoutParams actionLp=new LinearLayout.LayoutParams(actionSize,actionSize);actionLp.setMargins(2,0,2,0);actions.addView(button,actionLp);}
             column.addView(actions,new LinearLayout.LayoutParams(-2,-2));
