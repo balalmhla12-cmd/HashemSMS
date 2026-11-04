@@ -173,10 +173,14 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
         messages.setAdapter(messageAdapter);
         root.addView(messages,new LinearLayout.LayoutParams(-1,0,1));
         LinearLayout composerRow=new LinearLayout(this);composerRow.setGravity(Gravity.CENTER_VERTICAL);composerRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);composerRow.setPadding(UiResources.dp(this,4),UiResources.dp(this,5),UiResources.dp(this,6),UiResources.dp(this,5));composerRow.setBackground(rounded(UiResources.color(ConversationActivity.this,R.color.surface_variant),UiResources.color(ConversationActivity.this,R.color.search_border),30));
-        ImageButton attachment=iconActionButton(R.drawable.ic_attachment,"إرفاق صورة",false);attachment.setOnClickListener(v->imagePicker.launch(new androidx.activity.result.PickVisualMediaRequest.Builder().setMediaType(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE).build()));composerRow.addView(attachment,new LinearLayout.LayoutParams(UiResources.dp(this,36),UiResources.dp(this,40)));
+        LinearLayout leftTools=new LinearLayout(this);leftTools.setOrientation(LinearLayout.VERTICAL);leftTools.setGravity(Gravity.CENTER);
+        ImageButton attachment=iconActionButton(R.drawable.ic_add,"المرفقات",false);attachment.setOnClickListener(v->showAttachmentMenu(v));leftTools.addView(attachment,new LinearLayout.LayoutParams(UiResources.dp(this,38),UiResources.dp(this,38)));
+        TextView quickReplies=tv("الردود السريعة",10);quickReplies.setGravity(Gravity.CENTER);quickReplies.setPadding(UiResources.dp(this,2),0,UiResources.dp(this,2),0);quickReplies.setOnClickListener(v->showQuickReplies());leftTools.addView(quickReplies,new LinearLayout.LayoutParams(-2,-2));composerRow.addView(leftTools,new LinearLayout.LayoutParams(-2,-2));
+        composer=new EditText(this);composer.setHint("رسالة نصية");composer.setTextSize(16);composer.setMinLines(1);composer.setMaxLines(8);composer.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);composer.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG);composer.setGravity(Gravity.CENTER_VERTICAL|Gravity.END);composer.setPadding(UiResources.dp(this,12),UiResources.dp(this,6),UiResources.dp(this,12),UiResources.dp(this,6));composer.setTextColor(UiResources.color(this,R.color.on_surface));composer.setHintTextColor(UiResources.color(this,R.color.on_surface_variant));composer.setBackgroundColor(UiResources.color(ConversationActivity.this,android.R.color.transparent));composerRow.addView(composer,new LinearLayout.LayoutParams(0,-2,1));
         ImageButton emoji=iconActionButton(R.drawable.ic_emoji,"إدراج رمز تعبيري",false);emoji.setOnClickListener(v->showEmojiPicker());composerRow.addView(emoji,new LinearLayout.LayoutParams(UiResources.dp(this,36),UiResources.dp(this,40)));
-        composer=new EditText(this);composer.setHint("رسالة نصية");composer.setTextSize(16);composer.setMinLines(1);composer.setMaxLines(5);composer.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);composer.setTextDirection(View.TEXT_DIRECTION_RTL);composer.setGravity(Gravity.CENTER_VERTICAL|Gravity.END);composer.setPadding(UiResources.dp(this,12),UiResources.dp(this,6),UiResources.dp(this,12),UiResources.dp(this,6));composer.setTextColor(UiResources.color(this,R.color.on_surface));composer.setHintTextColor(UiResources.color(this,R.color.on_surface_variant));composer.setBackgroundColor(UiResources.color(ConversationActivity.this,android.R.color.transparent));composerRow.addView(composer,new LinearLayout.LayoutParams(0,-2,1));
-        Button send=actionButton("إرسال",true);send.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_send,0,0,0);send.setCompoundDrawablePadding(UiResources.dp(ConversationActivity.this,6));send.setOnClickListener(v->send());LinearLayout.LayoutParams sendLp=new LinearLayout.LayoutParams(-2,UiResources.dp(this,40));sendLp.setMargins(UiResources.dp(this,4),0,0,0);composerRow.addView(send,sendLp);
+        Button send=actionButton("إرسال",true);send.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_send,0,0,0);send.setCompoundDrawablePadding(UiResources.dp(ConversationActivity.this,6));send.setOnClickListener(v->send());send.setOnLongClickListener(v->{chooseSmsSubscription(new SubscriptionChoiceCallback(){public void onSelected(int id){getSharedPreferences("hashem_ui",MODE_PRIVATE).edit().putInt("preferred_sms_subscription",id).apply();Toast.makeText(ConversationActivity.this,"تم حفظ شريحة الإرسال المفضلة",Toast.LENGTH_SHORT).show();}public void onCancelled(){}});return true;});LinearLayout.LayoutParams sendLp=new LinearLayout.LayoutParams(-2,UiResources.dp(this,40));sendLp.setMargins(UiResources.dp(this,4),0,0,0);composerRow.addView(send,sendLp);
+        composer.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int st,int count,int after){}public void onTextChanged(CharSequence s,int st,int before,int count){attachment.setImageResource(s.length()==0?R.drawable.ic_add:android.R.drawable.ic_menu_close_clear_cancel);attachment.setContentDescription(s.length()==0?"المرفقات":"مسح النص");}public void afterTextChanged(Editable e){}});
+        attachment.setOnClickListener(v->{if(composer.length()>0){composer.setText("");return;}showAttachmentMenu(v);});
         attachmentPreview=new LinearLayout(this);attachmentPreview.setGravity(Gravity.CENTER_VERTICAL);attachmentPreview.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);attachmentPreview.setPadding(UiResources.dp(this,8),UiResources.dp(this,6),UiResources.dp(this,8),UiResources.dp(this,6));attachmentPreview.setVisibility(View.GONE);attachmentPreview.setBackground(rounded(UiResources.color(this,R.color.card_surface),UiResources.color(this,R.color.card_stroke),16));attachmentPreviewImage=new ImageView(this);attachmentPreviewImage.setScaleType(ImageView.ScaleType.CENTER_CROP);attachmentPreview.addView(attachmentPreviewImage,new LinearLayout.LayoutParams(UiResources.dp(this,64),UiResources.dp(this,64)));attachmentPreviewLabel=tv("صورة مرفقة",13);attachmentPreview.addView(attachmentPreviewLabel,new LinearLayout.LayoutParams(0,-2,1));Button removeAttachment=actionButton("إزالة",false);removeAttachment.setOnClickListener(v->clearPendingImage());attachmentPreview.addView(removeAttachment);LinearLayout.LayoutParams previewLp=new LinearLayout.LayoutParams(-1,-2);previewLp.bottomMargin=UiResources.dp(this,6);root.addView(attachmentPreview,previewLp);
         LinearLayout.LayoutParams rowLp=new LinearLayout.LayoutParams(-1,-2);rowLp.topMargin=UiResources.dp(this,8);root.addView(composerRow,rowLp);setContentView(root);
     }
@@ -343,6 +347,46 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
         ImageButton button=new ImageButton(this);button.setImageResource(iconRes);button.setContentDescription(description);button.setScaleType(ImageView.ScaleType.CENTER);
         button.setColorFilter(UiResources.color(this,R.color.primary_variant));button.setBackground(rounded(UiResources.color(this,R.color.primary_container),0,22));button.setPadding(0,0,0,0);button.setStateListAnimator(null);return button;
     }
+    private void showAttachmentMenu(View anchor){
+        PopupMenu menu=new PopupMenu(this,anchor);
+        menu.getMenu().add("معرض الصور").setIcon(R.drawable.ic_attachment);
+        menu.getMenu().add("الكاميرا");
+        menu.getMenu().add("صور GIF");
+        menu.getMenu().add("الملصقات");
+        menu.getMenu().add("الملفات");
+        menu.getMenu().add("الموقع الجغرافي المباشر");
+        menu.getMenu().add("جهات الاتصال");
+        menu.getMenu().add("تحديد وقت للإرسال");
+        menu.getMenu().add("الموقع الجغرافي لمرة واحدة");
+        menu.setOnMenuItemClickListener(item->{String title=item.getTitle().toString();if(title.equals("معرض الصور")){imagePicker.launch(new androidx.activity.result.PickVisualMediaRequest.Builder().setMediaType(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE).build());return true;}Toast.makeText(this,"هذا النوع من المرفقات يحتاج استكمال دعمه قبل إتاحته.",Toast.LENGTH_SHORT).show();return true;});
+        menu.show();
+    }
+
+    private String[] loadQuickReplies(){
+        android.content.SharedPreferences prefs=getSharedPreferences("hashem_quick_replies",MODE_PRIVATE);
+        String raw=prefs.getString("items",null);
+        if(raw==null)return new String[]{"كيف حالك","السلام عليكم"};
+        try{org.json.JSONArray array=new org.json.JSONArray(raw);String[] values=new String[array.length()];for(int i=0;i<array.length();i++)values[i]=array.optString(i);return values;}catch(Exception e){return new String[]{"كيف حالك","السلام عليكم"};}
+    }
+    private void saveQuickReplies(String[] values){org.json.JSONArray array=new org.json.JSONArray();for(String value:values)array.put(value);getSharedPreferences("hashem_quick_replies",MODE_PRIVATE).edit().putString("items",array.toString()).apply();}
+    private void showQuickReplies(){
+        ArrayList<String> values=new ArrayList<>(Arrays.asList(loadQuickReplies()));
+        ArrayList<String> choices=new ArrayList<>(values);choices.add("إضافة رد جديد");
+        new AlertDialog.Builder(this).setTitle("الردود السريعة").setItems(choices.toArray(new String[0]),(dialog,which)->{
+            if(which<values.size()){composer.setText(values.get(which));composer.setSelection(composer.length());}
+            else editQuickReply(-1,null);
+        }).setNeutralButton("إدارة الردود",(dialog,which)->manageQuickReplies()).show();
+    }
+    private void manageQuickReplies(){
+        ArrayList<String> values=new ArrayList<>(Arrays.asList(loadQuickReplies()));
+        ArrayList<String> choices=new ArrayList<>(values);choices.add("إضافة رد جديد");
+        new AlertDialog.Builder(this).setTitle("إدارة الردود السريعة").setItems(choices.toArray(new String[0]),(dialog,which)->{if(which==values.size())editQuickReply(-1,null);else new AlertDialog.Builder(this).setItems(new String[]{"إدراج","تعديل","حذف"},(d,action)->{if(action==0){composer.setText(values.get(which));composer.setSelection(composer.length());}else if(action==1)editQuickReply(which,values.get(which));else{values.remove(which);saveQuickReplies(values.toArray(new String[0]));manageQuickReplies();}}).show();}).setNegativeButton("إغلاق",null).show();
+    }
+    private void editQuickReply(int index,String existing){
+        EditText input=new EditText(this);input.setText(existing==null?"":existing);input.setHint("اكتب الرد السريع");input.setSingleLine(false);
+        new AlertDialog.Builder(this).setTitle(index<0?"إضافة رد سريع":"تعديل الرد السريع").setView(input).setNegativeButton("إلغاء",null).setPositiveButton("حفظ",(dialog,which)->{String value=input.getText().toString().trim();if(value.isEmpty())return;ArrayList<String> values=new ArrayList<>(Arrays.asList(loadQuickReplies()));if(index<0)values.add(value);else if(index<values.size())values.set(index,value);saveQuickReplies(values.toArray(new String[0]));}).show();
+    }
+
     void showEmojiPicker(){
         String[] emojis={"😀","😂","🥰","😍","👍","❤️","🙏","🎉","😢","🔥"};
         new AlertDialog.Builder(this).setTitle("اختر رمزًا تعبيريًا").setItems(emojis,(dialog,which)->{
