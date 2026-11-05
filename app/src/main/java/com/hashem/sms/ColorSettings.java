@@ -270,13 +270,27 @@ final class ColorSettings {
                 0xFF0000FF, 0xFFFF00FF, 0xFFFF0000};
         private float hue;
         private java.util.function.Consumer<Float> listener;
+        private LinearGradient hueGradient;
 
-        HuePicker(Context context) { super(context); setLayerType(View.LAYER_TYPE_SOFTWARE, null); }
+        HuePicker(Context context) {
+            super(context);
+            setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+            setFocusable(true);
+        }
         void setListener(java.util.function.Consumer<Float> listener) { this.listener = listener; }
         void setColor(int color) { float[] hsv = new float[3]; Color.colorToHSV(color, hsv); hue = hsv[0]; invalidate(); }
+        @Override protected void onSizeChanged(int width, int height, int oldWidth, int oldHeight) {
+            super.onSizeChanged(width, height, oldWidth, oldHeight);
+            hueGradient = width > 0 ? new LinearGradient(0, 0, width, 0, colors, null, Shader.TileMode.CLAMP) : null;
+        }
+        @Override public boolean performClick() {
+            super.performClick();
+            if (listener != null) listener.accept(hue);
+            return true;
+        }
         @Override protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
-            paint.setShader(new LinearGradient(0, 0, getWidth(), 0, colors, null, Shader.TileMode.CLAMP));
+            paint.setShader(hueGradient);
             canvas.drawRoundRect(0, 0, getWidth(), getHeight(), getHeight() / 2f, getHeight() / 2f, paint);
             paint.setShader(null);
             paint.setStyle(Paint.Style.STROKE);
@@ -291,10 +305,11 @@ final class ColorSettings {
                     || event.getAction() == MotionEvent.ACTION_UP) {
                 hue = Math.max(0, Math.min(360, event.getX() / Math.max(1, getWidth()) * 360f));
                 invalidate();
-                if (listener != null) listener.accept(hue);
+                if (event.getAction() == MotionEvent.ACTION_UP) performClick();
+                else if (listener != null) listener.accept(hue);
                 return true;
             }
-            return true;
+            return event.getAction() == MotionEvent.ACTION_CANCEL;
         }
     }
 
@@ -304,21 +319,48 @@ final class ColorSettings {
         private float saturation = 0.65f;
         private float value = 0.9f;
         private Runnable listener;
-        ShadePicker(Context context) { super(context); }
+        private LinearGradient saturationGradient;
+        private LinearGradient valueGradient;
+        ShadePicker(Context context) {
+            super(context);
+            setFocusable(true);
+        }
         void setListener(Runnable listener) { this.listener = listener; }
-        void setHue(float hue) { this.hue = hue; invalidate(); }
+        void setHue(float hue) { this.hue = hue; updateGradients(); invalidate(); }
         void setColor(int color) {
             float[] hsv = new float[3];
             Color.colorToHSV(color, hsv);
-            hue = hsv[0]; saturation = hsv[1]; value = hsv[2]; invalidate();
+            hue = hsv[0]; saturation = hsv[1]; value = hsv[2];
+            updateGradients();
+            invalidate();
         }
         int getColor() { return Color.HSVToColor(new float[]{hue, saturation, value}); }
+        @Override protected void onSizeChanged(int width, int height, int oldWidth, int oldHeight) {
+            super.onSizeChanged(width, height, oldWidth, oldHeight);
+            updateGradients();
+        }
+        private void updateGradients() {
+            if (getWidth() <= 0 || getHeight() <= 0) {
+                saturationGradient = null;
+                valueGradient = null;
+                return;
+            }
+            int pure = Color.HSVToColor(new float[]{hue, 1f, 1f});
+            saturationGradient = new LinearGradient(0, 0, getWidth(), 0,
+                    Color.WHITE, pure, Shader.TileMode.CLAMP);
+            valueGradient = new LinearGradient(0, 0, 0, getHeight(),
+                    0x00000000, Color.BLACK, Shader.TileMode.CLAMP);
+        }
+        @Override public boolean performClick() {
+            super.performClick();
+            if (listener != null) listener.run();
+            return true;
+        }
         @Override protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
-            int pure = Color.HSVToColor(new float[]{hue, 1f, 1f});
-            paint.setShader(new LinearGradient(0, 0, getWidth(), 0, Color.WHITE, pure, Shader.TileMode.CLAMP));
+            paint.setShader(saturationGradient);
             canvas.drawRect(0, 0, getWidth(), getHeight(), paint);
-            paint.setShader(new LinearGradient(0, 0, 0, getHeight(), 0x00000000, Color.BLACK, Shader.TileMode.CLAMP));
+            paint.setShader(valueGradient);
             canvas.drawRect(0, 0, getWidth(), getHeight(), paint);
             paint.setShader(null);
             paint.setStyle(Paint.Style.STROKE);
@@ -333,10 +375,11 @@ final class ColorSettings {
                 saturation = Math.max(0f, Math.min(1f, event.getX() / Math.max(1, getWidth())));
                 value = 1f - Math.max(0f, Math.min(1f, event.getY() / Math.max(1, getHeight())));
                 invalidate();
-                if (listener != null) listener.run();
+                if (event.getAction() == MotionEvent.ACTION_UP) performClick();
+                else if (listener != null) listener.run();
                 return true;
             }
-            return true;
+            return event.getAction() == MotionEvent.ACTION_CANCEL;
         }
     }
 }
