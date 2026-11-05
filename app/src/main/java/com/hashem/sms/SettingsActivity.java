@@ -114,7 +114,7 @@ public final class SettingsActivity extends AppCompatActivity {
         row(R.string.settings_privacy, R.string.settings_privacy_desc, R.drawable.ic_block,
                 "الخصوصية الصلاحيات الأذونات", this::openAppSettings);
         buildAdvanced();
-        row(R.string.settings_about, R.string.app_name, R.drawable.ic_nav_messages,
+        row(R.string.settings_about, R.string.settings_about_desc, R.drawable.ic_nav_messages,
                 "حول التطبيق الإصدار معلومات", this::about);
 
         search.addTextChangedListener(new android.text.TextWatcher() {
