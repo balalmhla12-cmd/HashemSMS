@@ -387,8 +387,9 @@ void pickContactsForCompose(EditText destination){
   });
  }
  void chooseSmsSubscription(SubscriptionChoiceCallback action){
-  try{android.telephony.TelephonyManager tm=(android.telephony.TelephonyManager)getSystemService(TELEPHONY_SERVICE);if(tm==null||tm.getPhoneCount()<=1){action.onSelected(-1);return;}}catch(SecurityException e){action.onCancelled();return;}
-  if(checkSelfPermission("android.permission.READ_PHONE_STATE")!=PackageManager.PERMISSION_GRANTED){pendingSubscriptionAction=action;requestPermissions(new String[]{"android.permission.READ_PHONE_STATE"},61);return;}showSmsSubscriptionChoices(action);
+  if(checkSelfPermission("android.permission.READ_PHONE_STATE")!=PackageManager.PERMISSION_GRANTED){pendingSubscriptionAction=action;requestPermissions(new String[]{"android.permission.READ_PHONE_STATE"},61);return;}
+  try{android.telephony.TelephonyManager tm=(android.telephony.TelephonyManager)getSystemService(TELEPHONY_SERVICE);if(tm==null||tm.getPhoneCount()<=1){action.onSelected(-1);return;}}catch(SecurityException e){android.util.Log.w("HashemSMS","Unable to inspect SIM count",e);action.onCancelled();return;}
+  showSmsSubscriptionChoices(action);
  }
  @android.annotation.SuppressLint("MissingPermission") void showSmsSubscriptionChoices(SubscriptionChoiceCallback callback){
   final java.util.concurrent.atomic.AtomicBoolean resolved=new java.util.concurrent.atomic.AtomicBoolean(false);
