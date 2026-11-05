@@ -5,7 +5,7 @@ import java.util.Set;
 
 /** Persists and validates a conversation's preferred SMS subscription. */
 final class SimPreferenceStore {
-    enum State { NONE, AVAILABLE, REMOVED }
+    enum State { NONE, AVAILABLE, REMOVED, UNVERIFIED }
 
     static final class RestoreResult {
         final State state;
@@ -31,8 +31,10 @@ final class SimPreferenceStore {
             return new RestoreResult(State.NONE, -1);
         }
         int savedId = preferences.getInt(key, -1);
-        if (savedId >= 0 && activeSubscriptionIds != null
-                && activeSubscriptionIds.contains(savedId)) {
+        if (activeSubscriptionIds == null) {
+            return new RestoreResult(State.UNVERIFIED, -1);
+        }
+        if (savedId >= 0 && activeSubscriptionIds.contains(savedId)) {
             return new RestoreResult(State.AVAILABLE, savedId);
         }
         preferences.edit().remove(key).apply();

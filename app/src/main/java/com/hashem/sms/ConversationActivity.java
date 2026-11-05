@@ -677,7 +677,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
                     chooseSmsSubscription(store.remember(key,callback));return;
                 }
                 java.util.List<android.telephony.SubscriptionInfo> active=android.telephony.SubscriptionManager.from(this).getActiveSubscriptionInfoList();
-                java.util.Set<Integer> activeIds=new java.util.HashSet<>();
+                java.util.Set<Integer> activeIds=active==null?null:new java.util.HashSet<>();
                 if(active!=null)for(android.telephony.SubscriptionInfo info:active)activeIds.add(info.getSubscriptionId());
                 SimPreferenceStore.RestoreResult restored=store.resolve(key,activeIds);
                 if(restored.isAvailable()){callback.onSelected(restored.subscriptionId);return;}

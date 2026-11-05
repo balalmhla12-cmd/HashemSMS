@@ -60,6 +60,18 @@ public class SimPreferenceStoreTest {
     }
 
     @Test
+    public void unavailableSubscriptionListPreservesSavedPreference() {
+        new SimPreferenceStore(preferences).remember(KEY, new NoOpCallback()).onSelected(31);
+
+        SimPreferenceStore.RestoreResult restored =
+                new SimPreferenceStore(preferences).resolve(KEY, null);
+
+        assertEquals(SimPreferenceStore.State.UNVERIFIED, restored.state);
+        assertTrue(preferences.contains(KEY));
+        assertEquals(31, preferences.getInt(KEY, -1));
+    }
+
+    @Test
     public void missingSavedSubscriptionIsRemovedAndRequiresNewSelection() {
         new SimPreferenceStore(preferences).remember(KEY, new NoOpCallback()).onSelected(23);
 
