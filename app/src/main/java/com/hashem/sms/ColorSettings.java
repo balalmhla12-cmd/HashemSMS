@@ -237,7 +237,7 @@ final class ColorSettings {
     }
 
     private static void updatePreview(TextView preview, String label, int color) {
-        preview.setText(label + "  Aa");
+        preview.setText(preview.getContext().getString(R.string.color_picker_preview_sample, label));
         preview.setTextColor(readableTextColor(color));
         android.graphics.drawable.GradientDrawable background = new android.graphics.drawable.GradientDrawable();
         background.setColor(color);
