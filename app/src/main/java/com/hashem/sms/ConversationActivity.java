@@ -62,6 +62,8 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
     private TextView attachmentPreviewLabel;
     private java.io.File pendingImageFile;
     private Uri pendingImageUri;
+    private int attachmentPreparationGeneration=0;
+    private boolean attachmentPreparing=false;
     
     SubscriptionChoiceCallback pendingSubscriptionAction;
     private boolean pendingForceSimPicker = false;
@@ -511,7 +513,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
     void forwardSelected(){ArrayList<Long> ids=new ArrayList<>(selected);MESSAGE_EXECUTOR.execute(()->{StringBuilder body=new StringBuilder();Cursor c=null;try{c=db.messagesByIds(ids);while(c.moveToNext())body.append(c.getString(c.getColumnIndexOrThrow("body"))).append("\n");}finally{if(c!=null)c.close();}final String forwardedBody=body.toString().trim();runOnUiThread(()->{final EditText to=new EditText(this);to.setHint("رقم المستلم");new AlertDialog.Builder(this).setTitle("إعادة توجيه").setMessage(forwardedBody).setView(to).setPositiveButton("إرسال",(d,w)->sendForwarded(to.getText().toString().trim(),forwardedBody)).setNegativeButton("إلغاء",null).show();});});}
 
     void sendForwarded(String recipient,String body){if(recipient.isEmpty()||body.trim().isEmpty()){Toast.makeText(this,"أدخل رقم المستلم",Toast.LENGTH_SHORT).show();return;}dispatchSms(recipient,body,"FORWARD",7000,8000);}
-    void send(){String body=composer.getText().toString().trim();if(pendingImageFile!=null){sendPendingMms(body);return;}if(body.isEmpty())return;dispatchSms(address,body,"CONVERSATION",3000,4000,()->composer.setText(""));}
+    void send(){String body=composer.getText().toString().trim();if(attachmentPreparing||(pendingImageUri!=null&&pendingImageFile==null)){Toast.makeText(this,"انتظر حتى يكتمل تجهيز المرفق.",Toast.LENGTH_SHORT).show();return;}if(pendingImageFile!=null){sendPendingMms(body);return;}if(body.isEmpty())return;dispatchSms(address,body,"CONVERSATION",3000,4000,()->composer.setText(""));}
     private void onImagePicked(Uri uri){
         if(uri==null)return;
         String detected=getContentResolver().getType(uri);
@@ -528,30 +530,70 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
     }
     private void preparePickedAttachment(Uri uri,String detectedMime){
         if(uri==null)return;
+        final int generation=++attachmentPreparationGeneration;
+        attachmentPreparing=true;
         if(pendingImageFile!=null&&pendingImageFile.exists())pendingImageFile.delete();
-        pendingImageFile=null;pendingImageUri=uri;attachmentPreview.setVisibility(View.VISIBLE);attachmentPreviewLabel.setText("جارٍ تجهيز المرفق…");
-        final String selectedMime=normalizeAttachmentMime(detectedMime);final String mime=selectedMime.startsWith("image/")&&!selectedMime.equals("image/gif")?"image/jpeg":selectedMime;pendingAttachmentMime=mime;
+        pendingImageFile=null;
+        pendingImageUri=uri;
+        attachmentPreview.setVisibility(View.VISIBLE);
+        attachmentPreviewLabel.setText("جارٍ تجهيز المرفق…");
         attachmentPreviewImage.setImageURI(uri);
+        final String selectedMime=normalizeAttachmentMime(detectedMime);
+        final String mime=selectedMime.startsWith("image/")&&!selectedMime.equals("image/gif")?"image/jpeg":selectedMime;
+        pendingAttachmentMime=mime;
         MESSAGE_EXECUTOR.execute(()->{
-            java.io.File prepared=null;String error=null;
+            java.io.File prepared=null;
+            String error=null;
             try{
-                java.io.File dir=new java.io.File(getFilesDir(),"mms");if(!dir.exists()&&!dir.mkdirs())throw new java.io.IOException("تعذّر إنشاء مجلد مرفقات MMS");
+                java.io.File dir=new java.io.File(getFilesDir(),"mms");
+                if(!dir.exists()&&!dir.mkdirs())throw new java.io.IOException("تعذّر إنشاء مجلد مرفقات MMS");
                 if(mime.startsWith("image/")&&!mime.equals("image/gif")){
                     MmsImageFit.Result result=MmsImageCompressor.compress(getApplicationContext(),uri,MmsImageFit.budgetFor(0L));
                     prepared=new java.io.File(dir,"image-"+java.util.UUID.randomUUID()+".jpg");
                     try(java.io.FileOutputStream out=new java.io.FileOutputStream(prepared)){out.write(result.data);out.getFD().sync();}
                 }else{
                     prepared=new java.io.File(dir,"attachment-"+java.util.UUID.randomUUID()+attachmentExtension(mime));
-                    long total=0;byte[] buffer=new byte[8192];
+                    long total=0;
+                    byte[] buffer=new byte[8192];
                     try(java.io.InputStream in=getContentResolver().openInputStream(uri);java.io.FileOutputStream out=new java.io.FileOutputStream(prepared)){
                         if(in==null)throw new java.io.IOException("تعذّر فتح الملف");
-                        int read;while((read=in.read(buffer))!=-1){total+=read;if(total>MmsImageFit.budgetFor(0L))throw new java.io.IOException("حجم الملف يتجاوز الحد الآمن لرسالة MMS");out.write(buffer,0,read);}out.getFD().sync();
+                        int read;
+                        while((read=in.read(buffer))!=-1){
+                            total+=read;
+                            if(total>MmsImageFit.budgetFor(0L))throw new java.io.IOException("حجم الملف يتجاوز الحد الآمن لرسالة MMS");
+                            out.write(buffer,0,read);
+                        }
+                        out.getFD().sync();
                     }
                 }
                 if(prepared.length()<=0)throw new java.io.IOException("الملف فارغ");
-            }catch(Exception e){if(prepared!=null&&prepared.exists())prepared.delete();prepared=null;error=e.getMessage()==null?"تعذّر تجهيز المرفق":e.getMessage();android.util.Log.e("HashemSMS","Unable to prepare MMS attachment",e);}
-            final java.io.File ready=prepared;final String failure=error;
-            runOnUiThread(()->{if(isFinishing()||isDestroyed())return;if(ready==null){clearPendingImage();Toast.makeText(this,"تعذّر تجهيز المرفق: "+failure,Toast.LENGTH_LONG).show();return;}pendingImageFile=ready;pendingAttachmentMime=mime;attachmentPreviewLabel.setText("مرفق جاهز · "+android.text.format.Formatter.formatShortFileSize(this,ready.length()));if(mime.startsWith("image/"))attachmentPreviewImage.setImageURI(Uri.fromFile(ready));else attachmentPreviewImage.setImageResource(android.R.drawable.ic_menu_save);pendingCameraUri=null;});
+            }catch(Exception e){
+                if(prepared!=null&&prepared.exists())prepared.delete();
+                prepared=null;
+                error=e.getMessage()==null?"تعذّر تجهيز المرفق":e.getMessage();
+                android.util.Log.e("HashemSMS","Unable to prepare MMS attachment",e);
+            }
+            final java.io.File ready=prepared;
+            final String failure=error;
+            runOnUiThread(()->{
+                if(generation!=attachmentPreparationGeneration||isFinishing()||isDestroyed()){
+                    if(ready!=null&&ready.exists()&&!ready.delete())android.util.Log.w("HashemSMS","Unable to remove stale prepared attachment");
+                    return;
+                }
+                attachmentPreparing=false;
+                if(ready==null){
+                    pendingImageUri=null;
+                    clearPendingImage();
+                    Toast.makeText(this,"تعذّر تجهيز المرفق: "+failure,Toast.LENGTH_LONG).show();
+                    return;
+                }
+                pendingImageFile=ready;
+                pendingAttachmentMime=mime;
+                attachmentPreviewLabel.setText("مرفق جاهز · "+android.text.format.Formatter.formatShortFileSize(this,ready.length()));
+                if(mime.startsWith("image/"))attachmentPreviewImage.setImageURI(Uri.fromFile(ready));
+                else attachmentPreviewImage.setImageResource(android.R.drawable.ic_menu_save);
+                pendingCameraUri=null;
+            });
         });
     }
     private String normalizeAttachmentMime(String mime){if(mime==null)return "application/octet-stream";String v=mime.toLowerCase(Locale.ROOT);if(v.equals("application/x-pdf"))return "application/pdf";if(v.equals("text/x-vcard")||v.equals("text/directory"))return "text/vcard";if(v.equals("image/jpg"))return "image/jpeg";return v;}
@@ -575,8 +617,8 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
     private void requestOneTimeLocation(){if(ContextCompat.checkSelfPermission(this,android.Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED&&ContextCompat.checkSelfPermission(this,android.Manifest.permission.ACCESS_COARSE_LOCATION)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION,android.Manifest.permission.ACCESS_COARSE_LOCATION},9101);return;}obtainOneTimeLocation();}
     private void obtainOneTimeLocation(){try{android.location.LocationManager manager=(android.location.LocationManager)getSystemService(LOCATION_SERVICE);if(manager==null)throw new java.io.IOException("خدمة الموقع غير متاحة");if(Build.VERSION.SDK_INT>=30){String provider=manager.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER)?android.location.LocationManager.NETWORK_PROVIDER:android.location.LocationManager.GPS_PROVIDER;manager.getCurrentLocation(provider,new android.os.CancellationSignal(),getMainExecutor(),this::shareLocation);}else{android.location.Location location=manager.getLastKnownLocation(android.location.LocationManager.NETWORK_PROVIDER);if(location==null)location=manager.getLastKnownLocation(android.location.LocationManager.GPS_PROVIDER);shareLocation(location);}}catch(SecurityException e){Toast.makeText(this,"إذن الموقع غير متاح",Toast.LENGTH_LONG).show();}catch(Exception e){Toast.makeText(this,"تعذّر تحديد الموقع: "+e.getMessage(),Toast.LENGTH_LONG).show();}}
     private void shareLocation(android.location.Location location){if(location==null){Toast.makeText(this,"تعذّر تحديد موقعك؛ تحقق من تشغيل خدمات الموقع",Toast.LENGTH_LONG).show();return;}String link="https://maps.google.com/?q="+location.getLatitude()+","+location.getLongitude();composer.setText("موقعي الحالي: "+link);composer.setSelection(composer.length());Toast.makeText(this,"أُضيف رابط موقعك الحالي إلى الرسالة؛ اضغط إرسال لمشاركته",Toast.LENGTH_LONG).show();}
-    private void clearPendingImage(){if(pendingImageFile!=null&&!pendingImageFile.delete())android.util.Log.w("HashemSMS","Could not remove unsent MMS image");pendingImageFile=null;pendingImageUri=null;pendingAttachmentMime="image/jpeg";if(attachmentPreview!=null)attachmentPreview.setVisibility(View.GONE);if(attachmentPreviewImage!=null)attachmentPreviewImage.setImageDrawable(null);}
-    private void sendPendingMms(String caption){if(pendingImageFile==null||!pendingImageFile.isFile()){Toast.makeText(this,"المرفق غير متاح؛ أعد اختياره.",Toast.LENGTH_LONG).show();return;}final java.io.File file=pendingImageFile;final String mime=pendingAttachmentMime;final String recipient=address;choosePreferredOrPrompt(new SubscriptionChoiceCallback(){public void onSelected(int subId){pendingImageFile=null;pendingImageUri=null;attachmentPreview.setVisibility(View.GONE);composer.setText("");SmsSending.SEND_EXECUTOR.execute(()->MmsSending.sendAttachment(getApplicationContext(),new Db(getApplicationContext()),recipient,caption,file,mime,subId));}public void onCancelled(){}});}
+    private void clearPendingImage(){attachmentPreparationGeneration++;attachmentPreparing=false;if(pendingImageFile!=null&&!pendingImageFile.delete())android.util.Log.w("HashemSMS","Could not remove unsent MMS image");pendingImageFile=null;pendingImageUri=null;pendingAttachmentMime="image/jpeg";if(attachmentPreview!=null)attachmentPreview.setVisibility(View.GONE);if(attachmentPreviewImage!=null)attachmentPreviewImage.setImageDrawable(null);}
+    private void sendPendingMms(String caption){if(attachmentPreparing){Toast.makeText(this,"انتظر حتى يكتمل تجهيز المرفق.",Toast.LENGTH_SHORT).show();return;}if(pendingImageFile==null||!pendingImageFile.isFile()){Toast.makeText(this,"المرفق غير متاح؛ أعد اختياره.",Toast.LENGTH_LONG).show();return;}final java.io.File file=pendingImageFile;final String mime=pendingAttachmentMime;final String recipient=address;choosePreferredOrPrompt(new SubscriptionChoiceCallback(){public void onSelected(int subId){pendingImageFile=null;pendingImageUri=null;attachmentPreview.setVisibility(View.GONE);composer.setText("");SmsSending.SEND_EXECUTOR.execute(()->MmsSending.sendAttachment(getApplicationContext(),new Db(getApplicationContext()),recipient,caption,file,mime,subId));}public void onCancelled(){}});}
     private void retryMms(ConversationMessage item){Cursor cursor=null;try{cursor=db.mmsAttachments(item.id);if(!cursor.moveToFirst())throw new java.io.IOException("المرفق غير موجود");String path=cursor.getString(cursor.getColumnIndexOrThrow("local_path"));String mime=cursor.getString(cursor.getColumnIndexOrThrow("content_type"));java.io.File image=new java.io.File(path);if(!image.isFile())throw new java.io.IOException("ملف المرفق غير موجود");String caption="";int split=item.body.indexOf('\n');if(split>=0)caption=item.body.substring(split+1);final String retryCaption=caption;final String retryMime=mime;choosePreferredOrPrompt(new SubscriptionChoiceCallback(){public void onSelected(int subId){SmsSending.SEND_EXECUTOR.execute(()->MmsSending.retryAttachment(getApplicationContext(),new Db(getApplicationContext()),item.id,address,image,retryMime,subId,retryCaption));}public void onCancelled(){}});}catch(Exception e){Toast.makeText(this,"تعذّرت إعادة المحاولة: "+e.getMessage(),Toast.LENGTH_LONG).show();}finally{if(cursor!=null)cursor.close();}}
     void dispatchSms(String recipient,String body,String tag,int sentBase,int deliveredBase){dispatchSms(recipient,body,tag,sentBase,deliveredBase,()->{});}
     void dispatchSms(String recipient,String body,String tag,int sentBase,int deliveredBase,Runnable onSelected){
