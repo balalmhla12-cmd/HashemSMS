@@ -118,7 +118,7 @@ final class ColorSettings {
         panel.addView(previewLabel);
 
         TextView preview = new TextView(activity);
-        preview.setText(label + "  Aa");
+        preview.setText(activity.getString(R.string.color_picker_preview_sample, label));
         preview.setGravity(Gravity.CENTER);
         preview.setTextSize(18);
         preview.setPadding(dp(activity, 12), dp(activity, 14), dp(activity, 12), dp(activity, 14));
