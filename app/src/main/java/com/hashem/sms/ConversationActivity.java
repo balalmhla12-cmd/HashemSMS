@@ -615,7 +615,49 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
     private void showScheduleDialog(){if(pendingImageFile!=null){Toast.makeText(this,"جدولة المرفقات غير متاحة حاليًا؛ أرسل المرفق الآن أو أزله أولًا.",Toast.LENGTH_LONG).show();return;}String body=composer.getText().toString().trim();if(body.isEmpty()){Toast.makeText(this,"اكتب الرسالة أولاً لجدولتها",Toast.LENGTH_SHORT).show();return;}java.util.Calendar calendar=java.util.Calendar.getInstance();calendar.add(java.util.Calendar.MINUTE,5);new DatePickerDialog(this,(view,year,month,day)->{java.util.Calendar chosen=java.util.Calendar.getInstance();chosen.set(year,month,day);new TimePickerDialog(this,(time,hour,minute)->{chosen.set(java.util.Calendar.HOUR_OF_DAY,hour);chosen.set(java.util.Calendar.MINUTE,minute);chosen.set(java.util.Calendar.SECOND,0);chosen.set(java.util.Calendar.MILLISECOND,0);long at=chosen.getTimeInMillis();if(at<=System.currentTimeMillis()){Toast.makeText(this,"اختر وقتاً في المستقبل",Toast.LENGTH_SHORT).show();return;}choosePreferredOrPrompt(new SubscriptionChoiceCallback(){public void onSelected(int subscriptionId){long id=db.addMessage(address,body,"out","scheduled");if(id<=0){Toast.makeText(ConversationActivity.this,"تعذّر حفظ الرسالة المجدولة",Toast.LENGTH_LONG).show();return;}db.saveSchedule(id,address,body,at);boolean exact=AlarmScheduler.scheduleBestEffort(ConversationActivity.this,id,address,body,at);composer.setText("");Toast.makeText(ConversationActivity.this,exact?"تمت جدولة الرسالة":"تمت الجدولة بموعد تقريبي؛ إذن المنبّه الدقيق غير متاح",Toast.LENGTH_LONG).show();}public void onCancelled(){}});},calendar.get(java.util.Calendar.HOUR_OF_DAY),calendar.get(java.util.Calendar.MINUTE),true).show();},calendar.get(java.util.Calendar.YEAR),calendar.get(java.util.Calendar.MONTH),calendar.get(java.util.Calendar.DAY_OF_MONTH)).show();}
     private void showLiveLocationNotice(){new AlertDialog.Builder(this).setTitle("الموقع الجغرافي المباشر").setMessage("المشاركة الحية المستمرة تحتاج إلى خدمة آمنة لتحديث الموقع ومشاركته. يمكنك إرسال موقعك الحالي من خيار «الموقع الجغرافي لمرة واحدة».").setPositiveButton("حسناً",null).show();}
     private void requestOneTimeLocation(){if(ContextCompat.checkSelfPermission(this,android.Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED&&ContextCompat.checkSelfPermission(this,android.Manifest.permission.ACCESS_COARSE_LOCATION)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION,android.Manifest.permission.ACCESS_COARSE_LOCATION},9101);return;}obtainOneTimeLocation();}
-    private void obtainOneTimeLocation(){try{android.location.LocationManager manager=(android.location.LocationManager)getSystemService(LOCATION_SERVICE);if(manager==null)throw new java.io.IOException("خدمة الموقع غير متاحة");if(Build.VERSION.SDK_INT>=30){String provider=manager.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER)?android.location.LocationManager.NETWORK_PROVIDER:android.location.LocationManager.GPS_PROVIDER;manager.getCurrentLocation(provider,new android.os.CancellationSignal(),getMainExecutor(),this::shareLocation);}else{android.location.Location location=manager.getLastKnownLocation(android.location.LocationManager.NETWORK_PROVIDER);if(location==null)location=manager.getLastKnownLocation(android.location.LocationManager.GPS_PROVIDER);shareLocation(location);}}catch(SecurityException e){Toast.makeText(this,"إذن الموقع غير متاح",Toast.LENGTH_LONG).show();}catch(Exception e){Toast.makeText(this,"تعذّر تحديد الموقع: "+e.getMessage(),Toast.LENGTH_LONG).show();}}
+    @SuppressWarnings("deprecation")
+    private void obtainOneTimeLocation(){
+        try{
+            android.location.LocationManager manager=(android.location.LocationManager)getSystemService(LOCATION_SERVICE);
+            if(manager==null)throw new java.io.IOException("خدمة الموقع غير متاحة");
+            String provider=manager.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER)
+                    ?android.location.LocationManager.NETWORK_PROVIDER
+                    :manager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)
+                    ?android.location.LocationManager.GPS_PROVIDER:null;
+            if(provider==null){Toast.makeText(this,"فعّل خدمة الموقع ثم حاول مجددًا.",Toast.LENGTH_LONG).show();return;}
+            if(Build.VERSION.SDK_INT>=30){
+                manager.getCurrentLocation(provider,new android.os.CancellationSignal(),getMainExecutor(),this::shareLocation);
+                return;
+            }
+            java.util.concurrent.atomic.AtomicBoolean completed=new java.util.concurrent.atomic.AtomicBoolean(false);
+            android.os.Handler handler=new android.os.Handler(android.os.Looper.getMainLooper());
+            android.location.LocationListener[] listenerHolder=new android.location.LocationListener[1];
+            Runnable timeout=()->{
+                if(completed.compareAndSet(false,true)){
+                    if(listenerHolder[0]!=null)manager.removeUpdates(listenerHolder[0]);
+                    shareLocation(null);
+                }
+            };
+            listenerHolder[0]=new android.location.LocationListener(){
+                @Override public void onLocationChanged(android.location.Location location){
+                    if(completed.compareAndSet(false,true)){
+                        handler.removeCallbacks(timeout);
+                        manager.removeUpdates(this);
+                        shareLocation(location);
+                    }
+                }
+                @Override public void onProviderDisabled(String name){}
+                @Override public void onProviderEnabled(String name){}
+                @Override public void onStatusChanged(String name,int status,android.os.Bundle extras){}
+            };
+            handler.postDelayed(timeout,20000L);
+            manager.requestSingleUpdate(provider,listenerHolder[0],android.os.Looper.getMainLooper());
+        }catch(SecurityException e){
+            Toast.makeText(this,"إذن الموقع غير متاح",Toast.LENGTH_LONG).show();
+        }catch(Exception e){
+            Toast.makeText(this,"تعذّر تحديد الموقع: "+e.getMessage(),Toast.LENGTH_LONG).show();
+        }
+    }
     private void shareLocation(android.location.Location location){if(location==null){Toast.makeText(this,"تعذّر تحديد موقعك؛ تحقق من تشغيل خدمات الموقع",Toast.LENGTH_LONG).show();return;}String link="https://maps.google.com/?q="+location.getLatitude()+","+location.getLongitude();composer.setText("موقعي الحالي: "+link);composer.setSelection(composer.length());Toast.makeText(this,"أُضيف رابط موقعك الحالي إلى الرسالة؛ اضغط إرسال لمشاركته",Toast.LENGTH_LONG).show();}
     private void clearPendingImage(){attachmentPreparationGeneration++;attachmentPreparing=false;if(pendingImageFile!=null&&!pendingImageFile.delete())android.util.Log.w("HashemSMS","Could not remove unsent MMS image");pendingImageFile=null;pendingImageUri=null;pendingAttachmentMime="image/jpeg";if(attachmentPreview!=null)attachmentPreview.setVisibility(View.GONE);if(attachmentPreviewImage!=null)attachmentPreviewImage.setImageDrawable(null);}
     private void sendPendingMms(String caption){if(attachmentPreparing){Toast.makeText(this,"انتظر حتى يكتمل تجهيز المرفق.",Toast.LENGTH_SHORT).show();return;}if(pendingImageFile==null||!pendingImageFile.isFile()){Toast.makeText(this,"المرفق غير متاح؛ أعد اختياره.",Toast.LENGTH_LONG).show();return;}final java.io.File file=pendingImageFile;final String mime=pendingAttachmentMime;final String recipient=address;choosePreferredOrPrompt(new SubscriptionChoiceCallback(){public void onSelected(int subId){pendingImageFile=null;pendingImageUri=null;attachmentPreview.setVisibility(View.GONE);composer.setText("");SmsSending.SEND_EXECUTOR.execute(()->MmsSending.sendAttachment(getApplicationContext(),new Db(getApplicationContext()),recipient,caption,file,mime,subId));}public void onCancelled(){}});}
