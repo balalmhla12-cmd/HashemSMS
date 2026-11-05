@@ -64,4 +64,5 @@
     <string name="settings_conversations_desc">تخصيص حجم النص وشكل الفقاعات وإجراءات التمرير والردود السريعة.</string>
     <string name="settings_backup">النسخ الاحتياطي والاستعادة</string>
     <string name="settings_backup_desc">تصدير واستيراد الرسائل والمجموعات والجدولة وسجل الحملات مع التحقق وحماية البيانات الحالية.</string>
+    <string name="settings_about_desc">معلومات التطبيق والإصدار والمساعدة وإرسال الملاحظات.</string>
 </resources>
