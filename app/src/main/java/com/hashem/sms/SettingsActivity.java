@@ -195,7 +195,7 @@ public final class SettingsActivity extends AppCompatActivity {
 
     private void styleThemeOption(TextView option, int mode) {
         int current = getSharedPreferences(PREFS, MODE_PRIVATE)
-                .getInt(NIGHT_KEY, AppCompatDelegate.MODE_NIGHT_YES);
+                .getInt(NIGHT_KEY, AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
         boolean selected = current == mode;
         option.setTextColor(col(selected ? R.color.on_primary : R.color.on_surface));
         option.setBackground(round(col(selected ? R.color.primary_variant : R.color.card_surface),
