@@ -654,8 +654,9 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
 
     void chooseSmsSubscription(SubscriptionChoiceCallback callback){chooseSmsSubscription(callback,false);}
     private void chooseSmsSubscription(SubscriptionChoiceCallback callback,boolean forcePicker){
-        android.telephony.TelephonyManager tm;try{tm=(android.telephony.TelephonyManager)getSystemService(TELEPHONY_SERVICE);if(!forcePicker&&(tm==null||tm.getPhoneCount()<=1)){callback.onSelected(-1);return;}}catch(SecurityException e){callback.onCancelled();return;}
-        if(checkSelfPermission("android.permission.READ_PHONE_STATE")!=PackageManager.PERMISSION_GRANTED){pendingSubscriptionAction=callback;pendingForceSimPicker=forcePicker;requestPermissions(new String[]{"android.permission.READ_PHONE_STATE"},62);return;}showSmsSubscriptionChoices(callback,forcePicker);
+        if(checkSelfPermission("android.permission.READ_PHONE_STATE")!=PackageManager.PERMISSION_GRANTED){pendingSubscriptionAction=callback;pendingForceSimPicker=forcePicker;requestPermissions(new String[]{"android.permission.READ_PHONE_STATE"},62);return;}
+        android.telephony.TelephonyManager tm;try{tm=(android.telephony.TelephonyManager)getSystemService(TELEPHONY_SERVICE);if(!forcePicker&&(tm==null||tm.getPhoneCount()<=1)){callback.onSelected(-1);return;}}catch(SecurityException e){android.util.Log.w("HashemSMS","Unable to inspect SIM count",e);callback.onCancelled();return;}
+        showSmsSubscriptionChoices(callback,forcePicker);
     }
     @android.annotation.SuppressLint("MissingPermission") void showSmsSubscriptionChoices(SubscriptionChoiceCallback callback){showSmsSubscriptionChoices(callback,false);}
     @android.annotation.SuppressLint("MissingPermission") private void showSmsSubscriptionChoices(SubscriptionChoiceCallback callback,boolean forcePicker){
