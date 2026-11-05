@@ -70,6 +70,31 @@ public class DbAttachmentMimeTest {
     }
 
     @Test
+    public void failedMessagesFilterIncludesArabicMmsFailureStatus() {
+        Db db = new Db(context);
+        try {
+            long failedId = db.addMessage("+123", "MMS failed", "out", "فشل");
+            long sentId = db.addMessage("+456", "MMS sent", "out", "تم الإرسال");
+            assertTrue(failedId > 0);
+            assertTrue(sentId > 0);
+
+            boolean foundFailed = false;
+            boolean foundSent = false;
+            try (Cursor rows = db.list("failed")) {
+                while (rows.moveToNext()) {
+                    long id = rows.getLong(rows.getColumnIndexOrThrow("id"));
+                    if (id == failedId) foundFailed = true;
+                    if (id == sentId) foundSent = true;
+                }
+            }
+            assertTrue("Arabic MMS failure must appear in failed messages", foundFailed);
+            org.junit.Assert.assertFalse("Successful MMS must not appear in failed messages", foundSent);
+        } finally {
+            db.close();
+        }
+    }
+
+    @Test
     public void rejectsAttachmentTypesNotAcceptedByMmsComposer() throws Exception {
         Db db = new Db(context);
         File file = File.createTempFile("hashem-", ".bin", context.getCacheDir());
