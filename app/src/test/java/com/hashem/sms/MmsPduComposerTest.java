@@ -100,6 +100,20 @@ public class MmsPduComposerTest {
     }
 
     @Test
+    public void normalizesKnownAliasesAndFallsBackForUnsupportedMimeTypes() {
+        assertEquals("application/pdf",
+                MmsPduComposer.normalizeContentType("application/x-pdf"));
+        assertEquals("text/vcard",
+                MmsPduComposer.normalizeContentType("text/x-vcard"));
+        assertEquals("image/jpeg",
+                MmsPduComposer.normalizeContentType("image/jpg"));
+        assertEquals("application/octet-stream",
+                MmsPduComposer.normalizeContentType("image/bmp"));
+        assertEquals("application/octet-stream",
+                MmsPduComposer.normalizeContentType(null));
+    }
+
+    @Test
     public void rejectsNonImageParts() {
         try {
             new MmsPduComposer.ImagePart(new byte[]{0x01}, "video/x-msvideo", "clip.avi");
