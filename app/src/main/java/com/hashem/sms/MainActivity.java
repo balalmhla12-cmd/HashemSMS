@@ -268,7 +268,13 @@ public class MainActivity extends androidx.appcompat.app.AppCompatActivity{
   android.database.Cursor attachments=null;
   try{
    attachments=db.mmsAttachments(messageId);
-   if(attachments==null||!attachments.moveToFirst()){send(recipient,body);return;}
+   if(attachments==null||!attachments.moveToFirst()){
+    if(body.startsWith("مرفق صورة")||body.startsWith("ملف مرفق")){
+     Toast.makeText(this,"بيانات المرفق الأصلي غير موجودة؛ لن نرسل وصفه كنص SMS.",Toast.LENGTH_LONG).show();
+     return;
+    }
+    send(recipient,body);return;
+   }
    String path=attachments.getString(attachments.getColumnIndexOrThrow("local_path"));
    String mime=attachments.getString(attachments.getColumnIndexOrThrow("content_type"));
    java.io.File file=new java.io.File(path);
