@@ -3,10 +3,6 @@ package com.hashem.sms;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
-import android.graphics.Color;
-import android.graphics.Typeface;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -16,10 +12,8 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatDelegate;
-import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 /** Small visual adjustments requested for the home screen; messaging behavior remains in MainActivity. */
@@ -54,7 +48,6 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
 
     static final class Overlay {
         private final MainActivity main;
-        private Typeface bold;
 
         Overlay(MainActivity main) {
             this.main = main;
@@ -73,12 +66,6 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
         }
 
         void install() {
-            try {
-                bold = Typeface.create(ResourcesCompat.getFont(main, R.font.almarai_family),
-                        Typeface.BOLD);
-            } catch (Throwable ignored) {
-                bold = Typeface.DEFAULT_BOLD;
-            }
             safe(this::header);
             safe(this::compose);
             safe(this::watchThreadRows);
@@ -112,7 +99,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             }
         }
 
-        /** Keep the existing compose action, moving it to the requested bottom-left FAB position. */
+        /** Move the existing compose button to the requested bottom-left position without restyling it. */
         private void compose() {
             Button button = main.composeButton;
             if (button == null || main.contentHost == null) return;
@@ -120,33 +107,8 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             ViewGroup parent = (ViewGroup) button.getParent();
             if (parent != null) parent.removeView(button);
 
-            button.setText(main.getString(R.string.compose_start));
-            button.setTextSize(14);
-            button.setTextColor(Color.WHITE);
-            if (bold != null) button.setTypeface(bold);
-            button.setMinWidth(0);
-            button.setMinHeight(dp(40));
-            button.setMinimumHeight(dp(40));
-            button.setPaddingRelative(dp(18), 0, dp(18), 0);
-
-            GradientDrawable background = new GradientDrawable(
-                    GradientDrawable.Orientation.LEFT_RIGHT,
-                    new int[]{0xFF1F6FE0, 0xFF29B6F6});
-            background.setCornerRadius(dp(30));
-            background.setStroke(dp(1), 0x6638C8FF);
-            button.setBackground(background);
-            button.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                    0, 0, R.drawable.ic_nav_messages, 0);
-            Drawable[] drawables = button.getCompoundDrawablesRelative();
-            if (drawables[2] != null) {
-                drawables[2] = drawables[2].mutate();
-                drawables[2].setTint(Color.WHITE);
-            }
-            button.setCompoundDrawablePadding(dp(10));
-            button.setElevation(dp(6));
-
             FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
-                    -2, dp(40), Gravity.BOTTOM | Gravity.START);
+                    -2, -2, Gravity.BOTTOM | Gravity.START);
             params.setMargins(dp(16), 0, dp(16), dp(16));
             main.contentHost.addView(button, params);
 
