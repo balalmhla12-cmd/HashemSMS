@@ -670,28 +670,21 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
     private void choosePreferredOrPrompt(String recipient,SubscriptionChoiceCallback callback){
         android.content.SharedPreferences prefs=getSharedPreferences("hashem_ui",MODE_PRIVATE);
         String key=SimPreferenceKey.forAddress(recipient);
+        SimPreferenceStore store=new SimPreferenceStore(prefs);
         if(prefs.contains(key)){
-            int preferred=prefs.getInt(key,-1);
-            if(preferred<0){
-                // Older builds could persist -1 after a permission fallback. It is not a selected SIM.
-                prefs.edit().remove(key).apply();
-            }else try{
+            try{
                 if(checkSelfPermission("android.permission.READ_PHONE_STATE")!=PackageManager.PERMISSION_GRANTED){
-                    chooseSmsSubscription(rememberSimChoice(prefs,key,callback));return;
+                    chooseSmsSubscription(store.remember(key,callback));return;
                 }
                 java.util.List<android.telephony.SubscriptionInfo> active=android.telephony.SubscriptionManager.from(this).getActiveSubscriptionInfoList();
-                if(active!=null)for(android.telephony.SubscriptionInfo info:active)if(info.getSubscriptionId()==preferred){callback.onSelected(preferred);return;}
-                prefs.edit().remove(key).apply();
-                Toast.makeText(this,"الشريحة المحفوظة لم تعد متاحة؛ اختر شريحة أخرى.",Toast.LENGTH_SHORT).show();
+                java.util.Set<Integer> activeIds=new java.util.HashSet<>();
+                if(active!=null)for(android.telephony.SubscriptionInfo info:active)activeIds.add(info.getSubscriptionId());
+                SimPreferenceStore.RestoreResult restored=store.resolve(key,activeIds);
+                if(restored.isAvailable()){callback.onSelected(restored.subscriptionId);return;}
+                if(restored.wasRemoved())Toast.makeText(this,"الشريحة المحفوظة لم تعد متاحة؛ اختر شريحة أخرى.",Toast.LENGTH_SHORT).show();
             }catch(Exception e){android.util.Log.w("HashemSMS","Unable to validate preferred SIM",e);}
         }
-        chooseSmsSubscription(rememberSimChoice(prefs,key,callback));
-    }
-    private SubscriptionChoiceCallback rememberSimChoice(android.content.SharedPreferences prefs,String key,SubscriptionChoiceCallback callback){
-        return new SubscriptionChoiceCallback(){
-            public void onSelected(int id){if(id>=0)prefs.edit().putInt(key,id).apply();callback.onSelected(id);}
-            public void onCancelled(){callback.onCancelled();}
-        };
+        chooseSmsSubscription(store.remember(key,callback));
     }
 
     void chooseSmsSubscription(SubscriptionChoiceCallback callback){chooseSmsSubscription(callback,false);}
