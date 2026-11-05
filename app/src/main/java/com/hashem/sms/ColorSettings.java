@@ -131,6 +131,7 @@ final class ColorSettings {
         hueLabel.setText(R.string.color_picker_hue);
         panel.addView(hueLabel);
         HuePicker huePicker = new HuePicker(activity);
+        huePicker.setContentDescription(activity.getString(R.string.color_picker_hue));
         LinearLayout.LayoutParams hueLp = new LinearLayout.LayoutParams(-1, dp(activity, 30));
         hueLp.topMargin = dp(activity, 6);
         hueLp.bottomMargin = dp(activity, 12);
@@ -140,6 +141,7 @@ final class ColorSettings {
         shadeLabel.setText(R.string.color_picker_shade);
         panel.addView(shadeLabel);
         ShadePicker shadePicker = new ShadePicker(activity);
+        shadePicker.setContentDescription(activity.getString(R.string.color_picker_shade));
         panel.addView(shadePicker, new LinearLayout.LayoutParams(-1, dp(activity, 174)));
 
         TextView presetLabel = new TextView(activity);
