@@ -104,18 +104,45 @@ public final class SettingsActivity extends AppCompatActivity {
         content.addView(empty, new LinearLayout.LayoutParams(-1, dp(90)));
 
         buildStatus();
-        section(R.string.settings_customization, "التخصيص المظهر الإشعارات الجدولة");
+
+        section(R.string.settings_general, "العامة اللغة المظهر الإشعارات النغمات الجدولة");
         buildAppearance();
         row(R.string.settings_notifications, R.string.settings_notifications_desc, R.drawable.ic_settings,
-                "الإشعارات التنبيهات", this::openNotificationSettings);
+                "الإشعارات التنبيهات النغمات", this::openNotificationSettings);
         row(R.string.settings_scheduling, R.string.settings_schedule_desc, R.drawable.ic_schedule,
-                "الجدولة المنبهات", this::openScheduleSettings);
-        section(R.string.settings_privacy, "الخصوصية الصلاحيات الوصول");
+                "الجدولة المنبهات الرسائل المجدولة", this::openScheduleSettings);
+
+        section(R.string.settings_colors, "تخصيص الألوان الواردة الصادرة الخلفية الشرائح");
+        row(R.string.settings_colors, R.string.settings_colors_desc, R.drawable.ic_settings,
+                "ألوان الرسائل الواردة الصادرة خلفية المحادثة الشرائح", () ->
+                        showSectionInfo(R.string.settings_colors, R.string.settings_colors_desc));
+
+        section(R.string.settings_translation, "الترجمة الإنجليزية العربية اللغة النموذج");
+        row(R.string.settings_translation, R.string.settings_translation_desc, R.drawable.ic_translate,
+                "ترجمة الإنجليزية إلى العربية دون اتصال نموذج", () ->
+                        showSectionInfo(R.string.settings_translation, R.string.settings_translation_desc));
+
+        section(R.string.settings_sim_section, "الشرائح sim الشريحة الافتراضية إعادة التسمية");
+        row(R.string.settings_sim, R.string.settings_sim_section_desc, R.drawable.ic_settings,
+                "الشريحة الأولى الثانية الافتراضية إعادة التسمية", this::showSims);
+
+        section(R.string.settings_conversations, "المحادثات حجم النص الفقاعات التمرير الردود السريعة");
+        row(R.string.settings_conversations, R.string.settings_conversations_desc, R.drawable.ic_nav_messages,
+                "حجم النص شكل الفقاعات إجراءات التمرير الردود السريعة", () ->
+                        showSectionInfo(R.string.settings_conversations, R.string.settings_conversations_desc));
+
+        section(R.string.settings_privacy, "الخصوصية والحماية قفل التطبيق بصمة رقم سري الحظر المزعجة");
         row(R.string.settings_privacy, R.string.settings_privacy_desc, R.drawable.ic_block,
-                "الخصوصية الصلاحيات الأذونات", this::openAppSettings);
-        buildAdvanced();
-        row(R.string.settings_about, R.string.app_name, R.drawable.ic_nav_messages,
-                "حول التطبيق الإصدار معلومات", this::about);
+                "قفل التطبيق بصمة pin حظر الأرقام الرسائل المزعجة الصلاحيات", this::openAppSettings);
+
+        section(R.string.settings_backup, "النسخ الاحتياطي الاستعادة تصدير استيراد");
+        row(R.string.settings_backup, R.string.settings_backup_desc, R.drawable.ic_settings,
+                "نسخة احتياطية استعادة تصدير استيراد البيانات", () ->
+                        showSectionInfo(R.string.settings_backup, R.string.settings_backup_desc));
+
+        section(R.string.settings_about, "حول التطبيق المساعدة الملاحظات الإصدار");
+        row(R.string.settings_about, R.string.settings_about_desc, R.drawable.ic_nav_messages,
+                "حول التطبيق المساعدة الملاحظات الإصدار معلومات", this::about);
 
         search.addTextChangedListener(new android.text.TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -124,6 +151,14 @@ public final class SettingsActivity extends AppCompatActivity {
         });
         setContentView(root);
         filter("");
+    }
+
+    private void showSectionInfo(int titleRes, int messageRes) {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle(titleRes)
+                .setMessage(messageRes)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
     }
 
     private void buildStatus() {

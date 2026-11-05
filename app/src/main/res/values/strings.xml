@@ -53,4 +53,15 @@
     <string name="settings_search_empty">لا توجد إعدادات مطابقة لبحثك.</string>
     <string name="settings_role_request_failed">تعذّر فتح طلب تعيين التطبيق الافتراضي.</string>
     <string name="settings_theme_applied">تم تحديث اختيار المظهر.</string>
+    <string name="settings_general">العامة</string>
+    <string name="settings_colors">تخصيص الألوان</string>
+    <string name="settings_colors_desc">ألوان مستقلة للرسائل الواردة والصادرة وخلفية المحادثة وكل شريحة SIM.</string>
+    <string name="settings_translation">الترجمة</string>
+    <string name="settings_translation_desc">ترجمة الرسائل من الإنجليزية إلى العربية محليًا على الجهاز بعد تنزيل النموذج.</string>
+    <string name="settings_sim_section">الشرائح</string>
+    <string name="settings_sim_section_desc">إدارة الشريحة الأولى والثانية، وإعادة التسمية، وخيارات الإرسال لكل شريحة.</string>
+    <string name="settings_conversations">المحادثات</string>
+    <string name="settings_conversations_desc">تخصيص حجم النص وشكل الفقاعات وإجراءات التمرير والردود السريعة.</string>
+    <string name="settings_backup">النسخ الاحتياطي والاستعادة</string>
+    <string name="settings_backup_desc">تصدير واستيراد الرسائل والمجموعات والجدولة وسجل الحملات مع التحقق وحماية البيانات الحالية.</string>
 </resources>
