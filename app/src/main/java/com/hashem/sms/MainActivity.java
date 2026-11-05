@@ -202,12 +202,13 @@ public class MainActivity extends androidx.appcompat.app.AppCompatActivity{
     String body=c.getString(c.getColumnIndexOrThrow("body"));
     String status=c.getString(c.getColumnIndexOrThrow("status"));
     String stamp=c.getString(c.getColumnIndexOrThrow("ts"));
+    long messageId=c.getLong(c.getColumnIndexOrThrow("id"));
     if(address==null)address="";
     if(body==null)body="";
     if(!query.isEmpty()&&!address.toLowerCase(Locale.ROOT).contains(query)&&!body.toLowerCase(Locale.ROOT).contains(query))continue;
     ArrayList<String[]> rows=grouped.get(address);
     if(rows==null){rows=new ArrayList<>();grouped.put(address,rows);}
-    rows.add(new String[]{body,status==null?"":status,stamp==null?"":stamp});
+    rows.add(new String[]{body,status==null?"":status,stamp==null?"":stamp,String.valueOf(messageId)});
    }
   }finally{c.close();}
   android.database.Cursor rulesCursor=db.listForwardRules();
@@ -252,7 +253,7 @@ public class MainActivity extends androidx.appcompat.app.AppCompatActivity{
     TextView meta=tv("الحالة: "+status+(timestamp>0?" · "+android.text.format.DateFormat.getTimeFormat(this).format(new java.util.Date(timestamp)):""),12);
     meta.setPadding(0,0,0,UiResources.dp(this,5));meta.setTextColor(UiResources.color(this,R.color.error));item.addView(meta);
     LinearLayout actions=new LinearLayout(this);actions.setOrientation(LinearLayout.HORIZONTAL);actions.setGravity(Gravity.CENTER_VERTICAL);
-    Button retry=button("إعادة الإرسال");retry.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("إعادة إرسال الرسالة؟").setMessage("سيتم إرسال الرسالة مرة أخرى إلى "+address).setNegativeButton("إلغاء",null).setPositiveButton("إرسال",(d,w)->send(address,body)).show());
+    Button retry=button("إعادة الإرسال");retry.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("إعادة إرسال الرسالة؟").setMessage("سيتم إرسال الرسالة مرة أخرى إلى "+address).setNegativeButton("إلغاء",null).setPositiveButton("إرسال",(d,w)->retryFailedMessage(Long.parseLong(failed[3]),address,body)).show());
     actions.addView(retry,new LinearLayout.LayoutParams(0,-2,1));
     if(hasSavedForwardRules){Button forward=button("توجيه عبر قاعدة محفوظة");forward.setOnClickListener(v->forwardFailedWithRule(address,body));LinearLayout.LayoutParams forwardLp=new LinearLayout.LayoutParams(0,-2,1);forwardLp.setMargins(UiResources.dp(this,6),0,0,0);actions.addView(forward,forwardLp);}
     item.addView(actions);card.addView(item);
@@ -262,6 +263,29 @@ public class MainActivity extends androidx.appcompat.app.AppCompatActivity{
    View divider=new View(this);divider.setBackgroundColor(UiResources.color(MainActivity.this,R.color.divider));list.addView(divider,new LinearLayout.LayoutParams(-1,UiResources.dp(this,1)));
   }
   if(conversations.isEmpty())list.addView(tv("لا توجد رسائل فاشلة حاليًا",17));
+ }
+ void retryFailedMessage(long messageId,String recipient,String body){
+  android.database.Cursor attachments=null;
+  try{
+   attachments=db.mmsAttachments(messageId);
+   if(attachments==null||!attachments.moveToFirst()){send(recipient,body);return;}
+   String path=attachments.getString(attachments.getColumnIndexOrThrow("local_path"));
+   String mime=attachments.getString(attachments.getColumnIndexOrThrow("content_type"));
+   java.io.File file=new java.io.File(path);
+   if(!file.isFile()||file.length()<=0){Toast.makeText(this,"ملف المرفق الأصلي غير متاح؛ لن نرسل نصًا بديلًا عنه.",Toast.LENGTH_LONG).show();return;}
+   int split=body.indexOf('\n');
+   String caption=split>=0?body.substring(split+1):"";
+   choosePreferredOrPrompt(recipient,new SubscriptionChoiceCallback(){
+    public void onSelected(int subscriptionId){
+     android.content.Context appContext=getApplicationContext();
+     SmsSending.SEND_EXECUTOR.execute(()->MmsSending.retryAttachment(appContext,new Db(appContext),messageId,recipient,file,mime,subscriptionId,caption));
+    }
+    public void onCancelled(){}
+   });
+  }catch(Exception e){
+   android.util.Log.e("HashemSMS","Unable to retry failed message "+messageId,e);
+   Toast.makeText(this,"تعذّرت إعادة المحاولة: "+e.getMessage(),Toast.LENGTH_LONG).show();
+  }finally{if(attachments!=null)attachments.close();}
  }
  void forwardFailedWithRule(String originalAddress,String body){android.database.Cursor c=db.listForwardRules();ArrayList<Long> ids=new ArrayList<>();ArrayList<String> labels=new ArrayList<>();ArrayList<String> destinations=new ArrayList<>();while(c.moveToNext()){ids.add(c.getLong(c.getColumnIndexOrThrow("id")));labels.add(c.getString(c.getColumnIndexOrThrow("name"))+" — "+c.getString(c.getColumnIndexOrThrow("destination")));destinations.add(c.getString(c.getColumnIndexOrThrow("destination")));}c.close();if(ids.isEmpty()){new AlertDialog.Builder(this).setMessage("لا توجد قواعد توجيه").setPositiveButton("حسنًا",null).show();return;}new AlertDialog.Builder(this).setTitle("اختر قاعدة التوجيه").setItems(labels.toArray(new String[0]),(dialog,which)->new AlertDialog.Builder(this).setTitle("تأكيد التوجيه").setMessage("ستُرسل نسخة من نص الرسالة الفاشلة إلى "+destinations.get(which)+" عبر القاعدة: "+labels.get(which)+". لن تُرسل إلى المستلم الأصلي بهذه الخطوة.").setNegativeButton("إلغاء",null).setPositiveButton("توجيه الآن",(d,w)->send(destinations.get(which),body)).show()).setNegativeButton("إلغاء",null).show();}
   void openNewConversationScreen(){new ComposeFlow("").show();}
