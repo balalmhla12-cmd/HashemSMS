@@ -334,7 +334,7 @@ void pickContactsForCompose(EditText destination){
   android.content.SharedPreferences.Editor editor=getSharedPreferences("hashem_ui",MODE_PRIVATE).edit();
   for(String[] recipient:recipients){
    if(recipient==null||recipient.length==0||recipient[0]==null||recipient[0].trim().isEmpty())continue;
-   editor.putInt(SimPreferenceKey.forAddress(recipient[0]),subscriptionId);
+   if(subscriptionId>=0)editor.putInt(SimPreferenceKey.forAddress(recipient[0]),subscriptionId);
   }
   editor.apply();
  }
@@ -347,8 +347,8 @@ void pickContactsForCompose(EditText destination){
   String key=SimPreferenceKey.forAddress(recipient);
   if(prefs.contains(key)){
    int preferred=prefs.getInt(key,-1);
-   if(preferred<0){callback.onSelected(-1);return;}
-   try{
+   if(preferred<0){prefs.edit().remove(key).apply();}
+   else try{
     if(checkSelfPermission("android.permission.READ_PHONE_STATE")==PackageManager.PERMISSION_GRANTED){
      java.util.List<android.telephony.SubscriptionInfo> active=android.telephony.SubscriptionManager.from(this).getActiveSubscriptionInfoList();
      if(active!=null)for(android.telephony.SubscriptionInfo info:active)if(info.getSubscriptionId()==preferred){callback.onSelected(preferred);return;}
@@ -358,7 +358,7 @@ void pickContactsForCompose(EditText destination){
    }catch(Exception e){android.util.Log.w("HashemSMS","Unable to validate preferred SIM",e);}
   }
   chooseSmsSubscription(new SubscriptionChoiceCallback(){
-   public void onSelected(int id){prefs.edit().putInt(key,id).apply();callback.onSelected(id);}
+   public void onSelected(int id){if(id>=0)prefs.edit().putInt(key,id).apply();callback.onSelected(id);}
    public void onCancelled(){callback.onCancelled();}
   });
  }
