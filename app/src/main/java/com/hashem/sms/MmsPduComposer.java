@@ -116,7 +116,17 @@ public final class MmsPduComposer {
         return headers.toByteArray();
     }
 
-    private static boolean isSupportedContentType(String type) {
+    static String normalizeContentType(String type) {
+        if (type == null || type.trim().isEmpty()) return "application/octet-stream";
+        String value = type.trim().toLowerCase(java.util.Locale.ROOT);
+        if ("application/x-pdf".equals(value)) value = "application/pdf";
+        if ("text/x-vcard".equals(value) || "text/directory".equals(value)) value = "text/vcard";
+        if ("image/jpg".equals(value)) value = "image/jpeg";
+        if ("application/x-zip-compressed".equals(value)) value = "application/zip";
+        return isSupportedContentType(value) ? value : "application/octet-stream";
+    }
+
+    static boolean isSupportedContentType(String type) {
         if (type == null) return false;
         switch (type.toLowerCase(java.util.Locale.ROOT)) {
             case "image/jpeg": case "image/png": case "image/gif": case "image/webp":
