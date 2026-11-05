@@ -54,4 +54,19 @@
     <string name="settings_role_request_failed">تعذّر فتح طلب تعيين التطبيق الافتراضي.</string>
     <string name="settings_theme_applied">تم تحديث اختيار المظهر.</string>
     <string name="settings_about_desc">معلومات التطبيق والإصدار والمساعدة وإرسال الملاحظات.</string>
+    <string name="settings_colors">تخصيص الألوان</string>
+    <string name="settings_colors_desc">ألوان مستقلة للرسائل الواردة والصادرة وخلفية المحادثة ولكل شريحة SIM.</string>
+    <string name="color_incoming">لون الرسائل الواردة</string>
+    <string name="color_outgoing">لون الرسائل الصادرة</string>
+    <string name="color_conversation_background">خلفية المحادثة</string>
+    <string name="color_sim_one">لون الشريحة الأولى</string>
+    <string name="color_sim_two">لون الشريحة الثانية</string>
+    <string name="color_picker_title">اختيار اللون</string>
+    <string name="color_picker_hue">درجة اللون</string>
+    <string name="color_picker_shade">التشبع والسطوع</string>
+    <string name="color_picker_hex">كود HEX</string>
+    <string name="color_picker_preview">معاينة</string>
+    <string name="color_picker_reset">استعادة الافتراضي</string>
+    <string name="color_picker_invalid_hex">أدخل لون HEX صحيحًا مثل #1A73E8.</string>
+
 </resources>

@@ -166,7 +166,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
     }
 
     void build(){
-        root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL); root.setPadding(UiResources.dp(this,10),UiResources.dp(this,8),UiResources.dp(this,10),UiResources.dp(this,8)); root.setBackgroundColor(UiResources.color(ConversationActivity.this,R.color.surface));
+        root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL); root.setPadding(UiResources.dp(this,10),UiResources.dp(this,8),UiResources.dp(this,10),UiResources.dp(this,8)); root.setBackgroundColor(ColorSettings.conversationBackground(this));
         LinearLayout top=new LinearLayout(this); top.setGravity(Gravity.CENTER_VERTICAL);top.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);top.setPadding(UiResources.dp(this,6),UiResources.dp(this,4),UiResources.dp(this,6),UiResources.dp(this,8));top.setBackground(rounded(UiResources.color(ConversationActivity.this,R.color.card_surface),UiResources.color(ConversationActivity.this,R.color.card_stroke),20));
         ImageButton back=iconActionButton(R.drawable.ic_arrow_back,"رجوع",false); back.setOnClickListener(v->finish()); top.addView(back,new LinearLayout.LayoutParams(UiResources.dp(this,40),UiResources.dp(this,44)));
         LinearLayout identity=new LinearLayout(this);identity.setOrientation(LinearLayout.VERTICAL);identity.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -702,7 +702,22 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
             if(infos.size()==1&&!forcePicker){once.onSelected(infos.get(0).getSubscriptionId());return;}String[] labels=new String[infos.size()];
             for(int i=0;i<infos.size();i++){android.telephony.SubscriptionInfo info=infos.get(i);String name;try{CharSequence display=info.getDisplayName();name=display==null||display.toString().trim().isEmpty()?"SIM "+(info.getSimSlotIndex()+1):display.toString();}catch(RuntimeException e){name="SIM "+(info.getSimSlotIndex()+1);}
                 String number="";try{String value=info.getNumber();if(value!=null)number=value.trim();}catch(RuntimeException e){android.util.Log.w("HashemSMS","Could not read SIM phone number for slot "+(info.getSimSlotIndex()+1),e);}labels[i]=name+(number.isEmpty()?"":" · "+number);}
-            new AlertDialog.Builder(this).setTitle("اختر شريحة الإرسال").setItems(labels,(dialog,which)->{if(which>=0&&which<infos.size())once.onSelected(infos.get(which).getSubscriptionId());else once.onCancelled();}).setNegativeButton("إرسال بالشريحة الافتراضية",(dialog,which)->once.onSelected(-1)).setOnCancelListener(dialog->once.onCancelled()).show();
+            new AlertDialog.Builder(this).setTitle("اختر شريحة الإرسال").setAdapter(new android.widget.ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,labels){
+                @Override public android.view.View getView(int position,android.view.View convertView,android.view.ViewGroup parent){
+                    android.widget.TextView item=(android.widget.TextView)super.getView(position,convertView,parent);
+                    if(position>=0&&position<infos.size()){
+                        android.text.SpannableString styled=new android.text.SpannableString("●  "+labels[position]);
+                        int slot=infos.get(position).getSimSlotIndex();
+                        styled.setSpan(new android.text.style.ForegroundColorSpan(ColorSettings.simColor(ConversationActivity.this,slot)),
+                                0,1,android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        item.setText(styled);
+                    }
+                    item.setTextSize(16);
+                    item.setPadding(UiResources.dp(ConversationActivity.this,18),UiResources.dp(ConversationActivity.this,12),
+                            UiResources.dp(ConversationActivity.this,18),UiResources.dp(ConversationActivity.this,12));
+                    return item;
+                }
+            },(dialog,which)->{if(which>=0&&which<infos.size())once.onSelected(infos.get(which).getSubscriptionId());else once.onCancelled();}).setNegativeButton("إرسال بالشريحة الافتراضية",(dialog,which)->once.onSelected(-1)).setOnCancelListener(dialog->once.onCancelled()).show();
         }catch(SecurityException e){android.util.Log.w("HashemSMS","SIM list permission denied; cancelling send",e);Toast.makeText(this,"تعذّرت قراءة الشرائح؛ أُلغي الإرسال.",Toast.LENGTH_SHORT).show();once.onCancelled();}catch(RuntimeException e){android.util.Log.w("HashemSMS","SIM list could not be fetched; cancelling send",e);Toast.makeText(this,"تعذّر جلب قائمة الشرائح؛ أُلغي الإرسال.",Toast.LENGTH_SHORT).show();once.onCancelled();}
     }
     @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] grantResults){

@@ -106,6 +106,8 @@ public final class SettingsActivity extends AppCompatActivity {
         buildStatus();
         section(R.string.settings_customization, "التخصيص المظهر الإشعارات الجدولة");
         buildAppearance();
+        row(R.string.settings_colors, R.string.settings_colors_desc, R.drawable.ic_settings,
+                "الألوان لون الرسائل الواردة الصادرة الخلفية شريحة sim", this::showColorSettings);
         row(R.string.settings_notifications, R.string.settings_notifications_desc, R.drawable.ic_settings,
                 "الإشعارات التنبيهات", this::openNotificationSettings);
         row(R.string.settings_scheduling, R.string.settings_schedule_desc, R.drawable.ic_schedule,
@@ -175,6 +177,27 @@ public final class SettingsActivity extends AppCompatActivity {
         card.addView(preview);
         content.addView(card, margin(10));
         addFilter(card, "المظهر معاينة الألوان فاتح داكن حسب النظام");
+    }
+
+    private void showColorSettings() {
+        String[] labels = {
+                getString(R.string.color_incoming),
+                getString(R.string.color_outgoing),
+                getString(R.string.color_conversation_background),
+                getString(R.string.color_sim_one),
+                getString(R.string.color_sim_two)
+        };
+        String[] keys = {ColorSettings.INCOMING, ColorSettings.OUTGOING,
+                ColorSettings.CONVERSATION_BACKGROUND, ColorSettings.SIM_ONE, ColorSettings.SIM_TWO};
+        int[] defaults = {R.color.bubble_in, R.color.bubble_out, R.color.conversation_background,
+                R.color.primary_variant, R.color.icon_orange};
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle(R.string.settings_colors)
+                .setItems(labels, (dialog, which) -> {
+                    if (which >= 0 && which < keys.length) {
+                        ColorSettings.showPicker(this, keys[which], labels[which], defaults[which]);
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
     }
 
     private void themeOption(LinearLayout parent, int label, int mode) {

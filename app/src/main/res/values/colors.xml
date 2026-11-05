@@ -6,6 +6,7 @@
     <color name="on_surface_variant">#405A73</color>
     <color name="primary_container">#D8EFFB</color>
     <color name="bubble_in">#E5F0F8</color>
+    <color name="conversation_background">#F4F9FD</color>
     <color name="bubble_out">#B9E7FA</color>
     <color name="on_bubble_out">#10243B</color>
     <color name="on_bubble_in">#10243B</color>
