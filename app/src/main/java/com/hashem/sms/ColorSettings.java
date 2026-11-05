@@ -149,6 +149,7 @@ final class ColorSettings {
         panel.addView(presetLabel, presetLabelLp);
         GridLayout presets = new GridLayout(activity);
         presets.setColumnCount(6);
+        final EditText[] hexInputRef = {null};
         for (int color : PRESETS) {
             Button swatch = new Button(activity);
             swatch.setText("");
@@ -176,7 +177,7 @@ final class ColorSettings {
         hexLabelLp.topMargin = dp(activity, 8);
         panel.addView(hexLabel, hexLabelLp);
         EditText hexInput = new EditText(activity);
-        final EditText[] hexInputRef = {hexInput};
+        hexInputRef[0] = hexInput;
         hexInput.setSingleLine(true);
         hexInput.setText(String.format(Locale.ROOT, "#%06X", selected[0] & 0xFFFFFF));
         hexInput.setHint("#1A73E8");
@@ -266,10 +267,10 @@ final class ColorSettings {
         private final int[] colors = {0xFFFF0000, 0xFFFFFF00, 0xFF00FF00, 0xFF00FFFF,
                 0xFF0000FF, 0xFFFF00FF, 0xFFFF0000};
         private float hue;
-        private java.util.function.FloatConsumer listener;
+        private java.util.function.Consumer<Float> listener;
 
         HuePicker(Context context) { super(context); setLayerType(View.LAYER_TYPE_SOFTWARE, null); }
-        void setListener(java.util.function.FloatConsumer listener) { this.listener = listener; }
+        void setListener(java.util.function.Consumer<Float> listener) { this.listener = listener; }
         void setColor(int color) { float[] hsv = new float[3]; Color.colorToHSV(color, hsv); hue = hsv[0]; invalidate(); }
         @Override protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
