@@ -778,6 +778,11 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
                 if(restored.wasRemoved())Toast.makeText(this,"الشريحة المحفوظة لم تعد متاحة؛ اختر شريحة أخرى.",Toast.LENGTH_SHORT).show();
             }catch(Exception e){android.util.Log.w("HashemSMS","Unable to validate preferred SIM",e);}
         }
+        DefaultSimPreferenceStore.Result defaultSim=DefaultSimPreferenceStore.resolve(this,prefs);
+        if(defaultSim.state==DefaultSimPreferenceStore.State.SYSTEM_DEFAULT){callback.onSelected(-1);return;}
+        if(defaultSim.state==DefaultSimPreferenceStore.State.AVAILABLE){callback.onSelected(defaultSim.subscriptionId);return;}
+        if(defaultSim.state==DefaultSimPreferenceStore.State.UNVERIFIED){callback.onSelected(-1);return;}
+        if(defaultSim.state==DefaultSimPreferenceStore.State.REMOVED)Toast.makeText(this,"الشريحة الافتراضية المحفوظة لم تعد متاحة؛ اختر شريحة أخرى.",Toast.LENGTH_SHORT).show();
         chooseSmsSubscription(store.remember(key,callback));
     }
 
