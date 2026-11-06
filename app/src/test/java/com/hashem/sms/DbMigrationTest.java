@@ -220,6 +220,107 @@ public class DbMigrationTest {
         }
     }
 
+
+    @Test
+    public void openingPopulatedVersion12DatabasePreservesEveryTableSchemaAndAttachmentFile() throws Exception {
+        Db creator = new Db(context);
+        SQLiteDatabase original = creator.getWritableDatabase();
+        assertEquals(12, original.getVersion());
+
+        ContentValues message = new ContentValues();
+        message.put("id", 1201L);
+        message.put("address", "+9677001201");
+        message.put("body", "رسالة محفوظة في قاعدة v12");
+        message.put("type", "in");
+        message.put("status", "received");
+        message.put("ts", 1700000000123L);
+        message.put("provider_id", 8801L);
+        message.put("read", 1);
+        message.put("star", 1);
+        message.put("trash", 0);
+        message.put("bulk_campaign_id", 1201L);
+        original.insertOrThrow("messages", null, message);
+
+        original.execSQL("INSERT INTO groups(id,name) VALUES(1201,'مجموعة v12')");
+        original.execSQL("INSERT INTO group_members(gid,address,name) VALUES(1201,'+9677001201','عضو v12')");
+        original.execSQL("INSERT INTO schedules(id,address,body,at) VALUES(1201,'+9677001201','رسالة مجدولة v12',1700000001123)");
+        original.execSQL("INSERT INTO forward_rules(id,name,destination) VALUES(1201,'تحويل v12','+9677001202')");
+        original.execSQL("INSERT INTO conversation_flags(address,archived,blocked) VALUES('+9677001201',1,0)");
+        original.execSQL("INSERT INTO bulk_campaigns(id,name,created_at,recipient_count) VALUES(1201,'حملة v12',1700000002,1)");
+
+        File attachmentFile = new File(context.getFilesDir(), "v12-preserved-attachment.gif");
+        byte[] attachmentBytes = new byte[]{'G','I','F','8','9','a',1,2,3,4};
+        try (java.io.FileOutputStream output = new java.io.FileOutputStream(attachmentFile)) {
+            output.write(attachmentBytes);
+        }
+        long attachmentId = creator.addMmsAttachment(1201L, attachmentFile.getAbsolutePath(),
+                "image/gif", attachmentBytes.length, "v12-transaction");
+        assertTrue(attachmentId > 0);
+
+        original.execSQL("INSERT INTO bulk_campaign_recipients(id,campaign_id,address,display_name,message_id,status) VALUES(1201,1201,'+9677001201','عضو الحملة',1201,'sent')");
+
+        String[] tables = {
+                "messages", "groups", "group_members", "schedules", "forward_rules",
+                "conversation_flags", "message_attachments", "bulk_campaigns", "bulk_campaign_recipients"
+        };
+        for (String table : tables) assertEquals("fixture table " + table, 1, countRows(original, table));
+        assertEquals(12, original.getVersion());
+        java.util.List<String> schemaBefore = snapshotSchema(original);
+        java.util.Map<String, java.util.List<String>> rowsBefore = new java.util.LinkedHashMap<>();
+        for (String table : tables) rowsBefore.put(table, snapshotRows(original, table));
+        byte[] attachmentBefore = java.nio.file.Files.readAllBytes(attachmentFile.toPath());
+        creator.close();
+
+        Db reopenedDb = new Db(context);
+        SQLiteDatabase reopened = reopenedDb.getWritableDatabase();
+        assertEquals(12, reopened.getVersion());
+        assertEquals(schemaBefore, snapshotSchema(reopened));
+        for (String table : tables) {
+            assertEquals("rows changed in " + table, rowsBefore.get(table), snapshotRows(reopened, table));
+        }
+        assertArrayEquals(attachmentBefore, java.nio.file.Files.readAllBytes(attachmentFile.toPath()));
+        assertEquals(8801L, providerId(reopened, 1201L));
+        reopenedDb.close();
+    }
+
+    private static java.util.List<String> snapshotSchema(SQLiteDatabase db) {
+        java.util.List<String> schema = new ArrayList<>();
+        try (Cursor c = db.rawQuery(
+                "SELECT type,name,tbl_name,sql FROM sqlite_master "
+                        + "WHERE name NOT LIKE 'sqlite_%' ORDER BY type,name", null)) {
+            while (c.moveToNext()) {
+                schema.add(c.getString(0) + "|" + c.getString(1) + "|"
+                        + c.getString(2) + "|" + c.getString(3));
+            }
+        }
+        return schema;
+    }
+
+    private static java.util.List<String> snapshotRows(SQLiteDatabase db, String table) {
+        java.util.List<String> rows = new ArrayList<>();
+        try (Cursor c = db.rawQuery("SELECT * FROM " + table + " ORDER BY rowid", null)) {
+            while (c.moveToNext()) {
+                StringBuilder row = new StringBuilder();
+                for (int i = 0; i < c.getColumnCount(); i++) {
+                    if (i > 0) row.append('|');
+                    switch (c.getType(i)) {
+                        case Cursor.FIELD_TYPE_NULL:
+                            row.append("<NULL>");
+                            break;
+                        case Cursor.FIELD_TYPE_BLOB:
+                            row.append(java.util.Arrays.toString(c.getBlob(i)));
+                            break;
+                        default:
+                            row.append(c.getString(i));
+                            break;
+                    }
+                }
+                rows.add(row.toString());
+            }
+        }
+        return rows;
+    }
+
     private static int countRows(SQLiteDatabase db, String table) {
         try (Cursor c = db.rawQuery("SELECT COUNT(*) FROM " + table, null)) {
             assertTrue(c.moveToFirst());
