@@ -403,7 +403,6 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
             case "صور GIF": documentPicker.launch(new String[]{"image/gif"}); break;
             case "الملصقات": showStickerPicker(); break;
             case "الملفات": documentPicker.launch(new String[]{"application/pdf","text/plain","text/vcard","application/octet-stream","*/*"}); break;
-            case "الموقع الجغرافي المباشر": showLiveLocationNotice(); break;
             case "جهات الاتصال": launchContactPicker(); break;
             case "تحديد وقت للإرسال": showScheduleDialog(); break;
             case "الموقع الجغرافي لمرة واحدة": requestOneTimeLocation(); break;
