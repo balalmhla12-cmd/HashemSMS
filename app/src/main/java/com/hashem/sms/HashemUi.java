@@ -49,7 +49,12 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
     @Override public void onActivityStopped(Activity activity) {
         if (startedActivityCount > 0) startedActivityCount--;
         // A configuration recreation is not the user leaving the app.
-        if (startedActivityCount == 0 && !activity.isChangingConfigurations()) {
+        // The lock screen is part of the foreground app flow. Stopping it after a
+        // successful authentication must not be mistaken for the user leaving the app;
+        // otherwise the immediate-lock setting would relock before the underlying
+        // activity is resumed.
+        if (startedActivityCount == 0 && !activity.isChangingConfigurations()
+                && !(activity instanceof AppLockActivity)) {
             AppLockController.lockForBackground(activity);
         }
     }
