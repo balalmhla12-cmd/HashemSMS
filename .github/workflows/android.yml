@@ -146,4 +146,12 @@ jobs:
             app/build/reports/lint-results-debug.xml
             app/build/reports/lint-results-debug.html
           if-no-files-found: warn
-
+      - name: Upload unit test XML and HTML reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HashemSMS-unit-test-reports
+          path: |
+            app/build/test-results/testDebugUnitTest/*.xml
+            app/build/reports/tests/testDebugUnitTest/**
+          if-no-files-found: warn
