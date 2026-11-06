@@ -20,14 +20,15 @@ public final class MmsDownloadReceiver extends BroadcastReceiver {
                         : intent.getAction())) return;
         final PendingResult pending = goAsync();
         final Context app = context.getApplicationContext();
+        final int downloadResult = getResultCode();
         try {
             SmsSending.RECEIVER_EXECUTOR.execute(() -> {
                 File source = null;
                 try {
                     source = new File(intent.getStringExtra(MmsReceiver.EXTRA_DESTINATION));
                     String transaction = intent.getStringExtra(MmsReceiver.EXTRA_TRANSACTION);
-                    if (getResultCode() != Activity.RESULT_OK) {
-                        Log.w(TAG, "Carrier MMS download failed; result=" + getResultCode());
+                    if (downloadResult != Activity.RESULT_OK) {
+                        Log.w(TAG, "Carrier MMS download failed; result=" + downloadResult);
                         return;
                     }
                     if (source == null || !source.isFile() || source.length() < 8
