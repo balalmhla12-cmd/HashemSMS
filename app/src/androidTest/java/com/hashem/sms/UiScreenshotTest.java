@@ -36,8 +36,7 @@ public final class UiScreenshotTest {
         Context target = InstrumentationRegistry.getInstrumentation().getTargetContext();
         target.deleteDatabase("hashem.db");
         seedPreviewData(target);
-        Context testContext = InstrumentationRegistry.getInstrumentation().getContext();
-        File output = new File(testContext.getFilesDir(), "HashemSMS-Screenshots");
+        File output = new File(target.getFilesDir(), "HashemSMS-Screenshots");
         if (!output.exists() && !output.mkdirs()) {
             throw new AssertionError("Unable to create screenshot directory: " + output);
         }
