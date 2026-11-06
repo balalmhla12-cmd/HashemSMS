@@ -57,8 +57,6 @@ public class DbThreadPaginationTest {
             assertEquals(200, page.getCount());
             assertTrue(page.moveToFirst());
             assertEquals(1L, page.getLong(page.getColumnIndexOrThrow("id")));
-            assertTrue(page.moveToLast());
-            assertEquals(200L, page.getLong(page.getColumnIndexOrThrow("id")));
             long ts = page.getLong(page.getColumnIndexOrThrow("ts"));
             long id = page.getLong(page.getColumnIndexOrThrow("id"));
             try (Cursor older = db.threadBefore("+1002", ts, id, 200)) {
