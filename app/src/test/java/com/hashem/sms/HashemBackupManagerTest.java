@@ -143,7 +143,7 @@ public final class HashemBackupManagerTest {
             output.write(attachmentBytes);
         }
         database.addMmsAttachment(originalId, attachment.getAbsolutePath(),
-                "application/octet-stream", attachmentBytes.length, "future-version-transaction");
+                "image/gif", attachmentBytes.length, "future-version-transaction");
 
         ByteArrayOutputStream validBackup = new ByteArrayOutputStream();
         HashemBackupManager.exportBackup(context, validBackup);
