@@ -5,23 +5,77 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.util.Log;
 
-public class SentReceiver extends BroadcastReceiver {
- @Override public void onReceive(Context context,Intent intent){
-  long id=intent.getLongExtra("id",-1);if(id<=0)return;
-  int total=Math.max(1,intent.getIntExtra("partCount",1)),index=intent.getIntExtra("partIndex",0);if(index<0||index>=total)return;
-  boolean success=getResultCode()==Activity.RESULT_OK;String prefix="message_"+id+"_";boolean finished=false;
-  synchronized(SentReceiver.class){
-   SharedPreferences prefs=context.getSharedPreferences("sms_send_results",Context.MODE_PRIVATE);
-   if(prefs.getBoolean(prefix+"done_"+index,false))return;
-   int completed=prefs.getInt(prefix+"completed",0)+1,failures=prefs.getInt(prefix+"failures",0)+(success?0:1);finished=completed>=total;
-   SharedPreferences.Editor e=prefs.edit().putBoolean(prefix+"done_"+index,true).putInt(prefix+"completed",completed).putInt(prefix+"failures",failures);
-   Db db=new Db(context);db.status(id,finished?(failures==0?"تم الإرسال":"لم يتم الإرسال"):"جارٍ الإرسال");
-   if(finished)db.updateBulkRecipientStatus(id,failures==0?"تم الإرسال":"لم يتم الإرسال");
-   if(finished){if(failures>0)android.util.Log.e("HashemSMS","Multipart SMS send failed for message id="+id+" partsFailed="+failures);db.updateSystemProviderStatus(context,id,failures==0);e.remove(prefix+"completed").remove(prefix+"failures");for(int i=0;i<total;i++)e.remove(prefix+"done_"+i);}
-   e.commit();
-  }
-  if(finished)context.sendBroadcast(new Intent(SmsReceiver.ACTION_SMS_UPDATED).setPackage(context.getPackageName()));
-  if(finished&&"NOTIFICATION_REPLY".equals(intent.getStringExtra("tag"))){String address=intent.getStringExtra(NotificationHelper.EXTRA_ADDRESS);if(address!=null&&!address.trim().isEmpty()&&NotificationHelper.isConversationNotificationActive(context,address))NotificationHelper.showConversationNotification(context,address);}
- }
+public final class SentReceiver extends BroadcastReceiver {
+    private static final String TAG = "HashemSMSSentReceiver";
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        if (intent == null) return;
+        long id = intent.getLongExtra("id", -1L);
+        int partCount = intent.getIntExtra("partCount", 1);
+        int partIndex = intent.getIntExtra("partIndex", 0);
+        if (id <= 0 || partCount < 1 || partIndex < 0 || partIndex >= partCount) return;
+
+        final int resultCode = getResultCode();
+        final String tag = intent.getStringExtra("tag");
+        final String address = intent.getStringExtra(NotificationHelper.EXTRA_ADDRESS);
+        final Context app = context.getApplicationContext();
+        final PendingResult pending = goAsync();
+        try {
+            SmsSending.RECEIVER_EXECUTOR.execute(() -> {
+                try {
+                    process(app, id, partCount, partIndex, resultCode, tag, address);
+                } catch (Exception e) {
+                    Log.e(TAG, "Unable to process sent callback", e);
+                } finally {
+                    pending.finish();
+                }
+            });
+        } catch (RuntimeException e) {
+            Log.e(TAG, "Unable to queue sent callback", e);
+            pending.finish();
+        }
+    }
+
+    private void process(Context context, long id, int partCount, int partIndex,
+                         int resultCode, String tag, String address) {
+        boolean success = resultCode == Activity.RESULT_OK;
+        Db db = new Db(context);
+        boolean finished = false;
+        synchronized (SentReceiver.class) {
+            if (partCount <= 1) {
+                db.status(id, success ? "تم الإرسال" : "لم يتم الإرسال");
+                if (success) db.saveOutgoingToSystemProvider(context, id);
+                db.updateBulkRecipientStatus(id, success ? "تم الإرسال" : "لم يتم الإرسال");
+                finished = true;
+            } else {
+                SharedPreferences prefs = context.getSharedPreferences("hashem_sms_parts", Context.MODE_PRIVATE);
+                String key = tag == null ? String.valueOf(id) : tag;
+                String doneKey = "sent_done_" + key;
+                String failedKey = "sent_failed_" + key;
+                int done = prefs.getInt(doneKey, 0);
+                boolean failed = prefs.getBoolean(failedKey, false) || !success;
+                if (done >= partCount) return;
+                done++;
+                boolean allDone = done >= partCount;
+                prefs.edit().putInt(doneKey, done).putBoolean(failedKey, failed).commit();
+                if (allDone) {
+                    prefs.edit().remove(doneKey).remove(failedKey).commit();
+                    db.status(id, failed ? "لم يتم الإرسال" : "تم الإرسال");
+                    if (!failed) db.saveOutgoingToSystemProvider(context, id);
+                    db.updateBulkRecipientStatus(id, failed ? "لم يتم الإرسال" : "تم الإرسال");
+                    finished = true;
+                }
+            }
+        }
+        if (finished) {
+            context.sendBroadcast(new Intent(SmsReceiver.ACTION_SMS_UPDATED).setPackage(context.getPackageName()));
+            if (success && address != null && !address.trim().isEmpty()
+                    && NotificationHelper.isConversationNotificationActive(context, address)) {
+                NotificationHelper.showConversationNotification(context, address);
+            }
+        }
+    }
 }

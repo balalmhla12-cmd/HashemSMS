@@ -1,5 +1,50 @@
 package com.hashem.sms;
-import android.content.BroadcastReceiver;import android.content.Context;import android.content.Intent;import android.util.Log;import java.io.File;
+
+import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.util.Log;
+import java.io.File;
+
 public final class MmsSendReceiver extends BroadcastReceiver {
- @Override public void onReceive(Context context,Intent intent){long id=intent==null?-1L:intent.getLongExtra("message_id",-1L);String path=intent==null?null:intent.getStringExtra("pdu_path");if(id<=0)return;boolean ok=getResultCode()==android.app.Activity.RESULT_OK;Db db=new Db(context.getApplicationContext());db.status(id,MmsSendState.statusFor(ok));if(path!=null){File pdu=new File(path);if(pdu.exists()&&!pdu.delete())Log.w("HashemSMS","Unable to delete completed MMS PDU");}context.getApplicationContext().sendBroadcast(new Intent(SmsReceiver.ACTION_SMS_UPDATED).setPackage(context.getPackageName()));SmsSending.postToast(context,ok?"تم إرسال رسالة الوسائط.":"فشل إرسال رسالة الوسائط؛ يمكنك إعادة المحاولة.",android.widget.Toast.LENGTH_LONG);}
+    private static final String TAG = "HashemSMSMmsSendReceiver";
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        if (intent == null) return;
+        long id = intent.getLongExtra("id", -1L);
+        if (id <= 0) return;
+        final int resultCode = getResultCode();
+        final String pduPath = intent.getStringExtra("pdu_path");
+        final Context app = context.getApplicationContext();
+        final PendingResult pending = goAsync();
+        try {
+            SmsSending.RECEIVER_EXECUTOR.execute(() -> {
+                try {
+                    process(app, id, resultCode, pduPath);
+                } catch (Exception e) {
+                    Log.e(TAG, "Unable to process MMS send callback", e);
+                } finally {
+                    pending.finish();
+                }
+            });
+        } catch (RuntimeException e) {
+            Log.e(TAG, "Unable to queue MMS send callback", e);
+            pending.finish();
+        }
+    }
+
+    private void process(Context context, long id, int resultCode, String pduPath) {
+        boolean success = resultCode == Activity.RESULT_OK;
+        Db db = new Db(context);
+        db.status(id, success ? "تم الإرسال" : "لم يتم الإرسال");
+        db.updateBulkRecipientStatus(id, success ? "تم الإرسال" : "لم يتم الإرسال");
+        if (pduPath != null && !pduPath.trim().isEmpty()) {
+            try { new File(pduPath).delete(); }
+            catch (RuntimeException e) { Log.w(TAG, "Unable to delete temporary MMS PDU", e); }
+        }
+        context.sendBroadcast(new Intent(SmsReceiver.ACTION_SMS_UPDATED).setPackage(context.getPackageName()));
+        SmsSending.postToast(context, success ? "تم إرسال رسالة MMS" : "فشل إرسال رسالة MMS");
+    }
 }
