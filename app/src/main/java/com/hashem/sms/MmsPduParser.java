@@ -199,7 +199,8 @@ final class MmsPduParser {
         }
         if (c.remaining() != 0) throw new IllegalArgumentException("Unexpected trailing MMS data");
         if (from.trim().isEmpty()) throw new IllegalArgumentException("MMS sender is missing");
-        return new Message(from.trim(), subject.trim(), date, body.toString(), parts);
+        String normalizedFrom = from.trim().replaceFirst("(?i)/TYPE=[A-Z0-9_-]+$", "");
+        return new Message(normalizedFrom, subject.trim(), date, body.toString(), parts);
     }
 
     private static String safeFileName(String value, int index, String type) {
