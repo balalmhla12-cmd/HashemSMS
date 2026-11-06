@@ -61,14 +61,12 @@ jobs:
             adb shell pm grant com.hashem.sms android.permission.RECEIVE_SMS
             adb shell pm grant com.hashem.sms android.permission.READ_SMS
             adb shell pm grant com.hashem.sms android.permission.READ_CONTACTS
-            api_level="$(adb shell getprop ro.build.version.sdk | tr -d '\r')"
-            if [ "$api_level" -ge 33 ]; then adb shell pm grant com.hashem.sms android.permission.POST_NOTIFICATIONS; fi
             mkdir -p ui-screenshots
             set +e
             ./gradlew --no-daemon connectedDebugAndroidTest
             test_status=$?
             set -e
-            adb exec-out run-as com.hashem.sms.test sh -c 'cd files && tar -cf - HashemSMS-Screenshots' > ui-screenshots.tar
+            adb exec-out run-as com.hashem.sms sh -c 'cd files && tar -cf - HashemSMS-Screenshots' > ui-screenshots.tar
             test -s ui-screenshots.tar
             tar -tf ui-screenshots.tar
             tar -xf ui-screenshots.tar -C ui-screenshots
