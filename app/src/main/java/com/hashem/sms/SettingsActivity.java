@@ -164,7 +164,6 @@ public final class SettingsActivity extends AppCompatActivity {
     }
 
     private void buildAppearance() {
-        section(R.string.settings_appearance, "المظهر فاتح داكن النظام معاينة");
         LinearLayout card = card();
         TextView heading = txt(getString(R.string.settings_preview_title), 16);
         heading.setTypeface(bold());
