@@ -29,6 +29,7 @@ public final class MmsDownloadReceiver extends BroadcastReceiver {
                     String transaction = intent.getStringExtra(MmsReceiver.EXTRA_TRANSACTION);
                     if (downloadResult != Activity.RESULT_OK) {
                         Log.w(TAG, "Carrier MMS download failed; result=" + downloadResult);
+                        NotificationHelper.notifyMmsDownloadFailure(app);
                         return;
                     }
                     if (source == null || !source.isFile() || source.length() < 8
@@ -70,6 +71,7 @@ public final class MmsDownloadReceiver extends BroadcastReceiver {
                     app.sendBroadcast(new Intent(SmsReceiver.ACTION_SMS_UPDATED).setPackage(app.getPackageName()));
                 } catch (Exception e) {
                     Log.e(TAG, "Failed to persist downloaded MMS", e);
+                    NotificationHelper.notifyMmsDownloadFailure(app);
                 } finally {
                     MmsReceiver.releaseTransaction(intent.getStringExtra(MmsReceiver.EXTRA_TRANSACTION));
                     if (source != null && source.exists() && !source.delete()) {
