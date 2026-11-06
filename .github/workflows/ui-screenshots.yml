@@ -5,7 +5,7 @@ on:
     branches: [phase1-ui]
   workflow_dispatch:
 
-# Final visual verification can also be requested with [screenshots] in a commit message.
+# Final visual verification is requested by the [screenshots] commit marker.
 
 permissions:
   contents: read
