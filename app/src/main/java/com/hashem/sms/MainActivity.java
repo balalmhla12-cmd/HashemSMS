@@ -502,8 +502,37 @@ void pickContactsForCompose(EditText destination){
   if(bulkCampaignHistory!=null&&bulkCampaignHistory.getParent()==list)list.removeView(bulkCampaignHistory);
   bulkCampaignHistory=new LinearLayout(this);bulkCampaignHistory.setOrientation(LinearLayout.VERTICAL);bulkCampaignHistory.addView(tv("سجل الرسائل الجماعية",19));android.database.Cursor c=db.listBulkCampaigns();int count=0;
   try{while(c.moveToNext()){count++;long id=c.getLong(c.getColumnIndexOrThrow("id"));String name=c.getString(c.getColumnIndexOrThrow("name"));long created=c.getLong(c.getColumnIndexOrThrow("created_at"));int recipients=c.getInt(c.getColumnIndexOrThrow("recipient_count"));int sent=c.getInt(c.getColumnIndexOrThrow("sent_count"));int failed=c.getInt(c.getColumnIndexOrThrow("failed_count"));int pending=c.getInt(c.getColumnIndexOrThrow("pending_count"));
-   LinearLayout card=new LinearLayout(this);card.setOrientation(LinearLayout.VERTICAL);styleScreenCard(card);card.addView(tv(name,17));card.addView(tv(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm",Locale.getDefault()).format(new Date(created)),11));card.addView(tv("المستلمون: "+recipients+"  ·  أُرسلت: "+sent+"  ·  فشلت: "+failed+"  ·  قيد الانتظار: "+pending,13));card.setTag(id);bulkCampaignHistory.addView(card);
+   LinearLayout card=new LinearLayout(this);card.setOrientation(LinearLayout.VERTICAL);styleScreenCard(card);card.addView(tv(name,17));card.addView(tv(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm",Locale.getDefault()).format(new Date(created)),11));card.addView(tv("المستلمون: "+recipients+"  ·  أُرسلت: "+sent+"  ·  فشلت: "+failed+"  ·  قيد الانتظار: "+pending,13));card.setTag(id);card.setClickable(true);card.setOnClickListener(v->showBulkCampaignDetails(id,name));bulkCampaignHistory.addView(card);
   }}finally{c.close();}if(count==0)bulkCampaignHistory.addView(tv("لا توجد حملات سابقة.",14));list.addView(bulkCampaignHistory);
+ }
+ void showBulkCampaignDetails(long campaignId,String campaignName){
+  android.database.Cursor c=null;
+  LinearLayout content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(UiResources.dp(this,12),UiResources.dp(this,8),UiResources.dp(this,12),UiResources.dp(this,8));
+  int sent=0,failed=0,pending=0,total=0;
+  try{
+   c=db.bulkCampaignRecipients(campaignId);
+   while(c.moveToNext()){
+    total++;
+    String address=c.getString(c.getColumnIndexOrThrow("address"));
+    String displayName=c.getString(c.getColumnIndexOrThrow("display_name"));
+    String status=c.getString(c.getColumnIndexOrThrow("status"));
+    String normalized=status==null?"pending":status.trim().toLowerCase(Locale.ROOT);
+    boolean isFailed=normalized.equals("failed")||normalized.equals("فشل")||normalized.equals("لم يتم الإرسال");
+    boolean isSent=normalized.equals("sent")||normalized.equals("delivered")||normalized.equals("تم الإرسال")||normalized.equals("تم التسليم")||normalized.equals("لم يتم التسليم");
+    if(isFailed)failed++;else if(isSent)sent++;else pending++;
+    String label=isFailed?"فشل":isSent?(normalized.equals("delivered")||normalized.equals("تم التسليم")?"تم التسليم":"تم الإرسال"):"قيد الانتظار";
+    LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.VERTICAL);row.setPadding(0,UiResources.dp(this,8),0,UiResources.dp(this,8));
+    String person=displayName==null||displayName.trim().isEmpty()?address:displayName.trim()+"  ·  "+address;
+    row.addView(tv(person,15));row.addView(tv(label,13));
+    content.addView(row);
+    View divider=new View(this);divider.setBackgroundColor(UiResources.color(this,R.color.divider));content.addView(divider,new LinearLayout.LayoutParams(-1,UiResources.dp(this,1)));
+   }
+  }finally{if(c!=null)c.close();}
+  if(total==0)content.addView(tv("لا يوجد مستلمون محفوظون لهذه الحملة.",14));
+  TextView summary=tv("الإجمالي: "+total+"  ·  تم الإرسال/التسليم: "+sent+"  ·  فشل: "+failed+"  ·  قيد الانتظار: "+pending,14);
+  content.addView(summary,0);
+  ScrollView scroll=new ScrollView(this);scroll.setFillViewport(false);scroll.addView(content);
+  new AlertDialog.Builder(this).setTitle("تفاصيل الحملة: "+campaignName).setView(scroll).setPositiveButton("إغلاق",null).show();
  }
  void pickContactsForBulk(){
    ArrayList<String[]> all=new ArrayList<>();

@@ -67,6 +67,9 @@ public class Db extends SQLiteOpenHelper{
   if(messageId<=0||status==null)return;ContentValues values=new ContentValues();values.put("status",status);
   getWritableDatabase().update("bulk_campaign_recipients",values,"message_id=?",new String[]{String.valueOf(messageId)});
  }
+ public Cursor bulkCampaignRecipients(long campaignId){
+  return getReadableDatabase().rawQuery("SELECT r.id,r.address,r.display_name,r.message_id,r.status FROM bulk_campaign_recipients r WHERE r.campaign_id=? ORDER BY r.id ASC",new String[]{String.valueOf(campaignId)});
+ }
  public Cursor listBulkCampaigns(){
   return getReadableDatabase().rawQuery("SELECT c.id,c.name,c.created_at,c.recipient_count,"
     +"SUM(CASE WHEN r.status IN ('تم الإرسال','تم التسليم','لم يتم التسليم','sent','delivered') THEN 1 ELSE 0 END) AS sent_count,"
