@@ -186,6 +186,18 @@ public class Db extends SQLiteOpenHelper{
   int safeLimit=Math.max(1,limit);
   return getReadableDatabase().rawQuery("SELECT * FROM (SELECT * FROM messages WHERE address=? AND trash=0 AND type!='trash' ORDER BY ts DESC,id DESC LIMIT ?) ORDER BY ts ASC,id ASC",new String[]{address,String.valueOf(safeLimit)});
  }
+ private String threadSearchPattern(String query){
+  String escaped=query==null?"":query.replace("\\","\\\\").replace("%","\\%").replace("_","\\_");
+  return "%"+escaped+"%";
+ }
+ public Cursor threadSearchPage(String address,String query,int limit){
+  int safeLimit=Math.max(1,limit);
+  return getReadableDatabase().rawQuery("SELECT * FROM (SELECT * FROM messages WHERE address=? AND trash=0 AND type!='trash' AND LOWER(body) LIKE LOWER(?) ESCAPE '\\' ORDER BY ts DESC,id DESC LIMIT ?) ORDER BY ts ASC,id ASC",new String[]{address,threadSearchPattern(query),String.valueOf(safeLimit)});
+ }
+ public Cursor threadSearchBefore(String address,String query,long beforeTimestamp,long beforeId,int limit){
+  int safeLimit=Math.max(1,limit);
+  return getReadableDatabase().rawQuery("SELECT * FROM messages WHERE address=? AND trash=0 AND type!='trash' AND LOWER(body) LIKE LOWER(?) ESCAPE '\\' AND (ts<? OR (ts=? AND id<?)) ORDER BY ts DESC,id DESC LIMIT ?",new String[]{address,threadSearchPattern(query),String.valueOf(beforeTimestamp),String.valueOf(beforeTimestamp),String.valueOf(beforeId),String.valueOf(safeLimit)});
+ }
  public Cursor threadBefore(String address,long beforeTimestamp,long beforeId,int limit){
   int safeLimit=Math.max(1,limit);
   return getReadableDatabase().rawQuery("SELECT * FROM messages WHERE address=? AND trash=0 AND type!='trash' AND (ts<? OR (ts=? AND id<?)) ORDER BY ts DESC,id DESC LIMIT ?",new String[]{address,String.valueOf(beforeTimestamp),String.valueOf(beforeTimestamp),String.valueOf(beforeId),String.valueOf(safeLimit)});

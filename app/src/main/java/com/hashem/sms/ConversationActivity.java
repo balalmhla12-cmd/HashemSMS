@@ -198,7 +198,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
         messages.setLayoutManager(messageLayoutManager);
         messages.addOnScrollListener(new RecyclerView.OnScrollListener(){
             @Override public void onScrolled(RecyclerView recyclerView,int dx,int dy){
-                if(dy>=0||search==null||!search.getText().toString().trim().isEmpty())return;
+                if(dy>=0||search==null)return;
                 int first=messageLayoutManager.findFirstVisibleItemPosition();
                 if(first>=0&&first<=2)loadOlderMessages();
             }
@@ -233,8 +233,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
     }
 
     private void loadOlderMessages(){
-        if(loadingOlderPage||!hasMoreOlderMessages||search==null
-                ||!search.getText().toString().trim().isEmpty())return;
+        if(loadingOlderPage||!hasMoreOlderMessages||search==null)return;
         loadingOlderPage=true;
         loadedMessageLimit+=MESSAGE_PAGE_SIZE;
         loadMessages(false);
@@ -252,7 +251,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
         final String query=search==null?"":search.getText().toString().trim().toLowerCase(Locale.ROOT);
         final boolean searching=!query.isEmpty();
         final int requestedLimit=Math.max(MESSAGE_PAGE_SIZE,loadedMessageLimit);
-        final boolean prependOlder=loadingOlderPage&&!searching;
+        final boolean prependOlder=loadingOlderPage;
         final ArrayList<ConversationMessage> existingRows=prependOlder
                 ?new ArrayList<>(messageAdapter.getCurrentList()):new ArrayList<>();
         long beforeTimestamp=Long.MAX_VALUE;
@@ -282,7 +281,8 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
             boolean moreOlder=false;
             int pageCount=0;
             try{
-                if(searching)c=db.thread(currentAddress);
+                if(searching&&prependOlder)c=db.threadSearchBefore(currentAddress,query,olderThanTimestamp,olderThanId,MESSAGE_PAGE_SIZE);
+                else if(searching)c=db.threadSearchPage(currentAddress,query,requestedLimit);
                 else if(prependOlder)c=db.threadBefore(currentAddress,olderThanTimestamp,olderThanId,MESSAGE_PAGE_SIZE);
                 else c=db.threadPage(currentAddress,requestedLimit);
                 int idCol=c.getColumnIndexOrThrow("id");
@@ -295,7 +295,6 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
                     pageCount++;
                     String body=c.getString(bodyCol);
                     if(body==null)body="";
-                    if(searching&&!body.toLowerCase(Locale.ROOT).contains(query))continue;
                     long timestamp=c.getLong(tsCol);
                     long messageId=c.getLong(idCol);
                     String attachmentPath=null;
@@ -307,7 +306,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
                     messageRows.add(new ConversationMessage(messageId,body,c.getString(typeCol),
                             c.getString(statusCol),c.getInt(starCol),null,timestamp,false,attachmentPath));
                 }
-                moreOlder=!searching&&pageCount>=(prependOlder?MESSAGE_PAGE_SIZE:requestedLimit);
+                moreOlder=pageCount>=(prependOlder?MESSAGE_PAGE_SIZE:requestedLimit);
                 if(prependOlder)Collections.reverse(messageRows);
                 ids=db.threadMessageIds(currentAddress);
                 while(ids.moveToNext())existingMessageIds.add(ids.getLong(0));

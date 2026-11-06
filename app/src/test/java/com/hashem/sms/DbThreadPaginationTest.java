@@ -66,6 +66,36 @@ public class DbThreadPaginationTest {
     }
 
     @Test
+    public void searchUsesLiteralSubstringAndIsRestrictedToConversation() {
+        db.addMessageAt("+2001", "hello 100%_done", "in", "received", 100L);
+        db.addMessageAt("+2001", "hello 100XXdone", "in", "received", 200L);
+        db.addMessageAt("+2002", "hello 100%_done", "in", "received", 300L);
+
+        try (Cursor matches = db.threadSearchPage("+2001", "100%_done", 20)) {
+            assertEquals(1, matches.getCount());
+            assertTrue(matches.moveToFirst());
+            assertEquals("hello 100%_done", matches.getString(matches.getColumnIndexOrThrow("body")));
+        }
+    }
+
+    @Test
+    public void searchPaginationUsesTimestampAndIdWithoutOverlap() {
+        for (int i = 1; i <= 205; i++) {
+            db.addMessageAt("+2003", "needle " + i, "in", "received", 5000L);
+        }
+        db.addMessageAt("+2003", "other text", "in", "received", 5000L);
+
+        try (Cursor newest = db.threadSearchPage("+2003", "needle", 200)) {
+            assertEquals(200, newest.getCount());
+            assertTrue(newest.moveToFirst());
+            long firstId = newest.getLong(newest.getColumnIndexOrThrow("id"));
+            try (Cursor older = db.threadSearchBefore("+2003", "needle", 5000L, firstId, 200)) {
+                assertEquals(5, older.getCount());
+            }
+        }
+    }
+
+    @Test
     public void timestampAndIdTogetherDefineDeterministicOrder() {
         db.addMessageAt("+1003", "older timestamp", "in", "received", 100L);
         db.addMessageAt("+1003", "tie first", "in", "received", 200L);
