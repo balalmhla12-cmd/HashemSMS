@@ -7,25 +7,32 @@ import java.nio.charset.StandardCharsets;
 import org.junit.Test;
 
 public class MmsPduParserTest {
-    @Test public void parsesNotificationIndicationAndRejectsNonHttpLocation() {
-        byte[] pdu = bytes(1, 6, 0xbe, 0x8c, 0x82, 0x98,
-                't', 'x', '1', 0, 0x83);
-        byte[] location = "https://mmsc.example/message/1".getBytes(StandardCharsets.UTF_8);
-        byte[] full = new byte[pdu.length + location.length + 1];
-        System.arraycopy(pdu, 0, full, 0, pdu.length);
-        System.arraycopy(location, 0, full, pdu.length, location.length);
-        MmsPduParser.Notification result = MmsPduParser.parseNotification(full);
+    @Test public void parsesNotificationIndicationAndRejectsNonHttpLocation() throws Exception {
+        byte[] valid = notificationPdu("https://mmsc.example/message/1");
+        MmsPduParser.Notification result = MmsPduParser.parseNotification(valid);
         assertEquals("tx1", result.transactionId);
         assertEquals("https://mmsc.example/message/1", result.contentLocation);
 
-        byte[] invalid = bytes(1, 6, 0xbe, 0x8c, 0x82, 0x98,
-                't', 'x', 0, 0x83, 'f', 't', 'p', ':', '/', '/', 'x', 0);
         try {
-            MmsPduParser.parseNotification(invalid);
+            MmsPduParser.parseNotification(notificationPdu("ftp://example/message"));
             fail("non-HTTP location must be rejected");
         } catch (IllegalArgumentException expected) {
             assertTrue(expected.getMessage().contains("scheme"));
         }
+    }
+
+    private static byte[] notificationPdu(String location) throws Exception {
+        ByteArrayOutputStream headers = new ByteArrayOutputStream();
+        write(headers, 0xbe, 0x8c, 0x82, 0x98);
+        headers.write("tx1".getBytes(StandardCharsets.UTF_8));
+        headers.write(0);
+        write(headers, 0x83);
+        headers.write(location.getBytes(StandardCharsets.UTF_8));
+        headers.write(0);
+        ByteArrayOutputStream pdu = new ByteArrayOutputStream();
+        write(pdu, 1, 6, headers.size());
+        pdu.write(headers.toByteArray());
+        return pdu.toByteArray();
     }
 
     @Test public void parsesRetrieveConfTextAndAttachmentParts() throws Exception {
