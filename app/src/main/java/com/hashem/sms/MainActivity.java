@@ -304,11 +304,13 @@ public class MainActivity extends androidx.appcompat.app.AppCompatActivity{
    menu.getMenu().add("اختيار الشريحة").setIcon(R.drawable.ic_settings);
    menu.getMenu().add("إنشاء مجموعة").setIcon(R.drawable.ic_group);
    menu.getMenu().add("جهات الاتصال").setIcon(R.drawable.ic_nav_contacts);
+   menu.getMenu().add("رسالة جديدة").setIcon(R.drawable.ic_add_filled);
    menu.setOnMenuItemClickListener(item->{String choice=item.getTitle().toString();
     if("بحث".equals(choice)){search.requestFocus();((android.view.inputmethod.InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).showSoftInput(search,android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);return true;}
     if("اختيار الشريحة".equals(choice)){chooseSmsSubscription(new SubscriptionChoiceCallback(){public void onSelected(int id){DefaultSimPreferenceStore.save(getSharedPreferences("hashem_ui",MODE_PRIVATE),id);Toast.makeText(MainActivity.this,id<0?"تم اختيار الشريحة الافتراضية":"تم حفظ شريحة SIM الافتراضية",Toast.LENGTH_SHORT).show();}public void onCancelled(){}});return true;}
     if("إنشاء مجموعة".equals(choice)){filter="groups";selectedBottomTab="conversations";render();createGroupDialog();return true;}
     if("جهات الاتصال".equals(choice)){filter="contacts";selectedBottomTab="contacts";render();return true;}
+    if("رسالة جديدة".equals(choice)){openNewConversationScreen();return true;}
     return false;
    });menu.show();
   }
