@@ -123,7 +123,6 @@
     <string name="app_lock_timeout_five_minutes">بعد خمس دقائق</string>
     <string name="app_lock_timeout_saved">تم حفظ مهلة إعادة القفل.</string>
     <string name="app_lock_disable_confirm">سيصبح فتح HashemSMS متاحًا دون تحقق من الجهاز. هل تريد إيقاف القفل؟</string>
-    <string name="app_lock_enabled">قفل التطبيق مفعّل. استخدم بصمة الإصبع أو قفل شاشة الجهاز للمتابعة.</string>
     <string name="app_lock_disabled">تم إيقاف قفل التطبيق.</string>
     <string name="app_lock_title">فتح HashemSMS</string>
     <string name="app_lock_description">تحقق من هويتك باستخدام بصمة الإصبع أو رمز قفل شاشة الجهاز.</string>
