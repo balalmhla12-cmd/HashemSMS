@@ -56,50 +56,66 @@ final class MmsPduParser {
     private MmsPduParser() {}
 
     static Notification parseNotification(byte[] pdu) {
-        if (pdu == null || pdu.length < 4 || pdu.length > 64 * 1024) {
+        if (pdu == null || pdu.length < 6 || pdu.length > 64 * 1024) {
             throw new IllegalArgumentException("Invalid MMS notification size");
         }
         Cursor c = new Cursor(pdu);
         c.read(); // WSP transaction id
-        c.read(); // WSP push pdu type
-        int contentType = c.read();
-        if (contentType == 31) c.skip(c.readUintvar());
-        else if (contentType >= 0x80) { /* short-integer media type */ }
-        else if (contentType == 0) throw new IllegalArgumentException("Missing WSP content type");
+        if (c.read() != 0x06) throw new IllegalArgumentException("Not a WSP Push PDU");
+        int headerLength = c.readUintvar();
+        if (headerLength <= 0 || headerLength > c.remaining()) {
+            throw new IllegalArgumentException("Invalid WSP header length");
+        }
+        int headerEnd = c.position() + headerLength;
+        String contentType = c.readContentType();
+        if (!"application/vnd.wap.mms-message".equals(contentType)) {
+            throw new IllegalArgumentException("Unexpected WSP content type");
+        }
         String tx = "";
         String location = "";
-        while (c.remaining() > 0) {
+        boolean notificationType = false;
+        while (c.position() < headerEnd) {
             int header = c.read();
-            if (header == 0x8c) { // X-Mms-Message-Type
-                if (c.read() != 0x82) throw new IllegalArgumentException("Not an MMS notification indication");
-            } else if (header == 0x98) {
-                tx = c.readText();
-            } else if (header == 0x83) {
-                location = c.readText();
-            } else if (header == 0x8d || header == 0x8e || header == 0x8f
-                    || header == 0x90 || header == 0x91 || header == 0x92
-                    || header == 0x93 || header == 0x94 || header == 0x95
-                    || header == 0x9a || header == 0x9b || header == 0x9c
-                    || header == 0x9d || header == 0x9e || header == 0x9f
-                    || header == 0xa2 || header == 0xa3 || header == 0xa4
-                    || header == 0xa5 || header == 0xa6 || header == 0xa7
-                    || header == 0xa8 || header == 0xab) {
-                c.read();
-            } else if (header == 0x89 || header == 0x96 || header == 0x9a) {
-                c.skipEncodedString();
-            } else if (header == 0x88) {
-                c.skipValueLength();
-            } else if (header == 0x8b) {
-                c.readText();
-            } else if (header == 0x84) {
-                c.skipContentType();
-            } else {
-                // Unknown headers are not safely skippable without their WSP type.
-                throw new IllegalArgumentException("Unsupported MMS notification header");
+            switch (header) {
+                case 0x8c: // X-Mms-Message-Type
+                    notificationType = c.read() == 0x82;
+                    break;
+                case 0x98: // X-Mms-Transaction-ID
+                    tx = c.readText();
+                    break;
+                case 0x83: // X-Mms-Content-Location
+                    location = c.readText();
+                    break;
+                case 0x88: // X-Mms-Expiry
+                    c.skipValueLength();
+                    break;
+                case 0x8d: // X-Mms-MMS-Version
+                case 0x8a: // X-Mms-Message-Class
+                case 0x8e: // X-Mms-Message-Size (long-integer)
+                    if (header == 0x8e) {
+                        int n = c.read();
+                        if (n < 1 || n > 8) throw new IllegalArgumentException("Invalid MMS message size header");
+                        c.skip(n);
+                    } else {
+                        c.read();
+                    }
+                    break;
+                case 0x89: // X-Mms-From
+                case 0x96: // X-Mms-Subject
+                case 0x97: // X-Mms-To
+                    c.skipEncodedString();
+                    break;
+                case 0x84: // X-Mms-Content-Type
+                    c.skipContentType();
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unsupported MMS notification header 0x"
+                            + Integer.toHexString(header));
             }
+            if (c.position() > headerEnd) throw new IllegalArgumentException("MMS header exceeds WSP bounds");
         }
-        if (tx.isEmpty() || location.isEmpty()) {
-            throw new IllegalArgumentException("MMS notification is missing transaction or content location");
+        if (c.position() != headerEnd || !notificationType || tx.isEmpty() || location.isEmpty()) {
+            throw new IllegalArgumentException("MMS notification is missing required headers");
         }
         if (!(location.startsWith("http://") || location.startsWith("https://"))) {
             throw new IllegalArgumentException("Unsupported MMS content location scheme");
