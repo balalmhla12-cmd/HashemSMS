@@ -23,6 +23,7 @@ public final class MmsReceiver extends BroadcastReceiver {
     static final String EXTRA_DESTINATION = "mms_destination";
     static final String EXTRA_TRANSACTION = "mms_transaction";
     static final String EXTRA_CONTENT_LOCATION = "mms_content_location";
+    static final String EXTRA_DESTINATION_URI = "mms_destination_uri";
     private static final AtomicInteger REQUESTS = new AtomicInteger();
     private static final HashSet<String> IN_FLIGHT = new HashSet<>();
 
@@ -71,16 +72,32 @@ public final class MmsReceiver extends BroadcastReceiver {
                     .setAction(ACTION_MMS_DOWNLOAD + "." + request)
                     .putExtra(EXTRA_DESTINATION, destination.getAbsolutePath())
                     .putExtra(EXTRA_TRANSACTION, notification.transactionId)
-                    .putExtra(EXTRA_CONTENT_LOCATION, notification.contentLocation);
+                    .putExtra(EXTRA_CONTENT_LOCATION, notification.contentLocation)
+                    .putExtra(EXTRA_DESTINATION_URI, destinationUri.toString());
             PendingIntent callback = PendingIntent.getBroadcast(context, request, result,
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            // The telephony MMS service writes through this app-owned FileProvider URI.
+            android.content.pm.PackageManager packageManager = context.getPackageManager();
+            java.util.List<android.content.pm.PackageInfo> mmsPackages =
+                    packageManager.getPackagesHoldingPermissions(
+                            new String[]{android.Manifest.permission.RECEIVE_MMS}, 0);
+            for (android.content.pm.PackageInfo info : mmsPackages) {
+                if (info.packageName != null && !info.packageName.equals(context.getPackageName())) {
+                    context.grantUriPermission(info.packageName, destinationUri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                }
+            }
             // Null overrides intentionally let Android apply the active carrier's MMS configuration.
             manager.downloadMultimediaMessage(context, notification.contentLocation,
                     destinationUri, (Bundle) null, callback);
             handedToPlatform = true;
         } finally {
             if (!handedToPlatform) {
-                if (destination != null && destination.exists()) destination.delete();
+                if (destination != null) {
+                    Uri failedUri = FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", destination);
+                    context.revokeUriPermission(failedUri, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                    if (destination.exists()) destination.delete();
+                }
                 releaseTransaction(notification.transactionId);
             }
         }
