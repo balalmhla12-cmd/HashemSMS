@@ -137,7 +137,7 @@ final class MmsPduParser {
             if (header == 0x8c) {
                 if (c.read() != 0x84) throw new IllegalArgumentException("Downloaded PDU is not retrieve-conf");
             } else if (header == 0x89) {
-                from = c.readEncodedString();
+                from = c.readFromValue();
             } else if (header == 0x96) {
                 subject = c.readEncodedString();
             } else if (header == 0x85) {
@@ -145,13 +145,20 @@ final class MmsPduParser {
             } else if (header == 0x84) {
                 contentTypeOffset = c.position();
                 break;
-            } else if (header == 0x98 || header == 0x8b || header == 0x83) {
+            } else if (header == 0x98 || header == 0x8b || header == 0x83
+                    || header == 0x93 || header == 0x9a || header == 0xb3 || header == 0xb4) {
                 c.readText();
-            } else if (header == 0x8d || header == 0x8e || header == 0x8f
+            } else if (header == 0x97 || header == 0x81 || header == 0x82) {
+                c.skipEncodedString();
+            } else if (header == 0x8d || header == 0x8a || header == 0x8f
                     || header == 0x90 || header == 0x91 || header == 0x92
                     || header == 0x94 || header == 0x95 || header == 0x9b
                     || header == 0xa3 || header == 0xa6 || header == 0xa8) {
                 c.read();
+            } else if (header == 0x8e || header == 0x9f || header == 0xa9 || header == 0xaa || header == 0xab) {
+                int n = c.read();
+                if (n < 1 || n > 8) throw new IllegalArgumentException("Invalid MMS integer header");
+                c.skip(n);
             } else if (header == 0x88) {
                 c.skipValueLength();
             } else {
@@ -264,6 +271,13 @@ final class MmsPduParser {
                 p--;
                 readText();
             }
+        }
+        String readFromValue() {
+            int token = read();
+            if (token == 0x81) return "";
+            if (token == 0x80) return readEncodedString();
+            p--;
+            return readEncodedString();
         }
         String readEncodedString() {
             int first = read();
