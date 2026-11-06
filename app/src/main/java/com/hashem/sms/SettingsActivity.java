@@ -153,6 +153,8 @@ public final class SettingsActivity extends AppCompatActivity {
         section(R.string.settings_backup, "النسخ الاحتياطي الاستعادة تصدير استيراد الرسائل المرفقات");
         row(R.string.settings_backup, R.string.settings_backup_desc, R.drawable.ic_settings,
                 "النسخ الاحتياطي الاستعادة تصدير استيراد", this::showBackupStatus);
+        row(R.string.backup_manage, R.string.backup_manage_desc, R.drawable.ic_settings,
+                "إدارة النسخ الاحتياطي إنشاء استعادة تصدير استيراد", this::openBackupActivity);
 
         section(R.string.settings_about_section, "حول التطبيق المساعدة الملاحظات الإصدار");
         row(R.string.settings_about, R.string.settings_about_desc, R.drawable.ic_nav_messages,
@@ -309,6 +311,10 @@ public final class SettingsActivity extends AppCompatActivity {
                     dialog.dismiss();
                     Toast.makeText(this, getString(R.string.settings_message_size_saved, choices[which]), Toast.LENGTH_SHORT).show();
                 }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void openBackupActivity() {
+        startActivity(new Intent(this, BackupActivity.class));
     }
 
     private void showBackupStatus() {
