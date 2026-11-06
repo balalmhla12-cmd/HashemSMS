@@ -104,8 +104,17 @@
     <string name="settings_message_size_saved">تم حفظ حجم النص: %1$s. سيظهر عند فتح المحادثة.</string>
     <string name="settings_backup">النسخ الاحتياطي والاستعادة</string>
     <string name="settings_backup_desc">تصدير الرسائل والمرفقات واستعادتها بأمان.</string>
-    <string name="settings_backup_pending">لم يتم تفعيل التصدير والاستعادة بعد. لن نجري أي تغيير على رسائلك أو قاعدة البيانات من هذه الشاشة قبل اكتمال آلية النسخ والتحقق من سلامة الملف.</string>
+
     <string name="settings_about_section">حول التطبيق والمساعدة</string>
+    <string name="backup_create">إنشاء نسخة احتياطية</string>
+    <string name="backup_restore">استعادة نسخة احتياطية</string>
+    <string name="backup_restore_confirm">ستُستبدل بيانات الرسائل والمجموعات والجدولة وسجل الإرسال والمرفقات بالبيانات الموجودة في الملف. لن تتغير البيانات إذا كان الملف تالفًا أو غير متوافق. يُفضّل إنشاء نسخة احتياطية حديثة قبل المتابعة.</string>
+    <string name="backup_export_started">جارٍ إنشاء النسخة الاحتياطية والتحقق من المرفقات…</string>
+    <string name="backup_restore_started">جارٍ فحص النسخة وتجهيز الاستعادة الآمنة…</string>
+    <string name="backup_export_done">اكتمل إنشاء النسخة الاحتياطية.</string>
+    <string name="backup_restore_done">اكتملت الاستعادة. تم تحديث قائمة الرسائل.</string>
+    <string name="backup_operation_running">توجد عملية نسخ احتياطي أو استعادة قيد التنفيذ.</string>
+    <string name="backup_failed">لم تكتمل العملية:</string>
     <string name="app_lock_enable">تفعيل قفل التطبيق</string>
     <string name="app_lock_disable">إيقاف قفل التطبيق</string>
     <string name="app_lock_disable_confirm">سيصبح فتح HashemSMS متاحًا دون تحقق من الجهاز. هل تريد إيقاف القفل؟</string>

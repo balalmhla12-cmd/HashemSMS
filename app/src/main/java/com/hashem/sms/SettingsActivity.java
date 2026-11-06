@@ -23,11 +23,18 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.content.res.ResourcesCompat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import com.google.mlkit.common.model.RemoteModelManager;
 import com.google.mlkit.nl.translate.TranslateLanguage;
 import com.google.mlkit.nl.translate.TranslateRemoteModel;
@@ -40,10 +47,18 @@ public final class SettingsActivity extends AppCompatActivity {
     private final ArrayList<TextView> sectionTitles = new ArrayList<>();
     private static final String PREFS = "hashem_ui";
     private static final String NIGHT_KEY = "night_mode";
+    private static final ExecutorService BACKUP_EXECUTOR = Executors.newSingleThreadExecutor();
+    private final AtomicBoolean backupOperationRunning = new AtomicBoolean(false);
+    private ActivityResultLauncher<String> backupCreateLauncher;
+    private ActivityResultLauncher<String[]> backupOpenLauncher;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
         UiResources.configureSystemBars(this);
+        backupCreateLauncher = registerForActivityResult(
+                new ActivityResultContracts.CreateDocument("application/zip"), this::exportBackupTo);
+        backupOpenLauncher = registerForActivityResult(
+                new ActivityResultContracts.OpenDocument(), this::confirmBackupRestore);
         build();
     }
 
@@ -297,9 +312,62 @@ public final class SettingsActivity extends AppCompatActivity {
     }
 
     private void showBackupStatus() {
+        String[] options = {
+                getString(R.string.backup_create),
+                getString(R.string.backup_restore)
+        };
         new AlertDialog.Builder(this).setTitle(R.string.settings_backup)
-                .setMessage(R.string.settings_backup_pending)
-                .setPositiveButton(android.R.string.ok, null).show();
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        String stamp = new SimpleDateFormat("yyyyMMdd-HHmm", Locale.ROOT).format(new Date());
+                        backupCreateLauncher.launch("HashemSMS-backup-" + stamp + ".hsmbackup");
+                    } else if (which == 1) {
+                        backupOpenLauncher.launch(new String[]{"application/zip", "application/octet-stream"});
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void exportBackupTo(Uri destination) {
+        if (destination == null) return;
+        runBackupOperation(R.string.backup_export_started, R.string.backup_export_done,
+                () -> HashemBackupManager.exportBackup(getApplicationContext(), destination));
+    }
+
+    private void confirmBackupRestore(Uri source) {
+        if (source == null) return;
+        new AlertDialog.Builder(this).setTitle(R.string.backup_restore)
+                .setMessage(R.string.backup_restore_confirm)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.backup_restore, (dialog, which) ->
+                        runBackupOperation(R.string.backup_restore_started, R.string.backup_restore_done, () -> {
+                            HashemBackupManager.restoreBackup(getApplicationContext(), source);
+                            sendBroadcast(new Intent(SmsReceiver.ACTION_SMS_UPDATED).setPackage(getPackageName()));
+                        })).show();
+    }
+
+    private void runBackupOperation(int startedMessage, int successMessage, BackupTask task) {
+        if (!backupOperationRunning.compareAndSet(false, true)) {
+            Toast.makeText(this, R.string.backup_operation_running, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Toast.makeText(this, startedMessage, Toast.LENGTH_SHORT).show();
+        BACKUP_EXECUTOR.execute(() -> {
+            try {
+                task.run();
+                runOnUiThread(() -> Toast.makeText(this, successMessage, Toast.LENGTH_LONG).show());
+            } catch (Exception error) {
+                android.util.Log.e("HashemSMS", "Backup or restore operation failed", error);
+                runOnUiThread(() -> Toast.makeText(this,
+                        getString(R.string.backup_failed) + " " + (error.getMessage() == null ? "" : error.getMessage()),
+                        Toast.LENGTH_LONG).show());
+            } finally {
+                backupOperationRunning.set(false);
+            }
+        });
+    }
+
+    private interface BackupTask {
+        void run() throws Exception;
     }
 
     private void manageTranslationModel() {
@@ -683,3 +751,4 @@ public final class SettingsActivity extends AppCompatActivity {
         Entry(View view, String terms) { this.view = view; this.terms = terms; }
     }
 }
+
