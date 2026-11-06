@@ -122,17 +122,19 @@ jobs:
               out.write(f"- Baseline commit: `a5854817b880921f486f39385d9480239b470acd`\n")
               out.write(f"- Baseline warnings: **{bw}**; baseline errors/fatals: **{be}**\n")
               out.write(f"- Current warnings: **{cw}**; current errors/fatals: **{ce}**\n")
+              out.write("- Maximum allowed current warnings: **14**\n")
               out.write("- Top 3 baseline warning categories:\n")
               for issue_id, count in bk.most_common(3):
                   out.write(f"  - `{issue_id}` ({count}): {bm.get(issue_id, '')}\n")
-              if cw > bw or ce > be:
-                  out.write("\n**FAIL:** lint count exceeds the baseline.\n")
+              if cw > 14 or cw > bw or ce > be:
+                  out.write("\n**FAIL:** lint exceeds the 14-warning cap or the baseline.\n")
               else:
-                  out.write("\n**PASS:** warning/error counts do not exceed the baseline.\n")
+                  out.write("\n**PASS:** current warnings are <= 14 and warning/error counts do not exceed the baseline.\n")
           print(f"BASELINE_LINT_WARNINGS={bw} BASELINE_LINT_ERRORS={be}")
           print("BASELINE_LINT_WARNING_TYPES=" + ", ".join(f"{name}:{count}" for name, count in bk.most_common(3)))
           print(f"CURRENT_LINT_WARNINGS={cw} CURRENT_LINT_ERRORS={ce}")
-          if cw > bw or ce > be: sys.exit(1)
+          print("MAX_ALLOWED_LINT_WARNINGS=14")
+          if cw > 14 or cw > bw or ce > be: sys.exit(1)
           PY
 
       - name: Upload Android Lint reports
