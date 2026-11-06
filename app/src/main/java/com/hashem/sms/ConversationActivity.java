@@ -37,6 +37,11 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private boolean readMarkInFlight = false;
     private final AtomicInteger loadGeneration = new AtomicInteger();
+    private static final int MESSAGE_PAGE_SIZE = 200;
+    private int loadedMessageLimit = MESSAGE_PAGE_SIZE;
+    private boolean hasMoreOlderMessages = true;
+    private boolean loadingOlderPage = false;
+    private LinearLayoutManager messageLayoutManager;
     private boolean firstMessageLoad = true;
     private boolean smsReceiverRegistered;
     private final Runnable smsUpdateDebounce = () -> loadMessages(false);
@@ -189,7 +194,15 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
         messages=new ScaleAwareRecyclerView(this);
         messages.setClipToPadding(false);
         messages.setPadding(0,4,0,4);
-        messages.setLayoutManager(new LinearLayoutManager(this));
+        messageLayoutManager=new LinearLayoutManager(this);
+        messages.setLayoutManager(messageLayoutManager);
+        messages.addOnScrollListener(new RecyclerView.OnScrollListener(){
+            @Override public void onScrolled(RecyclerView recyclerView,int dx,int dy){
+                if(dy>=0||search==null||!search.getText().toString().trim().isEmpty())return;
+                int first=messageLayoutManager.findFirstVisibleItemPosition();
+                if(first>=0&&first<=2)loadOlderMessages();
+            }
+        });
         messageAdapter=new ConversationAdapter();
         messages.setAdapter(messageAdapter);
         messageTextScale=getSharedPreferences("hashem_ui",MODE_PRIVATE).getFloat("message_text_scale",1f);
@@ -219,52 +232,158 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
         LinearLayout.LayoutParams rowLp=new LinearLayout.LayoutParams(-1,-2);rowLp.topMargin=UiResources.dp(this,8);root.addView(composerRow,rowLp);setContentView(root);
     }
 
+    private void loadOlderMessages(){
+        if(loadingOlderPage||!hasMoreOlderMessages||search==null
+                ||!search.getText().toString().trim().isEmpty())return;
+        loadingOlderPage=true;
+        loadedMessageLimit+=MESSAGE_PAGE_SIZE;
+        loadMessages(false);
+    }
+
     private void loadMessages(boolean initialLoad){
         if(messages==null||db==null)return;
+        if(initialLoad){
+            loadedMessageLimit=MESSAGE_PAGE_SIZE;
+            hasMoreOlderMessages=true;
+            loadingOlderPage=false;
+        }
         final int generation=loadGeneration.incrementAndGet();
         final String currentAddress=address;
         final String query=search==null?"":search.getText().toString().trim().toLowerCase(Locale.ROOT);
-        final boolean wasAtBottom=initialLoad||!messages.canScrollVertically(1);
+        final boolean searching=!query.isEmpty();
+        final int requestedLimit=Math.max(MESSAGE_PAGE_SIZE,loadedMessageLimit);
+        final boolean prependOlder=loadingOlderPage&&!searching;
+        final ArrayList<ConversationMessage> existingRows=prependOlder
+                ?new ArrayList<>(messageAdapter.getCurrentList()):new ArrayList<>();
+        long beforeTimestamp=Long.MAX_VALUE;
+        long beforeId=Long.MAX_VALUE;
+        if(prependOlder){
+            for(ConversationMessage item:existingRows){
+                if(!item.isEmpty()&&!item.isDateDivider()){
+                    beforeTimestamp=item.timestamp;
+                    beforeId=item.id;
+                    break;
+                }
+            }
+        }
+        final long olderThanTimestamp=beforeTimestamp;
+        final long olderThanId=beforeId;
+        final int previousFirstPosition=messageLayoutManager==null?0:
+                Math.max(0,messageLayoutManager.findFirstVisibleItemPosition());
+        View previousFirstView=messageLayoutManager==null?null:
+                messageLayoutManager.findViewByPosition(previousFirstPosition);
+        final int previousFirstTop=previousFirstView==null?0:previousFirstView.getTop();
+        final boolean wasAtBottom=initialLoad||(!prependOlder&&!messages.canScrollVertically(1));
         MESSAGE_EXECUTOR.execute(()->{
-            ArrayList<ConversationMessage> rows=new ArrayList<>();
+            ArrayList<ConversationMessage> messageRows=new ArrayList<>();
             HashSet<Long> existingMessageIds=new HashSet<>();
             Cursor c=null;
+            Cursor ids=null;
+            boolean moreOlder=false;
+            int pageCount=0;
             try{
-                c=db.thread(currentAddress);
+                if(searching)c=db.thread(currentAddress);
+                else if(prependOlder)c=db.threadBefore(currentAddress,olderThanTimestamp,olderThanId,MESSAGE_PAGE_SIZE);
+                else c=db.threadPage(currentAddress,requestedLimit);
                 int idCol=c.getColumnIndexOrThrow("id");
                 int bodyCol=c.getColumnIndexOrThrow("body");
                 int typeCol=c.getColumnIndexOrThrow("type");
                 int statusCol=c.getColumnIndexOrThrow("status");
                 int starCol=c.getColumnIndexOrThrow("star");
+                int tsCol=c.getColumnIndexOrThrow("ts");
                 while(c.moveToNext()){
-                    existingMessageIds.add(c.getLong(idCol));
+                    pageCount++;
                     String body=c.getString(bodyCol);
                     if(body==null)body="";
-                    if(!query.isEmpty()&&!body.toLowerCase(Locale.ROOT).contains(query))continue;
-                    long timestamp=c.getLong(c.getColumnIndexOrThrow("ts"));long day=dayStart(timestamp);if(rows.isEmpty()||rows.get(rows.size()-1).timestamp==0L||dayStart(rows.get(rows.size()-1).timestamp)!=day)rows.add(ConversationMessage.date(day,timestamp));long messageId=c.getLong(idCol);String attachmentPath=null;Cursor attachmentCursor=null;try{attachmentCursor=db.mmsAttachments(messageId);if(attachmentCursor.moveToFirst())attachmentPath=attachmentCursor.getString(2);}finally{if(attachmentCursor!=null)attachmentCursor.close();}rows.add(new ConversationMessage(messageId,body,c.getString(typeCol),c.getString(statusCol),c.getInt(starCol),null,timestamp,false,attachmentPath));
+                    if(searching&&!body.toLowerCase(Locale.ROOT).contains(query))continue;
+                    long timestamp=c.getLong(tsCol);
+                    long messageId=c.getLong(idCol);
+                    String attachmentPath=null;
+                    Cursor attachmentCursor=null;
+                    try{
+                        attachmentCursor=db.mmsAttachments(messageId);
+                        if(attachmentCursor.moveToFirst())attachmentPath=attachmentCursor.getString(2);
+                    }finally{if(attachmentCursor!=null)attachmentCursor.close();}
+                    messageRows.add(new ConversationMessage(messageId,body,c.getString(typeCol),
+                            c.getString(statusCol),c.getInt(starCol),null,timestamp,false,attachmentPath));
                 }
+                moreOlder=!searching&&pageCount>=(prependOlder?MESSAGE_PAGE_SIZE:requestedLimit);
+                if(prependOlder)Collections.reverse(messageRows);
+                ids=db.threadMessageIds(currentAddress);
+                while(ids.moveToNext())existingMessageIds.add(ids.getLong(0));
             }catch(Exception e){
                 android.util.Log.e("HashemSMS","Unable to load conversation messages",e);
+                if(prependOlder)mainHandler.post(()->{
+                    if(generation==loadGeneration.get()){
+                        loadedMessageLimit=Math.max(MESSAGE_PAGE_SIZE,loadedMessageLimit-MESSAGE_PAGE_SIZE);
+                        loadingOlderPage=false;
+                    }
+                });
                 return;
-            }finally{if(c!=null)c.close();}
-            if(rows.isEmpty())rows.add(ConversationMessage.empty(query.isEmpty()?"لا توجد رسائل":"لا توجد نتائج مطابقة"));
+            }finally{
+                if(c!=null)c.close();
+                if(ids!=null)ids.close();
+            }
+            ArrayList<ConversationMessage> pageRows=new ArrayList<>();
+            for(ConversationMessage message:messageRows){
+                long day=dayStart(message.timestamp);
+                if(pageRows.isEmpty()||dayStart(pageRows.get(pageRows.size()-1).timestamp)!=day){
+                    pageRows.add(ConversationMessage.date(day,message.timestamp));
+                }
+                pageRows.add(message);
+            }
+            ArrayList<ConversationMessage> rows;
+            if(prependOlder){
+                rows=pageRows;
+                if(!pageRows.isEmpty()&&!existingRows.isEmpty()){
+                    ConversationMessage oldestExisting=null;
+                    for(ConversationMessage item:existingRows){
+                        if(!item.isEmpty()&&!item.isDateDivider()){oldestExisting=item;break;}
+                    }
+                    ConversationMessage newestOlder=null;
+                    for(int i=pageRows.size()-1;i>=0;i--){
+                        ConversationMessage item=pageRows.get(i);
+                        if(!item.isEmpty()&&!item.isDateDivider()){newestOlder=item;break;}
+                    }
+                    int skip=0;
+                    if(oldestExisting!=null&&newestOlder!=null
+                            &&dayStart(oldestExisting.timestamp)==dayStart(newestOlder.timestamp)
+                            &&!existingRows.isEmpty()&&existingRows.get(0).isDateDivider())skip=1;
+                    rows.addAll(existingRows.subList(skip,existingRows.size()));
+                }else rows.addAll(existingRows);
+            }else rows=pageRows;
+            if(rows.isEmpty())rows.add(ConversationMessage.empty(searching?"لا توجد نتائج مطابقة":"لا توجد رسائل"));
             final ArrayList<ConversationMessage> result=rows;
             final HashSet<Long> loadedMessageIds=existingMessageIds;
+            final boolean canLoadOlder=moreOlder;
             runOnUiThread(()->{
                 if(isFinishing()||isDestroyed()||generation!=loadGeneration.get()||messageAdapter==null)return;
+                hasMoreOlderMessages=canLoadOlder;
                 final boolean first=firstMessageLoad;
                 firstMessageLoad=false;
                 messageAdapter.submitList(result,()->{
                     if(messages==null||generation!=loadGeneration.get())return;
                     pruneSelection(selected,loadedMessageIds);
-                    if(selected.isEmpty()&&actionMode!=null){actionMode.finish();return;}
-                    if(wasAtBottom){
+                    if(selected.isEmpty()&&actionMode!=null){
+                        loadingOlderPage=false;
+                        actionMode.finish();
+                        return;
+                    }
+                    if(prependOlder){
+                        int inserted=Math.max(0,messageAdapter.getItemCount()-existingRows.size());
+                        int target=Math.min(messageAdapter.getItemCount()-1,previousFirstPosition+inserted);
+                        if(target>=0)messageLayoutManager.scrollToPositionWithOffset(target,previousFirstTop);
+                    }else if(wasAtBottom){
                         int last=messageAdapter.getItemCount()-1;
                         if(last>=0){
                             if(first)messages.scrollToPosition(last);
-                            else messages.post(()->{if(generation==loadGeneration.get()&&messages!=null)messages.smoothScrollToPosition(messageAdapter.getItemCount()-1);});
+                            else messages.post(()->{
+                                if(generation==loadGeneration.get()&&messages!=null)
+                                    messages.smoothScrollToPosition(messageAdapter.getItemCount()-1);
+                            });
                         }
                     }
+                    loadingOlderPage=false;
                 });
             });
         });

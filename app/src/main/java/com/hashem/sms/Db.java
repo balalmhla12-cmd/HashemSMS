@@ -182,6 +182,17 @@ public class Db extends SQLiteOpenHelper{
  public Cursor listGroups(){return getReadableDatabase().query("groups",new String[]{"id","name"},null,null,null,null,"name COLLATE NOCASE ASC");}
  public Cursor groupMembers(long gid){return getReadableDatabase().query("group_members",new String[]{"address","name"},"gid=?",new String[]{String.valueOf(gid)},null,null,"name COLLATE NOCASE ASC");}
  public Cursor thread(String address){return getReadableDatabase().query("messages",null,"address=? AND trash=0 AND type!='trash'",new String[]{address},null,null,"ts ASC");}
+ public Cursor threadPage(String address,int limit){
+  int safeLimit=Math.max(1,limit);
+  return getReadableDatabase().rawQuery("SELECT * FROM (SELECT * FROM messages WHERE address=? AND trash=0 AND type!='trash' ORDER BY ts DESC,id DESC LIMIT ?) ORDER BY ts ASC,id ASC",new String[]{address,String.valueOf(safeLimit)});
+ }
+ public Cursor threadBefore(String address,long beforeTimestamp,long beforeId,int limit){
+  int safeLimit=Math.max(1,limit);
+  return getReadableDatabase().rawQuery("SELECT * FROM messages WHERE address=? AND trash=0 AND type!='trash' AND (ts<? OR (ts=? AND id<?)) ORDER BY ts DESC,id DESC LIMIT ?",new String[]{address,String.valueOf(beforeTimestamp),String.valueOf(beforeTimestamp),String.valueOf(beforeId),String.valueOf(safeLimit)});
+ }
+ public Cursor threadMessageIds(String address){
+  return getReadableDatabase().query("messages",new String[]{"id"},"address=? AND trash=0 AND type!='trash'",new String[]{address},null,null,"ts ASC,id ASC");
+ }
  public Cursor messagesByIds(ArrayList<Long> ids){if(ids.isEmpty())return getReadableDatabase().rawQuery("SELECT * FROM messages WHERE 1=0",null);StringBuilder q=new StringBuilder();String[] a=new String[ids.size()];for(int i=0;i<ids.size();i++){if(i>0)q.append(',');q.append('?');a[i]=String.valueOf(ids.get(i));}return getReadableDatabase().rawQuery("SELECT * FROM messages WHERE id IN ("+q+") ORDER BY ts ASC",a);}
  public void deleteMessages(ArrayList<Long> ids){if(ids.isEmpty())return;StringBuilder q=new StringBuilder();String[] a=new String[ids.size()];for(int i=0;i<ids.size();i++){if(i>0)q.append(',');q.append('?');a[i]=String.valueOf(ids.get(i));}ContentValues v=new ContentValues();v.put("trash",1);getWritableDatabase().update("messages",v,"id IN ("+q+")",a);}
  public void starMessages(ArrayList<Long> ids){if(ids.isEmpty())return;StringBuilder q=new StringBuilder();String[] a=new String[ids.size()];for(int i=0;i<ids.size();i++){if(i>0)q.append(',');q.append('?');a[i]=String.valueOf(ids.get(i));}getWritableDatabase().execSQL("UPDATE messages SET star=CASE WHEN star=1 THEN 0 ELSE 1 END WHERE id IN ("+q+")",a);}
