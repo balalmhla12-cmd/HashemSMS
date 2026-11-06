@@ -60,7 +60,7 @@ public class MmsPduParserTest {
         write(out, 1, 2, 3);
 
         MmsPduParser.Message message = MmsPduParser.parseRetrieved(out.toByteArray());
-        assertEquals("15551234567/TYPE=PLMN", message.from);
+        assertEquals("15551234567", message.from);
         assertEquals("Photo", message.subject);
         assertEquals("hello", message.text);
         assertEquals(1, message.parts.size());
