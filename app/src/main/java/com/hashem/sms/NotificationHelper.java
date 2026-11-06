@@ -114,6 +114,22 @@ final class NotificationHelper {
   catch(Exception e){Log.w(TAG,"Unable to resolve contact name",e);}finally{if(cur!=null)cur.close();}return "";
  }
 
+ static void notifyMmsDownloadFailure(Context c){
+  try{
+   Context app=c.getApplicationContext();
+   NotificationManager manager=(NotificationManager)app.getSystemService(Context.NOTIFICATION_SERVICE);
+   if(manager==null)return;
+   Intent open=new Intent(app,MainActivity.class).setAction(app.getPackageName()+".MMS_DOWNLOAD_FAILED");
+   PendingIntent pi=PendingIntent.getActivity(app,390001,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+   Notification.Builder builder=new Notification.Builder(app,CHANNEL_ID);
+   builder.setSmallIcon(R.drawable.ic_stat_sms).setContentTitle("تعذّر تنزيل رسالة وسائط")
+    .setContentText("لم يتمكن الهاتف من تنزيل رسالة الوسائط المتعددة. تحقق من اتصال البيانات وإعدادات شركة الاتصالات.")
+    .setContentIntent(pi).setAutoCancel(true).setOnlyAlertOnce(true).setCategory(Notification.CATEGORY_ERROR);
+   manager.notify(390001,builder.build());
+  }catch(SecurityException e){Log.w(TAG,"Notification permission denied for MMS failure",e);}
+  catch(Exception e){Log.e(TAG,"Unable to show MMS download failure notification",e);}
+ }
+
  static void notifyMissedScheduled(Context c,long id,String address,String body){
   try{NotificationManager m=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);if(m==null)return;Intent open=new Intent(c,ConversationActivity.class).putExtra(EXTRA_ADDRESS,address).setAction(c.getPackageName()+".MISSED_SCHEDULE."+id);
    PendingIntent pi=PendingIntent.getActivity(c,(int)(id%100000)+200000,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
