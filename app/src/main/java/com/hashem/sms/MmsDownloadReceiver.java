@@ -9,6 +9,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.UUID;
+import java.util.ArrayList;
+import android.database.sqlite.SQLiteDatabase;
 
 /** Persists a successfully downloaded MMS retrieve-conf PDU and its attachments. */
 public final class MmsDownloadReceiver extends BroadcastReceiver {
@@ -40,29 +42,39 @@ public final class MmsDownloadReceiver extends BroadcastReceiver {
                     MmsPduParser.Message message = MmsPduParser.parseRetrieved(pdu);
                     Db db = new Db(app);
                     long timestamp = message.dateMillis > 0 ? message.dateMillis : System.currentTimeMillis();
-                    long messageId = db.addMessage(message.from,
-                            message.text.isEmpty() ? (message.subject.isEmpty() ? "رسالة وسائط متعددة" : message.subject) : message.text,
-                            "in", "received");
-                    if (messageId <= 0) throw new IllegalStateException("Unable to save incoming MMS message");
                     File attachmentDir = new File(app.getFilesDir(), "mms");
                     if (!attachmentDir.exists() && !attachmentDir.mkdirs()) {
                         throw new java.io.IOException("Cannot create MMS attachment directory");
                     }
-                    for (int i = 0; i < message.parts.size(); i++) {
-                        MmsPduParser.Part part = message.parts.get(i);
-                        if (part.data.length == 0) continue;
-                        String safeName = UUID.randomUUID().toString() + "-" + part.fileName;
-                        File target = new File(attachmentDir, safeName);
-                        try (FileOutputStream out = new FileOutputStream(target)) {
-                            out.write(part.data);
-                            out.getFD().sync();
-                        }
-                        try {
+                    ArrayList<File> savedFiles = new ArrayList<>();
+                    boolean committed = false;
+                    SQLiteDatabase database = db.getWritableDatabase();
+                    database.beginTransaction();
+                    try {
+                        long messageId = db.addMessageAt(message.from,
+                                message.text.isEmpty() ? (message.subject.isEmpty() ? "رسالة وسائط متعددة" : message.subject) : message.text,
+                                "in", "received", timestamp);
+                        if (messageId <= 0) throw new IllegalStateException("Unable to save incoming MMS message");
+                        for (MmsPduParser.Part part : message.parts) {
+                            if (part.data.length == 0) continue;
+                            String safeName = UUID.randomUUID().toString() + "-" + part.fileName;
+                            File target = new File(attachmentDir, safeName);
+                            try (FileOutputStream out = new FileOutputStream(target)) {
+                                out.write(part.data);
+                                out.getFD().sync();
+                            }
+                            savedFiles.add(target);
                             db.addMmsAttachment(messageId, target.getAbsolutePath(),
                                     part.contentType, target.length(), transaction);
-                        } catch (RuntimeException e) {
-                            target.delete();
-                            throw e;
+                        }
+                        database.setTransactionSuccessful();
+                        committed = true;
+                    } finally {
+                        database.endTransaction();
+                        if (!committed) {
+                            for (File saved : savedFiles) {
+                                if (saved.exists() && !saved.delete()) Log.w(TAG, "Unable to clean staged MMS attachment");
+                            }
                         }
                     }
                     MmsReceiver.markProcessed(app, transaction);
