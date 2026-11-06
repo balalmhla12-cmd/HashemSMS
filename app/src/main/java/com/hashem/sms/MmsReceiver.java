@@ -59,6 +59,10 @@ public final class MmsReceiver extends BroadcastReceiver {
             Uri destinationUri = FileProvider.getUriForFile(context,
                     context.getPackageName() + ".fileprovider", destination);
             int subscriptionId = intent.getIntExtra(SubscriptionManager.EXTRA_SUBSCRIPTION_INDEX, -1);
+            if (subscriptionId < 0) {
+                try { subscriptionId = SubscriptionManager.getDefaultSmsSubscriptionId(); }
+                catch (RuntimeException e) { Log.w(TAG, "Unable to resolve default SMS subscription", e); }
+            }
             SmsManager manager = subscriptionId >= 0
                     ? SmsManager.getSmsManagerForSubscriptionId(subscriptionId)
                     : SmsManager.getDefault();
