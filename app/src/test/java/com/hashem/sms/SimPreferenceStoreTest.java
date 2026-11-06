@@ -82,6 +82,23 @@ public class SimPreferenceStoreTest {
         assertFalse(preferences.contains(KEY));
     }
 
+    @Test
+    public void removedOrUnverifiedSavedSubscriptionRequiresExplicitSelection() {
+        SimPreferenceStore store = new SimPreferenceStore(preferences);
+        store.remember(KEY, new NoOpCallback()).onSelected(23);
+        SimPreferenceStore.RestoreResult removed =
+                store.resolve(KEY, Collections.singleton(24));
+        assertTrue(removed.requiresExplicitSelection());
+
+        preferences.edit().putInt(KEY, 31).commit();
+        SimPreferenceStore.RestoreResult unverified = store.resolve(KEY, null);
+        assertTrue(unverified.requiresExplicitSelection());
+
+        SimPreferenceStore.RestoreResult absent =
+                store.resolve("no_saved_subscription", Collections.<Integer>emptySet());
+        assertFalse(absent.requiresExplicitSelection());
+    }
+
     private static final class NoOpCallback implements SubscriptionChoiceCallback {
         @Override public void onSelected(int subscriptionId) { }
         @Override public void onCancelled() { }

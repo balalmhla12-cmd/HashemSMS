@@ -766,17 +766,23 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
         String key=SimPreferenceKey.forAddress(recipient);
         SimPreferenceStore store=new SimPreferenceStore(prefs);
         if(prefs.contains(key)){
+            if(checkSelfPermission("android.permission.READ_PHONE_STATE")!=PackageManager.PERMISSION_GRANTED){
+                chooseSmsSubscription(store.remember(key,callback),true);return;
+            }
             try{
-                if(checkSelfPermission("android.permission.READ_PHONE_STATE")!=PackageManager.PERMISSION_GRANTED){
-                    chooseSmsSubscription(store.remember(key,callback));return;
-                }
                 java.util.List<android.telephony.SubscriptionInfo> active=android.telephony.SubscriptionManager.from(this).getActiveSubscriptionInfoList();
                 java.util.Set<Integer> activeIds=active==null?null:new java.util.HashSet<>();
                 if(active!=null)for(android.telephony.SubscriptionInfo info:active)activeIds.add(info.getSubscriptionId());
                 SimPreferenceStore.RestoreResult restored=store.resolve(key,activeIds);
                 if(restored.isAvailable()){callback.onSelected(restored.subscriptionId);return;}
-                if(restored.wasRemoved())Toast.makeText(this,"الشريحة المحفوظة لم تعد متاحة؛ اختر شريحة أخرى.",Toast.LENGTH_SHORT).show();
-            }catch(Exception e){android.util.Log.w("HashemSMS","Unable to validate preferred SIM",e);}
+                if(restored.requiresExplicitSelection()){
+                    Toast.makeText(this,restored.wasRemoved()?"الشريحة المحفوظة لم تعد متاحة؛ اختر شريحة أخرى.":"تعذّر التحقق من الشريحة المحفوظة؛ اختر شريحة الإرسال.",Toast.LENGTH_SHORT).show();
+                    chooseSmsSubscription(store.remember(key,callback),true);return;
+                }
+            }catch(Exception e){
+                android.util.Log.w("HashemSMS","Unable to validate preferred SIM",e);
+                chooseSmsSubscription(store.remember(key,callback),true);return;
+            }
         }
         DefaultSimPreferenceStore.Result defaultSim=DefaultSimPreferenceStore.resolve(this,prefs);
         if(defaultSim.state==DefaultSimPreferenceStore.State.SYSTEM_DEFAULT){callback.onSelected(-1);return;}
@@ -786,7 +792,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
         chooseSmsSubscription(store.remember(key,callback));
     }
 
-    void chooseSmsSubscription(SubscriptionChoiceCallback callback){chooseSmsSubscription(callback,false);}
+void chooseSmsSubscription(SubscriptionChoiceCallback callback){chooseSmsSubscription(callback,false);}
     private void chooseSmsSubscription(SubscriptionChoiceCallback callback,boolean forcePicker){
         if(checkSelfPermission("android.permission.READ_PHONE_STATE")!=PackageManager.PERMISSION_GRANTED){pendingSubscriptionAction=callback;pendingForceSimPicker=forcePicker;requestPermissions(new String[]{"android.permission.READ_PHONE_STATE"},62);return;}
         android.telephony.TelephonyManager tm;try{tm=(android.telephony.TelephonyManager)getSystemService(TELEPHONY_SERVICE);if(!forcePicker&&(tm==null||tm.getPhoneCount()<=1)){callback.onSelected(-1);return;}}catch(SecurityException e){android.util.Log.w("HashemSMS","Unable to inspect SIM count",e);callback.onCancelled();return;}

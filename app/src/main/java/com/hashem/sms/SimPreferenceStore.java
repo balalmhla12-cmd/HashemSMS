@@ -18,6 +18,7 @@ final class SimPreferenceStore {
 
         boolean isAvailable() { return state == State.AVAILABLE; }
         boolean wasRemoved() { return state == State.REMOVED; }
+        boolean requiresExplicitSelection() { return state == State.REMOVED || state == State.UNVERIFIED; }
     }
 
     private final SharedPreferences preferences;

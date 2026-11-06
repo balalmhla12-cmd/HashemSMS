@@ -3,7 +3,7 @@ import android.app.*;import android.app.role.RoleManager;import android.telephon
 
 public class MainActivity extends androidx.appcompat.app.AppCompatActivity{
  BroadcastReceiver smsUpdatedReceiver=new BroadcastReceiver(){@Override public void onReceive(Context context,Intent intent){if(list!=null&&!isFinishing()&&!isDestroyed())onSmsUpdated();}}; boolean smsUpdatedReceiverRegistered=false; boolean basePermissionRequestPending=false;
- LinearLayout root,list,bulkCampaignHistory; EditText search,bulkCampaignName,bulkNumbers,bulkBody; Db db; SubscriptionChoiceCallback pendingSubscriptionAction; int purple; TextView title; String filter="all",selectedBottomTab="conversations"; volatile boolean systemSynced=false; boolean syncStarted=false;
+ LinearLayout root,list,bulkCampaignHistory; EditText search,bulkCampaignName,bulkNumbers,bulkBody; Db db; SubscriptionChoiceCallback pendingSubscriptionAction; boolean pendingForceSimPicker=false; int purple; TextView title; String filter="all",selectedBottomTab="conversations"; volatile boolean systemSynced=false; boolean syncStarted=false;
  static final java.util.concurrent.ExecutorService DATA_EXECUTOR=java.util.concurrent.Executors.newSingleThreadExecutor();
  static final java.util.concurrent.ExecutorService IMAGE_EXECUTOR=java.util.concurrent.Executors.newFixedThreadPool(2);
  final HashMap<String,ContactData> contactCache=new HashMap<>(); final android.util.LruCache<String,android.graphics.Bitmap> contactBitmapCache=new android.util.LruCache<String,android.graphics.Bitmap>(50){@Override protected int sizeOf(String key,android.graphics.Bitmap value){return 1;}}; final HashSet<String> contactPhotoPending=new HashSet<>(); final HashSet<String> contactLookupPending=new HashSet<>(); long contactCacheGeneration=0; boolean contactsObserverRegistered=false; final android.os.Handler contactsObserverHandler=new android.os.Handler(android.os.Looper.getMainLooper()); final Runnable contactsObserverDebounceRunnable=()->invalidateContactCaches(); final android.database.ContentObserver contactsObserver=new android.database.ContentObserver(new android.os.Handler(android.os.Looper.getMainLooper())){@Override public void onChange(boolean selfChange){contactsObserverHandler.removeCallbacks(contactsObserverDebounceRunnable);contactsObserverHandler.postDelayed(contactsObserverDebounceRunnable,600);}};
@@ -380,47 +380,72 @@ void pickContactsForCompose(EditText destination){
  private void choosePreferredOrPrompt(String recipient,SubscriptionChoiceCallback callback){
   android.content.SharedPreferences prefs=getSharedPreferences("hashem_ui",MODE_PRIVATE);
   String key=SimPreferenceKey.forAddress(recipient);
+  SimPreferenceStore store=new SimPreferenceStore(prefs);
   if(prefs.contains(key)){
-   int preferred=prefs.getInt(key,-1);
-   if(preferred<0){prefs.edit().remove(key).apply();}
-   else try{
-    if(checkSelfPermission("android.permission.READ_PHONE_STATE")==PackageManager.PERMISSION_GRANTED){
-     java.util.List<android.telephony.SubscriptionInfo> active=android.telephony.SubscriptionManager.from(this).getActiveSubscriptionInfoList();
-     if(active!=null)for(android.telephony.SubscriptionInfo info:active)if(info.getSubscriptionId()==preferred){callback.onSelected(preferred);return;}
-     prefs.edit().remove(key).apply();
-     Toast.makeText(this,"الشريحة المحفوظة لم تعد متاحة؛ اختر شريحة أخرى.",Toast.LENGTH_SHORT).show();
+   if(checkSelfPermission("android.permission.READ_PHONE_STATE")!=PackageManager.PERMISSION_GRANTED){
+    chooseSmsSubscription(store.remember(key,callback),true);return;
+   }
+   try{
+    java.util.List<android.telephony.SubscriptionInfo> active=android.telephony.SubscriptionManager.from(this).getActiveSubscriptionInfoList();
+    java.util.Set<Integer> activeIds=active==null?null:new java.util.HashSet<>();
+    if(active!=null)for(android.telephony.SubscriptionInfo info:active)activeIds.add(info.getSubscriptionId());
+    SimPreferenceStore.RestoreResult restored=store.resolve(key,activeIds);
+    if(restored.isAvailable()){callback.onSelected(restored.subscriptionId);return;}
+    if(restored.requiresExplicitSelection()){
+     Toast.makeText(this,restored.wasRemoved()?"الشريحة المحفوظة لم تعد متاحة؛ اختر شريحة أخرى.":"تعذّر التحقق من الشريحة المحفوظة؛ اختر شريحة الإرسال.",Toast.LENGTH_SHORT).show();
+     chooseSmsSubscription(store.remember(key,callback),true);return;
     }
-   }catch(Exception e){android.util.Log.w("HashemSMS","Unable to validate preferred SIM",e);}
+   }catch(Exception e){
+    android.util.Log.w("HashemSMS","Unable to validate preferred SIM",e);
+    chooseSmsSubscription(store.remember(key,callback),true);return;
+   }
   }
   DefaultSimPreferenceStore.Result defaultSim=DefaultSimPreferenceStore.resolve(this,prefs);
   if(defaultSim.state==DefaultSimPreferenceStore.State.SYSTEM_DEFAULT){callback.onSelected(-1);return;}
   if(defaultSim.state==DefaultSimPreferenceStore.State.AVAILABLE){callback.onSelected(defaultSim.subscriptionId);return;}
   if(defaultSim.state==DefaultSimPreferenceStore.State.UNVERIFIED){callback.onSelected(-1);return;}
   if(defaultSim.state==DefaultSimPreferenceStore.State.REMOVED)Toast.makeText(this,"الشريحة الافتراضية المحفوظة لم تعد متاحة؛ اختر شريحة أخرى.",Toast.LENGTH_SHORT).show();
-  chooseSmsSubscription(new SubscriptionChoiceCallback(){
-   public void onSelected(int id){if(id>=0)prefs.edit().putInt(key,id).apply();callback.onSelected(id);}
-   public void onCancelled(){callback.onCancelled();}
-  });
+  chooseSmsSubscription(store.remember(key,callback));
  }
- void chooseSmsSubscription(SubscriptionChoiceCallback action){
-  if(checkSelfPermission("android.permission.READ_PHONE_STATE")!=PackageManager.PERMISSION_GRANTED){pendingSubscriptionAction=action;requestPermissions(new String[]{"android.permission.READ_PHONE_STATE"},61);return;}
-  try{android.telephony.TelephonyManager tm=(android.telephony.TelephonyManager)getSystemService(TELEPHONY_SERVICE);if(tm==null||tm.getPhoneCount()<=1){action.onSelected(-1);return;}}catch(SecurityException e){android.util.Log.w("HashemSMS","Unable to inspect SIM count",e);action.onCancelled();return;}
-  showSmsSubscriptionChoices(action);
+ void chooseSmsSubscription(SubscriptionChoiceCallback action){chooseSmsSubscription(action,false);}
+ private void chooseSmsSubscription(SubscriptionChoiceCallback action,boolean forcePicker){
+  if(checkSelfPermission("android.permission.READ_PHONE_STATE")!=PackageManager.PERMISSION_GRANTED){
+   pendingSubscriptionAction=action;pendingForceSimPicker=forcePicker;
+   requestPermissions(new String[]{"android.permission.READ_PHONE_STATE"},61);return;
+  }
+  try{
+   android.telephony.TelephonyManager tm=(android.telephony.TelephonyManager)getSystemService(TELEPHONY_SERVICE);
+   if(!forcePicker&&(tm==null||tm.getPhoneCount()<=1)){action.onSelected(-1);return;}
+  }catch(SecurityException e){android.util.Log.w("HashemSMS","Unable to inspect SIM count",e);action.onCancelled();return;}
+  showSmsSubscriptionChoices(action,forcePicker);
  }
- @android.annotation.SuppressLint("MissingPermission") void showSmsSubscriptionChoices(SubscriptionChoiceCallback callback){
+ @android.annotation.SuppressLint("MissingPermission") void showSmsSubscriptionChoices(SubscriptionChoiceCallback callback){showSmsSubscriptionChoices(callback,false);}
+ @android.annotation.SuppressLint("MissingPermission") private void showSmsSubscriptionChoices(SubscriptionChoiceCallback callback,boolean forcePicker){
   final java.util.concurrent.atomic.AtomicBoolean resolved=new java.util.concurrent.atomic.AtomicBoolean(false);
   SubscriptionChoiceCallback once=new SubscriptionChoiceCallback(){public void onSelected(int id){if(resolved.compareAndSet(false,true))callback.onSelected(id);}public void onCancelled(){if(resolved.compareAndSet(false,true))callback.onCancelled();}};
-  try{java.util.List<android.telephony.SubscriptionInfo> infos=android.telephony.SubscriptionManager.from(this).getActiveSubscriptionInfoList();
+  try{
+   java.util.List<android.telephony.SubscriptionInfo> infos=android.telephony.SubscriptionManager.from(this).getActiveSubscriptionInfoList();
    if(infos==null||infos.isEmpty()){android.util.Log.w("HashemSMS","No active SIM list; cancelling send rather than silently using default");Toast.makeText(this,"لا توجد شريحة SIM نشطة؛ أُلغي الإرسال.",Toast.LENGTH_SHORT).show();once.onCancelled();return;}
-   if(infos.size()==1){once.onSelected(infos.get(0).getSubscriptionId());return;}String[] labels=new String[infos.size()];
-   for(int i=0;i<infos.size();i++){android.telephony.SubscriptionInfo info=infos.get(i);String name;try{CharSequence display=info.getDisplayName();name=display==null||display.toString().trim().isEmpty()?"SIM "+(info.getSimSlotIndex()+1):display.toString();}catch(RuntimeException e){name="SIM "+(info.getSimSlotIndex()+1);}
-    String number="";try{String value=info.getNumber();if(value!=null)number=value.trim();}catch(RuntimeException e){android.util.Log.w("HashemSMS","Could not read SIM phone number for slot "+(info.getSimSlotIndex()+1),e);}labels[i]=name+(number.isEmpty()?"":" · "+number);}
-   new AlertDialog.Builder(this).setTitle("اختر شريحة الإرسال").setItems(labels,(dialog,which)->{if(which>=0&&which<infos.size())once.onSelected(infos.get(which).getSubscriptionId());else once.onCancelled();}).setNegativeButton("إرسال بالشريحة الافتراضية",(dialog,which)->once.onSelected(-1)).setOnCancelListener(dialog->once.onCancelled()).show();
-  }catch(SecurityException e){android.util.Log.w("HashemSMS","SIM list permission denied; cancelling send",e);Toast.makeText(this,"تعذّرت قراءة الشرائح؛ أُلغي الإرسال.",Toast.LENGTH_SHORT).show();once.onCancelled();}catch(RuntimeException e){android.util.Log.w("HashemSMS","SIM list could not be fetched; cancelling send",e);Toast.makeText(this,"تعذّر جلب قائمة الشرائح؛ أُلغي الإرسال.",Toast.LENGTH_SHORT).show();once.onCancelled();}
+   if(infos.size()==1&&!forcePicker){once.onSelected(infos.get(0).getSubscriptionId());return;}
+   String[] labels=new String[infos.size()];
+   for(int i=0;i<infos.size();i++){
+    android.telephony.SubscriptionInfo info=infos.get(i);String name;
+    try{CharSequence display=info.getDisplayName();name=display==null||display.toString().trim().isEmpty()?"SIM "+(info.getSimSlotIndex()+1):display.toString();}
+    catch(RuntimeException e){name="SIM "+(info.getSimSlotIndex()+1);}
+    String number="";try{String value=info.getNumber();if(value!=null)number=value.trim();}
+    catch(RuntimeException e){android.util.Log.w("HashemSMS","Could not read SIM phone number for slot "+(info.getSimSlotIndex()+1),e);}
+    labels[i]=name+(number.isEmpty()?"":" · "+number);
+   }
+   new AlertDialog.Builder(this).setTitle("اختر شريحة الإرسال").setItems(labels,(dialog,which)->{
+    if(which>=0&&which<infos.size())once.onSelected(infos.get(which).getSubscriptionId());else once.onCancelled();
+   }).setNegativeButton("إرسال بالشريحة الافتراضية",(dialog,which)->once.onSelected(-1))
+     .setOnCancelListener(dialog->once.onCancelled()).show();
+  }catch(SecurityException e){android.util.Log.w("HashemSMS","SIM list permission denied; cancelling send",e);Toast.makeText(this,"تعذّرت قراءة الشرائح؛ أُلغي الإرسال.",Toast.LENGTH_SHORT).show();once.onCancelled();}
+   catch(RuntimeException e){android.util.Log.w("HashemSMS","SIM list could not be fetched; cancelling send",e);Toast.makeText(this,"تعذّر جلب قائمة الشرائح؛ أُلغي الإرسال.",Toast.LENGTH_SHORT).show();once.onCancelled();}
  }
- @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] grantResults){
-  super.onRequestPermissionsResult(requestCode,permissions,grantResults);if(requestCode==81){if(grantResults.length>0&&grantResults[0]==PackageManager.PERMISSION_GRANTED){synchronized(contactCache){contactCache.clear();contactCacheGeneration++;}synchronized(contactBitmapCache){contactBitmapCache.evictAll();}contactsLoaded=false;showContactsScreen();}else showContactsPermissionState();requestNotificationPermissionIfNeeded();return;}if(requestCode==5){basePermissionRequestPending=false;if(!requestContactsPermissionAtStartupOnce())requestNotificationPermissionIfNeeded();return;}if(requestCode==70){if(grantResults==null||grantResults.length==0||grantResults[0]!=PackageManager.PERMISSION_GRANTED)Toast.makeText(this,"لن تظهر إشعارات الرسائل دون الإذن.",Toast.LENGTH_SHORT).show();return;}if(requestCode!=61)return;SubscriptionChoiceCallback callback=pendingSubscriptionAction;pendingSubscriptionAction=null;if(callback==null)return;
-  if(grantResults!=null&&grantResults.length>0&&grantResults[0]==PackageManager.PERMISSION_GRANTED)showSmsSubscriptionChoices(callback);else{Toast.makeText(this,"لم يُمنح إذن قراءة حالة الهاتف؛ سيتم الإرسال بالشريحة الافتراضية.",Toast.LENGTH_SHORT).show();callback.onSelected(-1);}
+@Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] grantResults){
+  super.onRequestPermissionsResult(requestCode,permissions,grantResults);if(requestCode==81){if(grantResults.length>0&&grantResults[0]==PackageManager.PERMISSION_GRANTED){synchronized(contactCache){contactCache.clear();contactCacheGeneration++;}synchronized(contactBitmapCache){contactBitmapCache.evictAll();}contactsLoaded=false;showContactsScreen();}else showContactsPermissionState();requestNotificationPermissionIfNeeded();return;}if(requestCode==5){basePermissionRequestPending=false;if(!requestContactsPermissionAtStartupOnce())requestNotificationPermissionIfNeeded();return;}if(requestCode==70){if(grantResults==null||grantResults.length==0||grantResults[0]!=PackageManager.PERMISSION_GRANTED)Toast.makeText(this,"لن تظهر إشعارات الرسائل دون الإذن.",Toast.LENGTH_SHORT).show();return;}if(requestCode!=61)return;SubscriptionChoiceCallback callback=pendingSubscriptionAction;pendingSubscriptionAction=null;boolean forcePicker=pendingForceSimPicker;pendingForceSimPicker=false;if(callback==null)return;
+   if(grantResults!=null&&grantResults.length>0&&grantResults[0]==PackageManager.PERMISSION_GRANTED)showSmsSubscriptionChoices(callback,forcePicker);else if(forcePicker){Toast.makeText(this,"لم يُمنح إذن قراءة حالة الهاتف؛ أُلغي الإرسال لأن الشريحة المحفوظة لم تُتحقق.",Toast.LENGTH_SHORT).show();callback.onCancelled();}else{Toast.makeText(this,"لم يُمنح إذن قراءة حالة الهاتف؛ سيتم الإرسال بالشريحة الافتراضية.",Toast.LENGTH_SHORT).show();callback.onSelected(-1);}
  }
  void schedule(String a,String b){Calendar cal=Calendar.getInstance();cal.add(Calendar.MINUTE,5);DatePickerDialog datePicker=new DatePickerDialog(this,(view,year,month,day)->{cal.set(Calendar.YEAR,year);cal.set(Calendar.MONTH,month);cal.set(Calendar.DAY_OF_MONTH,day);TimePickerDialog timePicker=new TimePickerDialog(this,(timeView,hour,minute)->{cal.set(Calendar.HOUR_OF_DAY,hour);cal.set(Calendar.MINUTE,minute);cal.set(Calendar.SECOND,0);cal.set(Calendar.MILLISECOND,0);long when=cal.getTimeInMillis();if(when<=System.currentTimeMillis()){Toast.makeText(this,"اختر موعدًا في المستقبل",Toast.LENGTH_LONG).show();return;}confirmSchedule(a,b,when);},cal.get(Calendar.HOUR_OF_DAY),cal.get(Calendar.MINUTE),true);timePicker.setTitle("اختر وقت الإرسال");timePicker.show();},cal.get(Calendar.YEAR),cal.get(Calendar.MONTH),cal.get(Calendar.DAY_OF_MONTH));datePicker.setTitle("اختر تاريخ الإرسال");datePicker.getDatePicker().setMinDate(System.currentTimeMillis());datePicker.show();}
  void confirmSchedule(String a,String b,long when){
