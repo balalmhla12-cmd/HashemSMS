@@ -86,17 +86,28 @@ public final class MmsDownloadReceiver extends BroadcastReceiver {
                     Log.e(TAG, "Failed to persist downloaded MMS", e);
                     NotificationHelper.notifyMmsDownloadFailure(app);
                 } finally {
-                    MmsReceiver.releaseTransaction(intent.getStringExtra(MmsReceiver.EXTRA_TRANSACTION));
-                    String grantedUri = intent.getStringExtra(MmsReceiver.EXTRA_DESTINATION_URI);
-                    if (grantedUri != null) {
-                        try { app.revokeUriPermission(Uri.parse(grantedUri),
-                                Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION); }
-                        catch (RuntimeException e) { Log.w(TAG, "Unable to revoke temporary MMS URI grant", e); }
+                    try {
+                        try {
+                            MmsReceiver.releaseTransaction(intent.getStringExtra(MmsReceiver.EXTRA_TRANSACTION));
+                        } catch (RuntimeException e) {
+                            Log.w(TAG, "Unable to release MMS transaction", e);
+                        }
+                        String grantedUri = intent.getStringExtra(MmsReceiver.EXTRA_DESTINATION_URI);
+                        if (grantedUri != null) {
+                            try { app.revokeUriPermission(Uri.parse(grantedUri),
+                                    Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION); }
+                            catch (RuntimeException e) { Log.w(TAG, "Unable to revoke temporary MMS URI grant", e); }
+                        }
+                        try {
+                            if (source != null && source.exists() && !source.delete()) {
+                                Log.w(TAG, "Unable to remove temporary downloaded MMS PDU");
+                            }
+                        } catch (RuntimeException e) {
+                            Log.w(TAG, "Unable to remove temporary downloaded MMS PDU", e);
+                        }
+                    } finally {
+                        pending.finish();
                     }
-                    if (source != null && source.exists() && !source.delete()) {
-                        Log.w(TAG, "Unable to remove temporary downloaded MMS PDU");
-                    }
-                    pending.finish();
                 }
             });
         } catch (RuntimeException e) {
