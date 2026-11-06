@@ -100,7 +100,7 @@ public final class MmsReceiver extends BroadcastReceiver {
     static synchronized void markProcessed(Context context, String transactionId) {
         if (transactionId == null || transactionId.trim().isEmpty()) return;
         context.getSharedPreferences("received_mms_transactions", Context.MODE_PRIVATE)
-                .edit().putBoolean(key(transactionId), true).apply();
+                .edit().putBoolean(key(transactionId), true).commit();
         IN_FLIGHT.remove(transactionId);
     }
 
