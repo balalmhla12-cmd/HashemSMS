@@ -78,7 +78,7 @@ public final class AppLockActivity extends AppCompatActivity {
     private void authenticate() {
         if (isFinishing() || authenticationStarted || !AppLockController.isEnabled(this)) return;
         authenticationStarted = true;
-        if (Build.VERSION.SDK_INT < 29) {
+        if (Build.VERSION.SDK_INT < 28) {
             requestDeviceCredential();
             return;
         }
