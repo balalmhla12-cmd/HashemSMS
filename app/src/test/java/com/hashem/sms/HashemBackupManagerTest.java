@@ -150,7 +150,7 @@ public final class HashemBackupManagerTest {
         byte[] futureBackup = withFutureDatabaseVersion(validBackup.toByteArray(), 13);
 
         Map<String, String> tablesBefore = snapshotDatabaseTables();
-        Map<String, String> filesBefore = snapshotFiles(new File(context.getFilesDir()));
+        Map<String, String> filesBefore = snapshotFiles(context.getFilesDir());
 
         try {
             HashemBackupManager.restoreBackup(context, new ByteArrayInputStream(futureBackup));
@@ -163,7 +163,7 @@ public final class HashemBackupManagerTest {
         assertEquals("Database table schemas and rows changed after rejecting a future backup",
                 tablesBefore, snapshotDatabaseTables());
         assertEquals("Files or attachment bytes changed after rejecting a future backup",
-                filesBefore, snapshotFiles(new File(context.getFilesDir())));
+                filesBefore, snapshotFiles(context.getFilesDir()));
         assertArrayEquals(attachmentBytes, readBytes(attachment));
     }
 
