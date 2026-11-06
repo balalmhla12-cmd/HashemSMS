@@ -18,7 +18,6 @@
     <string name="compose_contacts_count">المحدد: %1$d · الظاهر: %2$d</string>
     <string name="settings_title">الإعدادات</string>
     <string name="settings_search_hint">ابحث في الإعدادات</string>
-    <string name="settings_status_title">حالة التطبيق</string>
     <string name="settings_default_sms">تطبيق الرسائل الافتراضي</string>
     <string name="settings_permissions">الصلاحيات</string>
     <string name="settings_sim">شرائح SIM</string>

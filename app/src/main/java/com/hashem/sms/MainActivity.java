@@ -50,6 +50,7 @@ public class MainActivity extends androidx.appcompat.app.AppCompatActivity{
   if(ok)prefs.edit().putLong("last_successful_sync",System.currentTimeMillis()).apply();
   return ok;
  }
+ @android.annotation.SuppressLint("RtlHardcoded")
  void build(){
   root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(UiResources.dp(this,8),UiResources.dp(this,10),UiResources.dp(this,8),UiResources.dp(this,8));root.setBackgroundResource(R.drawable.bg_hashem_gradient);
   LinearLayout bar=new LinearLayout(this);bar.setOrientation(LinearLayout.HORIZONTAL);bar.setGravity(Gravity.CENTER_VERTICAL);bar.setPadding(UiResources.dp(this,2),UiResources.dp(this,6),UiResources.dp(this,2),UiResources.dp(this,10));
