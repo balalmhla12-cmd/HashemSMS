@@ -29,6 +29,7 @@ import android.widget.*;
 import java.util.*;
 import com.google.mlkit.nl.languageid.*;
 import com.google.mlkit.nl.translate.*;
+import com.google.mlkit.common.model.DownloadConditions;
 
 public class ConversationActivity extends androidx.activity.ComponentActivity {
     Db db; String address; LinearLayout root; RecyclerView messages; ConversationAdapter messageAdapter; EditText search, composer; TextView selectionTitle; ActionMode actionMode; final ArrayList<Long> selected = new ArrayList<>();
