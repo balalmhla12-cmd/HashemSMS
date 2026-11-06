@@ -83,4 +83,17 @@
     <string name="translation_preparing">جارٍ تجهيز نموذج الترجمة أو ترجمة الرسالة…</string>
     <string name="translation_failed">تعذّرت الترجمة. تحقق من اتصال الإنترنت ثم حاول مجددًا.</string>
     <string name="translation_wifi_required">يتطلب تنزيل نموذج الترجمة اتصال Wi-Fi. يمكنك تغيير هذا الخيار من إعدادات الترجمة.</string>
+
+    <string name="settings_translation">الترجمة</string>
+    <string name="settings_translation_manage">إدارة الترجمة الإنجليزية إلى العربية</string>
+    <string name="settings_translation_manage_desc">إدارة نموذج الترجمة على الجهاز، وسياسة التنزيل، والموافقة على استخدامه.</string>
+    <string name="translation_model_downloaded">نموذج الترجمة العربية موجود على الجهاز.</string>
+    <string name="translation_model_not_downloaded">نموذج الترجمة العربية غير منزّل حاليًا.</string>
+    <string name="translation_change_network">تغيير طريقة تنزيل النموذج</string>
+    <string name="translation_revoke_and_delete">إلغاء الموافقة وحذف النموذج</string>
+    <string name="translation_network_saved">تم حفظ طريقة تنزيل النموذج.</string>
+    <string name="translation_revoke_title">إلغاء الموافقة وحذف النموذج؟</string>
+    <string name="translation_revoke_message">سيتم إلغاء موافقتك على تنزيل النموذج وحذف نموذج الترجمة العربية من هذا الجهاز. يمكنك الموافقة مجددًا عند طلب الترجمة لاحقًا.</string>
+    <string name="translation_model_deleted">تم حذف نموذج الترجمة وإلغاء الموافقة.</string>
+    <string name="translation_model_delete_failed">تعذّر حذف النموذج. أُلغيت الموافقة على تنزيله مجددًا.</string>
 </resources>

@@ -1,5 +1,6 @@
 package com.hashem.sms;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
@@ -27,6 +28,9 @@ import androidx.core.content.res.ResourcesCompat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import com.google.mlkit.common.model.RemoteModelManager;
+import com.google.mlkit.nl.translate.TranslateLanguage;
+import com.google.mlkit.nl.translate.TranslateRemoteModel;
 
 public final class SettingsActivity extends AppCompatActivity {
     private LinearLayout content;
@@ -262,6 +266,58 @@ public final class SettingsActivity extends AppCompatActivity {
         card.setOnClickListener(v -> action.run());
         content.addView(card, margin(8));
         addFilter(card, terms + " " + getString(titleRes) + " " + getString(descriptionRes));
+    }
+
+    private void manageTranslationModel() {
+        TranslateRemoteModel model = new TranslateRemoteModel.Builder(TranslateLanguage.ARABIC).build();
+        RemoteModelManager manager = RemoteModelManager.getInstance();
+        manager.isModelDownloaded(model)
+                .addOnSuccessListener(downloaded -> showTranslationModelOptions(manager, model, downloaded))
+                .addOnFailureListener(error -> showTranslationModelOptions(manager, model, false));
+    }
+
+    private void showTranslationModelOptions(RemoteModelManager manager, TranslateRemoteModel model, boolean downloaded) {
+        android.content.SharedPreferences prefs = getSharedPreferences("translation_settings", MODE_PRIVATE);
+        String status = getString(downloaded ? R.string.translation_model_downloaded : R.string.translation_model_not_downloaded);
+        String[] options = {
+                getString(R.string.translation_change_network),
+                getString(R.string.translation_revoke_and_delete)
+        };
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.settings_translation_manage)
+                .setMessage(status)
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        boolean wifiOnly = prefs.getBoolean("wifi_only", true);
+                        String[] networks = {
+                                getString(R.string.translation_wifi_only),
+                                getString(R.string.translation_wifi_or_mobile)
+                        };
+                        new AlertDialog.Builder(this)
+                                .setTitle(R.string.translation_change_network)
+                                .setSingleChoiceItems(networks, wifiOnly ? 0 : 1, (choiceDialog, selected) -> {
+                                    prefs.edit().putBoolean("wifi_only", selected == 0).apply();
+                                    choiceDialog.dismiss();
+                                    Toast.makeText(this, R.string.translation_network_saved, Toast.LENGTH_SHORT).show();
+                                })
+                                .setNegativeButton(android.R.string.cancel, null)
+                                .show();
+                    } else {
+                        new AlertDialog.Builder(this)
+                                .setTitle(R.string.translation_revoke_title)
+                                .setMessage(R.string.translation_revoke_message)
+                                .setNegativeButton(android.R.string.cancel, null)
+                                .setPositiveButton(R.string.translation_revoke_and_delete, (confirm, result) -> {
+                                    prefs.edit().remove("model_download_consented").apply();
+                                    manager.deleteDownloadedModel(model)
+                                            .addOnSuccessListener(unused -> Toast.makeText(this, R.string.translation_model_deleted, Toast.LENGTH_SHORT).show())
+                                            .addOnFailureListener(error -> Toast.makeText(this, R.string.translation_model_delete_failed, Toast.LENGTH_LONG).show());
+                                })
+                                .show();
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
     }
 
     private void buildAdvanced() {
