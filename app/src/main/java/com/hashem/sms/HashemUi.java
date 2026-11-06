@@ -48,7 +48,10 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
     @Override public void onActivityPaused(Activity activity) {}
     @Override public void onActivityStopped(Activity activity) {
         if (startedActivityCount > 0) startedActivityCount--;
-        if (startedActivityCount == 0) AppLockController.lockForBackground(activity);
+        // A configuration recreation is not the user leaving the app.
+        if (startedActivityCount == 0 && !activity.isChangingConfigurations()) {
+            AppLockController.lockForBackground(activity);
+        }
     }
     @Override public void onActivitySaveInstanceState(Activity activity, Bundle state) {}
     @Override public void onActivityDestroyed(Activity activity) {}
