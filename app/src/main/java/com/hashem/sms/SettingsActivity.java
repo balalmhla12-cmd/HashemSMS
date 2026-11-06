@@ -544,32 +544,58 @@ public final class SettingsActivity extends AppCompatActivity {
     }
 
     private void showSims() {
-        StringBuilder message = new StringBuilder(getString(R.string.settings_sim_note)).append("\n\n");
         if (checkSelfPermission("android.permission.READ_PHONE_STATE") != PackageManager.PERMISSION_GRANTED) {
-            message.append(getString(R.string.settings_status_sim_permission));
-        } else {
-            try {
-                SubscriptionManager manager = (SubscriptionManager) getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
-                List<SubscriptionInfo> active = manager == null ? null : manager.getActiveSubscriptionInfoList();
-                if (active == null || active.isEmpty()) {
-                    message.append(getString(R.string.settings_status_sim_none));
-                } else {
-                    for (SubscriptionInfo info : active) {
-                        CharSequence name = info.getDisplayName();
-                        CharSequence carrier = info.getCarrierName();
-                        message.append(getString(R.string.settings_sim)).append(" ")
-                                .append(info.getSimSlotIndex() + 1).append(": ")
-                                .append(name == null || name.length() == 0 ? carrier : name).append("\n");
-                    }
-                }
-            } catch (RuntimeException e) {
-                message.append(getString(R.string.settings_sim_error));
-            }
+            new AlertDialog.Builder(this).setTitle(R.string.settings_manage_sim)
+                    .setMessage(R.string.settings_status_sim_permission)
+                    .setPositiveButton(R.string.settings_open_system, (d, w) -> openAppSettings())
+                    .setNegativeButton(android.R.string.cancel, null).show();
+            return;
         }
-        new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle(R.string.settings_manage_sim).setMessage(message.toString())
-                .setPositiveButton(R.string.settings_open_system, (d, w) -> openAppSettings())
-                .setNegativeButton(android.R.string.cancel, null).show();
+        try {
+            SubscriptionManager manager = (SubscriptionManager) getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
+            List<SubscriptionInfo> active = manager == null ? null : manager.getActiveSubscriptionInfoList();
+            if (active == null || active.isEmpty()) {
+                new AlertDialog.Builder(this).setTitle(R.string.settings_manage_sim)
+                        .setMessage(R.string.settings_status_sim_none)
+                        .setPositiveButton(R.string.settings_open_system, (d, w) -> openAppSettings())
+                        .setNegativeButton(android.R.string.cancel, null).show();
+                return;
+            }
+            String[] labels = new String[active.size() + 1];
+            labels[0] = "استخدام الشريحة الافتراضية للنظام";
+            for (int i = 0; i < active.size(); i++) {
+                SubscriptionInfo info = active.get(i);
+                CharSequence name = info.getDisplayName();
+                CharSequence carrier = info.getCarrierName();
+                CharSequence label = name == null || name.length() == 0 ? carrier : name;
+                labels[i + 1] = "SIM " + (info.getSimSlotIndex() + 1) + " — "
+                        + (label == null || label.length() == 0 ? "الشريحة " + (i + 1) : label);
+            }
+            android.content.SharedPreferences preferences = getSharedPreferences(PREFS, MODE_PRIVATE);
+            DefaultSimPreferenceStore.Result saved = DefaultSimPreferenceStore.resolve(this, preferences);
+            int selected = saved.state == DefaultSimPreferenceStore.State.SYSTEM_DEFAULT ? 0 : -1;
+            if (saved.state == DefaultSimPreferenceStore.State.AVAILABLE) {
+                for (int i = 0; i < active.size(); i++) {
+                    if (active.get(i).getSubscriptionId() == saved.subscriptionId) selected = i + 1;
+                }
+            }
+            new AlertDialog.Builder(this).setTitle("شريحة الإرسال الافتراضية")
+                    .setSingleChoiceItems(labels, selected, (dialog, which) -> {
+                        int subscriptionId = which == 0 ? -1 : active.get(which - 1).getSubscriptionId();
+                        DefaultSimPreferenceStore.save(preferences, subscriptionId);
+                        dialog.dismiss();
+                        Toast.makeText(this, "تم حفظ شريحة الإرسال الافتراضية", Toast.LENGTH_SHORT).show();
+                        simDetail.setText(simStatus());
+                    })
+                    .setNeutralButton(R.string.settings_open_system, (dialog, which) -> openAppSettings())
+                    .setNegativeButton(android.R.string.cancel, null).show();
+        } catch (SecurityException | IllegalStateException error) {
+            android.util.Log.w("HashemSMS", "Unable to load active SIM subscriptions", error);
+            Toast.makeText(this, R.string.settings_sim_error, Toast.LENGTH_LONG).show();
+        } catch (RuntimeException error) {
+            android.util.Log.w("HashemSMS", "Unable to load active SIM subscriptions", error);
+            Toast.makeText(this, R.string.settings_sim_error, Toast.LENGTH_LONG).show();
+        }
     }
 
     private void requestDefaultRole() {
