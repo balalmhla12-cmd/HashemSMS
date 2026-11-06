@@ -107,24 +107,41 @@ public final class SettingsActivity extends AppCompatActivity {
         empty.setVisibility(View.GONE);
         content.addView(empty, new LinearLayout.LayoutParams(-1, dp(90)));
 
+        section(R.string.settings_general, "العامة لغة التطبيق المظهر الإشعارات النغمات");
         buildStatus();
-        section(R.string.settings_customization, "التخصيص المظهر الإشعارات الجدولة");
         buildAppearance();
+        row(R.string.settings_notifications, R.string.settings_notifications_desc, R.drawable.ic_settings,
+                "الإشعارات التنبيهات النغمات", this::openNotificationSettings);
+        row(R.string.settings_scheduling, R.string.settings_schedule_desc, R.drawable.ic_schedule,
+                "الجدولة المنبهات", this::openScheduleSettings);
+
+        section(R.string.settings_colors, "تخصيص الألوان الواردة الصادرة خلفية المحادثة الشرائح");
         row(R.string.settings_colors, R.string.settings_colors_desc, R.drawable.ic_settings,
                 "الألوان لون الرسائل الواردة الصادرة الخلفية شريحة sim", this::showColorSettings);
+
         section(R.string.settings_translation, "الترجمة إنجليزي عربي نموذج تنزيل");
         row(R.string.settings_translation_manage, R.string.settings_translation_manage_desc, R.drawable.ic_translate,
                 "ترجمة الإنجليزية إلى العربية نموذج الترجمة تنزيل حذف الموافقة", this::manageTranslationModel);
-        row(R.string.settings_notifications, R.string.settings_notifications_desc, R.drawable.ic_settings,
-                "الإشعارات التنبيهات", this::openNotificationSettings);
-        row(R.string.settings_scheduling, R.string.settings_schedule_desc, R.drawable.ic_schedule,
-                "الجدولة المنبهات", this::openScheduleSettings);
-        section(R.string.settings_privacy, "الخصوصية الصلاحيات الوصول");
+
+        section(R.string.settings_sim_section, "الشرائح sim الشركات إعادة تسمية الافتراضية الإرسال");
+        row(R.string.settings_sim, R.string.settings_sim_note, R.drawable.ic_settings,
+                "شرائح الهاتف sim الشركة الناقلة اختيار الشريحة", this::showSims);
+
+        section(R.string.settings_conversations, "المحادثات حجم النص الفقاعات التمرير الردود السريعة");
+        row(R.string.settings_message_size, R.string.settings_message_size_desc, R.drawable.ic_settings,
+                "حجم النص تكبير تصغير الرسائل الفقاعات المحادثات", this::showMessageTextSize);
+
+        section(R.string.settings_privacy, "الخصوصية والحماية قفل التطبيق حظر الأرقام المزعجة الصلاحيات");
         row(R.string.settings_privacy, R.string.settings_privacy_desc, R.drawable.ic_block,
-                "الخصوصية الصلاحيات الأذونات", this::openAppSettings);
-        buildAdvanced();
+                "الخصوصية الصلاحيات الأذونات الحماية إعدادات النظام", this::openAppSettings);
+
+        section(R.string.settings_backup, "النسخ الاحتياطي الاستعادة تصدير استيراد الرسائل المرفقات");
+        row(R.string.settings_backup, R.string.settings_backup_desc, R.drawable.ic_settings,
+                "النسخ الاحتياطي الاستعادة تصدير استيراد", this::showBackupStatus);
+
+        section(R.string.settings_about_section, "حول التطبيق المساعدة الملاحظات الإصدار");
         row(R.string.settings_about, R.string.settings_about_desc, R.drawable.ic_nav_messages,
-                "حول التطبيق الإصدار معلومات", this::about);
+                "حول التطبيق الإصدار معلومات المساعدة الملاحظات", this::about);
 
         search.addTextChangedListener(new android.text.TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -136,16 +153,12 @@ public final class SettingsActivity extends AppCompatActivity {
     }
 
     private void buildStatus() {
-        section(R.string.settings_status_title, "الحالة التطبيق الصلاحيات الافتراضي الشرائح");
         LinearLayout card = card();
         addStatus(card, R.drawable.ic_nav_messages, R.string.settings_default_sms, defaultStatus(),
                 "الرسائل الافتراضي", this::requestDefaultRole);
         divider(card);
         addStatus(card, R.drawable.ic_block, R.string.settings_permissions, permissionStatus(),
                 "الصلاحيات الأذونات", this::openAppSettings);
-        divider(card);
-        addStatus(card, R.drawable.ic_settings, R.string.settings_sim, simStatus(),
-                "الشريحة شرائح الهاتف sim", this::showSims);
         content.addView(card, margin(10));
         addFilter(card, "حالة التطبيق الصلاحيات الرسائل الافتراضي شرائح sim الهاتف");
     }
@@ -269,6 +282,25 @@ public final class SettingsActivity extends AppCompatActivity {
         card.setOnClickListener(v -> action.run());
         content.addView(card, margin(8));
         addFilter(card, terms + " " + getString(titleRes) + " " + getString(descriptionRes));
+    }
+
+    private void showMessageTextSize() {
+        float current = getSharedPreferences(PREFS, MODE_PRIVATE).getFloat("message_text_scale", 1f);
+        int selected = Math.max(0, Math.min(10, Math.round((current - 0.8f) * 10f)));
+        String[] choices = {"80%", "90%", "100%", "110%", "120%", "130%", "140%", "150%", "160%", "170%", "180%"};
+        new AlertDialog.Builder(this).setTitle(R.string.settings_message_size)
+                .setSingleChoiceItems(choices, selected, (dialog, which) -> {
+                    float scale = 0.8f + (which * 0.1f);
+                    getSharedPreferences(PREFS, MODE_PRIVATE).edit().putFloat("message_text_scale", scale).apply();
+                    dialog.dismiss();
+                    Toast.makeText(this, getString(R.string.settings_message_size_saved, choices[which]), Toast.LENGTH_SHORT).show();
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void showBackupStatus() {
+        new AlertDialog.Builder(this).setTitle(R.string.settings_backup)
+                .setMessage(R.string.settings_backup_pending)
+                .setPositiveButton(android.R.string.ok, null).show();
     }
 
     private void manageTranslationModel() {

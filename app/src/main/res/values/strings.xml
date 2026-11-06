@@ -97,4 +97,14 @@
     <string name="translation_revoke_message">سيتم إلغاء موافقتك على تنزيل النموذج وحذف نموذج الترجمة العربية من هذا الجهاز. يمكنك الموافقة مجددًا عند طلب الترجمة لاحقًا.</string>
     <string name="translation_model_deleted">تم حذف نموذج الترجمة وإلغاء الموافقة.</string>
     <string name="translation_model_delete_failed">تعذّر حذف النموذج. أُلغيت الموافقة على تنزيله مجددًا.</string>
+    <string name="settings_general">الإعدادات العامة</string>
+    <string name="settings_sim_section">إعدادات الشرائح</string>
+    <string name="settings_conversations">إعدادات المحادثات</string>
+    <string name="settings_message_size">حجم نص الرسائل</string>
+    <string name="settings_message_size_desc">اضبط حجم نص الرسائل وأزرار إجراءاتها داخل المحادثة.</string>
+    <string name="settings_message_size_saved">تم حفظ حجم النص: %1$s. سيظهر عند فتح المحادثة.</string>
+    <string name="settings_backup">النسخ الاحتياطي والاستعادة</string>
+    <string name="settings_backup_desc">تصدير الرسائل والمرفقات واستعادتها بأمان.</string>
+    <string name="settings_backup_pending">لم يتم تفعيل التصدير والاستعادة بعد. لن نجري أي تغيير على رسائلك أو قاعدة البيانات من هذه الشاشة قبل اكتمال آلية النسخ والتحقق من سلامة الملف.</string>
+    <string name="settings_about_section">حول التطبيق والمساعدة</string>
 </resources>
