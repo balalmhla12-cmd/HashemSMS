@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
+import android.widget.Toast;
 import java.io.File;
 
 public final class MmsSendReceiver extends BroadcastReceiver {
@@ -45,6 +46,6 @@ public final class MmsSendReceiver extends BroadcastReceiver {
             catch (RuntimeException e) { Log.w(TAG, "Unable to delete temporary MMS PDU", e); }
         }
         context.sendBroadcast(new Intent(SmsReceiver.ACTION_SMS_UPDATED).setPackage(context.getPackageName()));
-        SmsSending.postToast(context, success ? "تم إرسال رسالة MMS" : "فشل إرسال رسالة MMS");
+        SmsSending.postToast(context, success ? "تم إرسال رسالة MMS" : "فشل إرسال رسالة MMS", Toast.LENGTH_SHORT);
     }
 }
