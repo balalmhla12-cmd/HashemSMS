@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.util.Log;
 import java.io.File;
 import java.io.FileInputStream;
@@ -86,6 +87,12 @@ public final class MmsDownloadReceiver extends BroadcastReceiver {
                     NotificationHelper.notifyMmsDownloadFailure(app);
                 } finally {
                     MmsReceiver.releaseTransaction(intent.getStringExtra(MmsReceiver.EXTRA_TRANSACTION));
+                    String grantedUri = intent.getStringExtra(MmsReceiver.EXTRA_DESTINATION_URI);
+                    if (grantedUri != null) {
+                        try { app.revokeUriPermission(Uri.parse(grantedUri),
+                                Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION); }
+                        catch (RuntimeException e) { Log.w(TAG, "Unable to revoke temporary MMS URI grant", e); }
+                    }
                     if (source != null && source.exists() && !source.delete()) {
                         Log.w(TAG, "Unable to remove temporary downloaded MMS PDU");
                     }
