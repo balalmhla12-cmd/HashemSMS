@@ -89,6 +89,7 @@
     <string name="settings_translation_manage_desc">إدارة نموذج الترجمة على الجهاز، وسياسة التنزيل، والموافقة على استخدامه.</string>
     <string name="translation_model_downloaded">نموذج الترجمة العربية موجود على الجهاز.</string>
     <string name="translation_model_not_downloaded">نموذج الترجمة العربية غير منزّل حاليًا.</string>
+    <string name="translation_model_status_failed">تعذّر التحقق من حالة نموذج الترجمة. تحقق من الاتصال ثم أعد المحاولة.</string>
     <string name="translation_change_network">تغيير طريقة تنزيل النموذج</string>
     <string name="translation_revoke_and_delete">إلغاء الموافقة وحذف النموذج</string>
     <string name="translation_network_saved">تم حفظ طريقة تنزيل النموذج.</string>

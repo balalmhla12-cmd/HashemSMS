@@ -272,8 +272,17 @@ public final class SettingsActivity extends AppCompatActivity {
         TranslateRemoteModel model = new TranslateRemoteModel.Builder(TranslateLanguage.ARABIC).build();
         RemoteModelManager manager = RemoteModelManager.getInstance();
         manager.isModelDownloaded(model)
-                .addOnSuccessListener(downloaded -> showTranslationModelOptions(manager, model, downloaded))
-                .addOnFailureListener(error -> showTranslationModelOptions(manager, model, false));
+                .addOnSuccessListener(downloaded -> {
+                    if (!isFinishing() && !isDestroyed()) {
+                        showTranslationModelOptions(manager, model, downloaded);
+                    }
+                })
+                .addOnFailureListener(error -> {
+                    if (!isFinishing() && !isDestroyed()) {
+                        Toast.makeText(this, R.string.translation_model_status_failed, Toast.LENGTH_LONG).show();
+                    }
+                    android.util.Log.w("HashemSMS", "Unable to check downloaded translation model state", error);
+                });
     }
 
     private void showTranslationModelOptions(RemoteModelManager manager, TranslateRemoteModel model, boolean downloaded) {
