@@ -225,6 +225,10 @@ final class HashemBackupManager {
                 backup = null;
             }
 
+            // Keep a private, verified snapshot of the current user data before replacement.
+            // If creating this safety copy fails, abort restore without touching the live database.
+            createPreRestoreSafetyBackup(context);
+
             helper = new Db(context.getApplicationContext());
             live = helper.getWritableDatabase();
             verifySchemaCompatibility(live, databaseFile);
@@ -275,6 +279,44 @@ final class HashemBackupManager {
             if (helper != null) helper.close();
             if (!committed && restoredDirectory != null) deleteRecursively(restoredDirectory);
             deleteRecursively(work);
+        }
+    }
+
+    private static void createPreRestoreSafetyBackup(Context context) throws IOException {
+        File directory = new File(context.getFilesDir(), "safety-backups");
+        if (!directory.isDirectory() && !directory.mkdirs()) {
+            throw new IOException("تعذّر تجهيز نسخة الأمان قبل الاستعادة؛ لم تتغير البيانات الحالية.");
+        }
+        File temporary = new File(directory, "pre-restore-" + UUID.randomUUID() + ".tmp");
+        File completed = new File(directory,
+                "pre-restore-" + System.currentTimeMillis() + "-" + UUID.randomUUID() + ".hsmbackup");
+        boolean published = false;
+        try {
+            try (FileOutputStream output = new FileOutputStream(temporary)) {
+                exportBackup(context, output);
+                output.flush();
+                output.getFD().sync();
+            }
+            if (!temporary.isFile() || temporary.length() <= 0L
+                    || !temporary.renameTo(completed)) {
+                throw new IOException("تعذّر حفظ نسخة الأمان قبل الاستعادة؛ لم تتغير البيانات الحالية.");
+            }
+            published = true;
+            File[] backups = directory.listFiles((dir, name) -> name.startsWith("pre-restore-")
+                    && name.endsWith(".hsmbackup"));
+            if (backups != null && backups.length > 3) {
+                java.util.Arrays.sort(backups,
+                        (left, right) -> Long.compare(right.lastModified(), left.lastModified()));
+                for (int i = 3; i < backups.length; i++) {
+                    if (!backups[i].delete()) {
+                        android.util.Log.w("HashemSMS", "Unable to prune an old safety backup.");
+                    }
+                }
+            }
+        } finally {
+            if (!published && temporary.exists() && !temporary.delete()) {
+                android.util.Log.w("HashemSMS", "Unable to remove incomplete safety backup.");
+            }
         }
     }
 
