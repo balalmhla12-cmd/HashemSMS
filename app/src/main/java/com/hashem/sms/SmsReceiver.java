@@ -26,7 +26,7 @@ public class SmsReceiver extends BroadcastReceiver {
         final PendingResult pendingResult = goAsync();
         final Context appContext = context.getApplicationContext();
         try {
-            new Thread(() -> {
+            SmsSending.RECEIVER_EXECUTOR.execute(() -> {
                 try {
                     handleIncomingSms(appContext, intent);
                 } catch (Exception e) {
@@ -34,9 +34,9 @@ public class SmsReceiver extends BroadcastReceiver {
                 } finally {
                     pendingResult.finish();
                 }
-            }, "hashem-sms-receiver").start();
-        } catch (Exception e) {
-            Log.e(TAG, "Unable to start background SMS processing", e);
+            });
+        } catch (RuntimeException e) {
+            Log.e(TAG, "Unable to queue background SMS processing", e);
             pendingResult.finish();
         }
     }
