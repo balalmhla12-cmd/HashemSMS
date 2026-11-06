@@ -11,6 +11,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
@@ -21,6 +22,11 @@ public final class AppLockActivity extends AppCompatActivity {
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override public void handleOnBackPressed() {
+                // Keep the app behind the authentication gate.
+            }
+        });
         if (!AppLockController.isEnabled(this)) {
             AppLockController.unlockForSession();
             finish();
@@ -72,7 +78,7 @@ public final class AppLockActivity extends AppCompatActivity {
     private void authenticate() {
         if (isFinishing() || authenticationStarted || !AppLockController.isEnabled(this)) return;
         authenticationStarted = true;
-        if (Build.VERSION.SDK_INT < 28) {
+        if (Build.VERSION.SDK_INT < 29) {
             requestDeviceCredential();
             return;
         }
@@ -152,8 +158,4 @@ public final class AppLockActivity extends AppCompatActivity {
         }
     }
 
-    @SuppressWarnings("deprecation")
-    @Override public void onBackPressed() {
-        // Stay on the lock screen; leaving through Home/Recents still locks on re-entry.
-    }
 }

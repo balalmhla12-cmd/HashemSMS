@@ -23,8 +23,14 @@ final class AppLockController {
     }
 
     static void enforce(Activity activity) {
-        if (activity == null || activity.isFinishing() || activity instanceof AppLockActivity
-                || !isEnabled(activity) || unlockedForSession
+        if (activity == null || activity.isFinishing()) return;
+        boolean enabled = isEnabled(activity);
+        if (enabled) {
+            activity.getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
+        } else {
+            activity.getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
+        }
+        if (!enabled || activity instanceof AppLockActivity || unlockedForSession
                 || !LAUNCHING.compareAndSet(false, true)) return;
         try {
             activity.startActivity(new Intent(activity, AppLockActivity.class));
