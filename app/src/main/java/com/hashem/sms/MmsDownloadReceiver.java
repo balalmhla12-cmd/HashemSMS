@@ -35,7 +35,6 @@ public final class MmsDownloadReceiver extends BroadcastReceiver {
                             || source.length() > MmsPduParser.MAX_PDU_BYTES) {
                         throw new java.io.IOException("Downloaded MMS PDU is missing or outside size limits");
                     }
-                    if (MmsReceiver.isAlreadyProcessed(app, transaction)) return;
                     byte[] pdu = readBounded(source);
                     MmsPduParser.Message message = MmsPduParser.parseRetrieved(pdu);
                     Db db = new Db(app);
@@ -72,6 +71,7 @@ public final class MmsDownloadReceiver extends BroadcastReceiver {
                 } catch (Exception e) {
                     Log.e(TAG, "Failed to persist downloaded MMS", e);
                 } finally {
+                    MmsReceiver.releaseTransaction(intent.getStringExtra(MmsReceiver.EXTRA_TRANSACTION));
                     if (source != null && source.exists() && !source.delete()) {
                         Log.w(TAG, "Unable to remove temporary downloaded MMS PDU");
                     }
