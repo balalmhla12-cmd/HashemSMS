@@ -598,11 +598,14 @@ public final class SettingsActivity extends AppCompatActivity {
     private void showPrivacySettings() {
         boolean enabled = AppLockController.isEnabled(this);
         String[] options = enabled
-                ? new String[]{getString(R.string.app_lock_disable), getString(R.string.settings_open_system)}
+                ? new String[]{getString(R.string.app_lock_disable), getString(R.string.app_lock_timeout),
+                        getString(R.string.settings_open_system)}
                 : new String[]{getString(R.string.app_lock_enable), getString(R.string.settings_open_system)};
         new AlertDialog.Builder(this).setTitle(R.string.settings_privacy)
                 .setItems(options, (dialog, which) -> {
-                    if (which == 1) {
+                    if (enabled && which == 1) {
+                        showAppLockTimeout();
+                    } else if ((!enabled && which == 1) || (enabled && which == 2)) {
                         openAppSettings();
                     } else if (enabled) {
                         new AlertDialog.Builder(this).setTitle(R.string.app_lock_disable)
@@ -627,6 +630,23 @@ public final class SettingsActivity extends AppCompatActivity {
                         AppLockController.setEnabled(this, true);
                         AppLockController.lockNow(this);
                     }
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void showAppLockTimeout() {
+        String[] labels = {
+                getString(R.string.app_lock_timeout_immediate),
+                getString(R.string.app_lock_timeout_one_minute),
+                getString(R.string.app_lock_timeout_five_minutes)
+        };
+        int current = AppLockController.getTimeoutMinutes(this);
+        int selected = current == 1 ? 1 : current == 5 ? 2 : 0;
+        new AlertDialog.Builder(this).setTitle(R.string.app_lock_timeout)
+                .setSingleChoiceItems(labels, selected, (dialog, which) -> {
+                    int minutes = which == 1 ? 1 : which == 2 ? 5 : 0;
+                    AppLockController.setTimeoutMinutes(this, minutes);
+                    dialog.dismiss();
+                    Toast.makeText(this, R.string.app_lock_timeout_saved, Toast.LENGTH_SHORT).show();
                 }).setNegativeButton(android.R.string.cancel, null).show();
     }
 

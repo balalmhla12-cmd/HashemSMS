@@ -57,7 +57,7 @@ public final class AppLockActivity extends AppCompatActivity {
         title.setTextColor(UiResources.color(this, R.color.on_surface));
         root.addView(title, new LinearLayout.LayoutParams(-1, -2));
         TextView description = new TextView(this);
-        description.setText(R.string.app_lock_enabled);
+        description.setText(R.string.app_lock_description);
         description.setTextSize(16);
         description.setGravity(Gravity.CENTER);
         description.setTextColor(UiResources.color(this, R.color.on_surface_variant));

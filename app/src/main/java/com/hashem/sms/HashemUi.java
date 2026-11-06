@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 /** Small visual adjustments requested for the home screen; messaging behavior remains in MainActivity. */
 final class HashemUi implements Application.ActivityLifecycleCallbacks {
+    private int startedActivityCount;
     private static final String PREFS = "hashem_ui";
     private static final String KEY_NIGHT = "night_mode";
 
@@ -29,6 +30,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
     }
 
     @Override public void onActivityStarted(Activity activity) {
+        startedActivityCount++;
         AppLockController.enforce(activity);
         if (!(activity instanceof MainActivity)) return;
         MainActivity main = (MainActivity) activity;
@@ -44,7 +46,10 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
     @Override public void onActivityCreated(Activity activity, Bundle state) {}
     @Override public void onActivityResumed(Activity activity) {}
     @Override public void onActivityPaused(Activity activity) {}
-    @Override public void onActivityStopped(Activity activity) {}
+    @Override public void onActivityStopped(Activity activity) {
+        if (startedActivityCount > 0) startedActivityCount--;
+        if (startedActivityCount == 0) AppLockController.lockForBackground(activity);
+    }
     @Override public void onActivitySaveInstanceState(Activity activity, Bundle state) {}
     @Override public void onActivityDestroyed(Activity activity) {}
 

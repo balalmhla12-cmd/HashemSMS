@@ -117,6 +117,11 @@
     <string name="backup_failed">لم تكتمل العملية:</string>
     <string name="app_lock_enable">تفعيل قفل التطبيق</string>
     <string name="app_lock_disable">إيقاف قفل التطبيق</string>
+    <string name="app_lock_timeout">مهلة إعادة القفل</string>
+    <string name="app_lock_timeout_immediate">فور مغادرة التطبيق</string>
+    <string name="app_lock_timeout_one_minute">بعد دقيقة واحدة</string>
+    <string name="app_lock_timeout_five_minutes">بعد خمس دقائق</string>
+    <string name="app_lock_timeout_saved">تم حفظ مهلة إعادة القفل.</string>
     <string name="app_lock_disable_confirm">سيصبح فتح HashemSMS متاحًا دون تحقق من الجهاز. هل تريد إيقاف القفل؟</string>
     <string name="app_lock_enabled">قفل التطبيق مفعّل. استخدم بصمة الإصبع أو قفل شاشة الجهاز للمتابعة.</string>
     <string name="app_lock_disabled">تم إيقاف قفل التطبيق.</string>
