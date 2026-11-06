@@ -59,6 +59,26 @@ final class HashemBackupManager {
 
     static void exportBackup(Context context, Uri destination) throws IOException {
         if (context == null || destination == null) throw new IllegalArgumentException("ملف النسخة الاحتياطية غير محدد");
+        File staged = new File(context.getCacheDir(), "backup-destination-" + UUID.randomUUID());
+        try {
+            try (OutputStream stagedOutput = new FileOutputStream(staged)) {
+                exportBackup(context, stagedOutput);
+            }
+            try (InputStream input = new FileInputStream(staged);
+                 OutputStream output = context.getContentResolver().openOutputStream(destination, "w")) {
+                if (output == null) throw new IOException("تعذّر فتح ملف الوجهة للكتابة.");
+                copy(input, output, MAX_ARCHIVE_BYTES);
+                output.flush();
+            }
+        } finally {
+            if (staged.exists() && !staged.delete()) {
+                android.util.Log.w("HashemSMS", "Unable to delete staged backup destination file.");
+            }
+        }
+    }
+
+    static void exportBackup(Context context, OutputStream destination) throws IOException {
+        if (context == null || destination == null) throw new IllegalArgumentException("ملف النسخة الاحتياطية غير محدد");
         File work = new File(context.getCacheDir(), "backup-export-" + UUID.randomUUID());
         if (!work.mkdirs()) throw new IOException("تعذّر تجهيز مساحة النسخ الاحتياطي");
         File snapshotFile = new File(work, "database.sqlite");
@@ -124,11 +144,9 @@ final class HashemBackupManager {
                 zip.write(manifest.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
                 zip.closeEntry();
             }
-            try (InputStream input = new FileInputStream(archiveFile);
-                 OutputStream output = context.getContentResolver().openOutputStream(destination, "w")) {
-                if (output == null) throw new IOException("تعذّر فتح ملف الوجهة للكتابة.");
-                copy(input, output, MAX_ARCHIVE_BYTES);
-                output.flush();
+            try (InputStream input = new FileInputStream(archiveFile)) {
+                copy(input, destination, MAX_ARCHIVE_BYTES);
+                destination.flush();
             }
         } finally {
             if (snapshot != null) snapshot.close();
@@ -138,6 +156,13 @@ final class HashemBackupManager {
     }
 
     static void restoreBackup(Context context, Uri source) throws IOException {
+        if (context == null || source == null) throw new IllegalArgumentException("ملف النسخة الاحتياطية غير محدد");
+        InputStream input = context.getContentResolver().openInputStream(source);
+        if (input == null) throw new IOException("تعذّر فتح ملف النسخة الاحتياطية.");
+        restoreBackup(context, input);
+    }
+
+    static void restoreBackup(Context context, InputStream source) throws IOException {
         if (context == null || source == null) throw new IllegalArgumentException("ملف النسخة الاحتياطية غير محدد");
         File work = new File(context.getCacheDir(), "backup-restore-" + UUID.randomUUID());
         if (!work.mkdirs()) throw new IOException("تعذّر تجهيز مساحة الاستعادة");
@@ -150,7 +175,7 @@ final class HashemBackupManager {
         SQLiteDatabase live = null;
         boolean attached = false;
         try {
-            extractArchive(context, source, work);
+            extractArchive(source, work);
             JSONObject manifest = readManifest(new File(work, "manifest.json"));
             if (manifest.optInt("archiveVersion", -1) != ARCHIVE_VERSION
                     || manifest.optInt("databaseVersion", -1) != DATABASE_VERSION) {
@@ -321,14 +346,12 @@ final class HashemBackupManager {
         return result;
     }
 
-    private static void extractArchive(Context context, Uri source, File work) throws IOException {
+    private static void extractArchive(InputStream rawInput, File work) throws IOException {
         File attachmentDirectory = new File(work, "attachments");
         if (!attachmentDirectory.mkdirs()) throw new IOException("تعذّر تجهيز ملفات الاستعادة.");
         Set<String> names = new HashSet<>();
         long total = 0;
-        InputStream rawInput = context.getContentResolver().openInputStream(source);
-        if (rawInput == null) throw new IOException("تعذّر فتح ملف النسخة الاحتياطية.");
-        try (InputStream input = rawInput; ZipInputStream zip = new ZipInputStream(input)) {
+        try (ZipInputStream zip = new ZipInputStream(rawInput)) {
             ZipEntry entry;
             byte[] buffer = new byte[8192];
             while ((entry = zip.getNextEntry()) != null) {
@@ -475,3 +498,5 @@ final class HashemBackupManager {
         }
     }
 }
+
+

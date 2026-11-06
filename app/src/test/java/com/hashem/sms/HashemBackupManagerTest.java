@@ -7,9 +7,7 @@ import static org.junit.Assert.fail;
 
 import android.content.Context;
 import android.database.Cursor;
-import android.net.Uri;
 
-import androidx.core.content.FileProvider;
 
 import org.junit.After;
 import org.junit.Before;
@@ -21,6 +19,8 @@ import org.robolectric.annotation.Config;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
@@ -56,14 +56,14 @@ public final class HashemBackupManagerTest {
         database.addMmsAttachment(originalId, attachment.getAbsolutePath(),
                 "image/gif", bytes.length, "backup-test-transaction");
 
-        Uri backupUri = backupUri("round-trip.hsmbackup");
-        HashemBackupManager.exportBackup(context, backupUri);
-        assertTrue(new File(context.getCacheDir(), "mms/round-trip.hsmbackup").isFile());
+        ByteArrayOutputStream backupBytes = new ByteArrayOutputStream();
+        HashemBackupManager.exportBackup(context, backupBytes);
+        assertTrue(backupBytes.size() > 0);
 
         database.addMessage("+15550000000", "رسالة أحدث", "out", "تم الإرسال");
         assertEquals(2, countMessages());
 
-        HashemBackupManager.restoreBackup(context, backupUri);
+        HashemBackupManager.restoreBackup(context, new ByteArrayInputStream(backupBytes.toByteArray()));
 
         assertEquals(1, countMessages());
         try (Cursor cursor = database.mmsAttachments(originalId)) {
@@ -77,26 +77,13 @@ public final class HashemBackupManagerTest {
 
     @Test public void corruptArchiveDoesNotChangeCurrentMessages() throws Exception {
         database.addMessage("+15551234567", "رسالة يجب أن تبقى", "out", "تم الإرسال");
-        File corrupt = new File(context.getCacheDir(), "mms/corrupt.hsmbackup");
-        File parent = corrupt.getParentFile();
-        assertTrue(parent.isDirectory() || parent.mkdirs());
-        try (FileOutputStream output = new FileOutputStream(corrupt)) {
-            output.write("not-a-zip-file".getBytes(StandardCharsets.UTF_8));
-        }
-
+        byte[] corrupt = "not-a-zip-file".getBytes(StandardCharsets.UTF_8);
         try {
-            HashemBackupManager.restoreBackup(context, backupUri("corrupt.hsmbackup"));
+            HashemBackupManager.restoreBackup(context, new ByteArrayInputStream(corrupt));
             fail("A corrupt backup must be rejected");
         } catch (IOException expected) {
             assertEquals(1, countMessages());
         }
-    }
-
-    private Uri backupUri(String name) {
-        File directory = new File(context.getCacheDir(), "mms");
-        assertTrue(directory.isDirectory() || directory.mkdirs());
-        File file = new File(directory, name);
-        return FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", file);
     }
 
     private int countMessages() {
@@ -126,3 +113,5 @@ public final class HashemBackupManagerTest {
         file.delete();
     }
 }
+
+
