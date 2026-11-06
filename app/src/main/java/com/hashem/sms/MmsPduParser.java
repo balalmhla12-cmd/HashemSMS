@@ -349,7 +349,8 @@ final class MmsPduParser {
                 if (h == 0x85 || h == 0x8e || h == 0x97) result = readText();
                 else if (h < 128) readText();
                 else if (h == 0x98) result = readText();
-                else if (h == 0x99) skipValueLength();
+                else if (h == 0x99 || h == 0xae) skipValueLength();
+                else if (h == 0xc0 || h == 0xc1) readText();
                 else throw new IllegalArgumentException("Unsupported MMS part header");
             }
             return result;
@@ -366,6 +367,7 @@ final class MmsPduParser {
             case 0xA4: return "application/vnd.wap.multipart.form-data";
             case 0xA5: return "application/vnd.wap.multipart.byteranges";
             case 0xA6: return "application/vnd.wap.multipart.alternative";
+            case 0xB3: return "application/vnd.wap.multipart.related";
             default: return "application/octet-stream";
         }
     }
