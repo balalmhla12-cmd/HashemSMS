@@ -21,8 +21,6 @@
     <string name="settings_default_sms">تطبيق الرسائل الافتراضي</string>
     <string name="settings_permissions">الصلاحيات</string>
     <string name="settings_sim">شرائح SIM</string>
-    <string name="settings_customization">التخصيص والتفضيلات</string>
-    <string name="settings_appearance">المظهر</string>
     <string name="settings_notifications">الإشعارات</string>
     <string name="settings_scheduling">إعدادات الجدولة</string>
     <string name="settings_privacy">الخصوصية والصلاحيات</string>
