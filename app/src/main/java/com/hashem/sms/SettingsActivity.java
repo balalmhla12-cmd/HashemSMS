@@ -133,7 +133,7 @@ public final class SettingsActivity extends AppCompatActivity {
 
         section(R.string.settings_privacy, "الخصوصية والحماية قفل التطبيق حظر الأرقام المزعجة الصلاحيات");
         row(R.string.settings_privacy, R.string.settings_privacy_desc, R.drawable.ic_block,
-                "الخصوصية الصلاحيات الأذونات الحماية إعدادات النظام", this::openAppSettings);
+                "الخصوصية الصلاحيات الأذونات الحماية قفل التطبيق إعدادات النظام", this::showPrivacySettings);
 
         section(R.string.settings_backup, "النسخ الاحتياطي الاستعادة تصدير استيراد الرسائل المرفقات");
         row(R.string.settings_backup, R.string.settings_backup_desc, R.drawable.ic_settings,
@@ -524,6 +524,42 @@ public final class SettingsActivity extends AppCompatActivity {
         } catch (Exception e) {
             Toast.makeText(this, R.string.settings_role_request_failed, Toast.LENGTH_LONG).show();
         }
+    }
+
+
+    private void showPrivacySettings() {
+        boolean enabled = AppLockController.isEnabled(this);
+        String[] options = enabled
+                ? new String[]{getString(R.string.app_lock_disable), getString(R.string.settings_open_system)}
+                : new String[]{getString(R.string.app_lock_enable), getString(R.string.settings_open_system)};
+        new AlertDialog.Builder(this).setTitle(R.string.settings_privacy)
+                .setItems(options, (dialog, which) -> {
+                    if (which == 1) {
+                        openAppSettings();
+                    } else if (enabled) {
+                        new AlertDialog.Builder(this).setTitle(R.string.app_lock_disable)
+                                .setMessage(R.string.app_lock_disable_confirm)
+                                .setNegativeButton(android.R.string.cancel, null)
+                                .setPositiveButton(R.string.app_lock_disable, (confirm, result) -> {
+                                    AppLockController.setEnabled(this, false);
+                                    Toast.makeText(this, R.string.app_lock_disabled, Toast.LENGTH_SHORT).show();
+                                }).show();
+                    } else {
+                        android.app.KeyguardManager keyguard =
+                                (android.app.KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
+                        if (keyguard == null || !keyguard.isDeviceSecure()) {
+                            new AlertDialog.Builder(this).setTitle(R.string.app_lock_requires_screen_lock)
+                                    .setMessage(R.string.app_lock_requires_screen_lock_message)
+                                    .setPositiveButton(R.string.settings_open_system, (confirm, result) -> {
+                                        try { startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS)); }
+                                        catch (Exception error) { openAppSettings(); }
+                                    }).setNegativeButton(android.R.string.cancel, null).show();
+                            return;
+                        }
+                        AppLockController.setEnabled(this, true);
+                        AppLockController.lockNow(this);
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
     }
 
     private void openNotificationSettings() {

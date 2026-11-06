@@ -29,6 +29,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
     }
 
     @Override public void onActivityStarted(Activity activity) {
+        AppLockController.enforce(activity);
         if (!(activity instanceof MainActivity)) return;
         MainActivity main = (MainActivity) activity;
         if (main.root == null || "hashem_ui".equals(main.root.getTag())) return;
