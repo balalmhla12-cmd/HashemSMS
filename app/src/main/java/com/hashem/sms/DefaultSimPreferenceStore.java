@@ -45,7 +45,7 @@ final class DefaultSimPreferenceStore {
             Set<Integer> ids = new HashSet<>();
             for (SubscriptionInfo info : active) ids.add(info.getSubscriptionId());
             return resolve(preferences, ids);
-        } catch (SecurityException | RuntimeException e) {
+        } catch (RuntimeException e) {
             android.util.Log.w("HashemSMS", "Unable to validate the saved default SIM", e);
             return new Result(State.UNVERIFIED, -1);
         }
