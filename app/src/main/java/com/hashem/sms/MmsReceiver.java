@@ -1,6 +1,5 @@
 package com.hashem.sms;
 
-import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -51,34 +50,35 @@ public final class MmsReceiver extends BroadcastReceiver {
             Log.i(TAG, "Ignoring duplicate or in-flight MMS transaction " + notification.transactionId);
             return;
         }
-        File dir = new File(context.getCacheDir(), "mms");
-        if (!dir.exists() && !dir.mkdirs()) throw new java.io.IOException("Cannot create MMS cache directory");
-        File destination = File.createTempFile("incoming-", ".mms", dir);
-        Uri destinationUri = FileProvider.getUriForFile(context,
-                context.getPackageName() + ".fileprovider", destination);
-        int subscriptionId = intent.getIntExtra(SubscriptionManager.EXTRA_SUBSCRIPTION_INDEX, -1);
-        SmsManager manager;
-        if (subscriptionId >= 0 && android.os.Build.VERSION.SDK_INT >= 22) {
-            manager = SmsManager.getSmsManagerForSubscriptionId(subscriptionId);
-        } else {
-            manager = SmsManager.getDefault();
-        }
-        int request = Math.abs(REQUESTS.incrementAndGet()) + (int) (System.currentTimeMillis() & 0x3fffffff);
-        Intent result = new Intent(context, MmsDownloadReceiver.class)
-                .setAction(ACTION_MMS_DOWNLOAD + "." + request)
-                .putExtra(EXTRA_DESTINATION, destination.getAbsolutePath())
-                .putExtra(EXTRA_TRANSACTION, notification.transactionId)
-                .putExtra(EXTRA_CONTENT_LOCATION, notification.contentLocation);
-        PendingIntent callback = PendingIntent.getBroadcast(context, request, result,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        File destination = null;
+        boolean handedToPlatform = false;
         try {
+            File dir = new File(context.getCacheDir(), "mms");
+            if (!dir.exists() && !dir.mkdirs()) throw new java.io.IOException("Cannot create MMS cache directory");
+            destination = File.createTempFile("incoming-", ".mms", dir);
+            Uri destinationUri = FileProvider.getUriForFile(context,
+                    context.getPackageName() + ".fileprovider", destination);
+            int subscriptionId = intent.getIntExtra(SubscriptionManager.EXTRA_SUBSCRIPTION_INDEX, -1);
+            SmsManager manager = subscriptionId >= 0
+                    ? SmsManager.getSmsManagerForSubscriptionId(subscriptionId)
+                    : SmsManager.getDefault();
+            int request = Math.abs(REQUESTS.incrementAndGet()) + (int) (System.currentTimeMillis() & 0x3fffffff);
+            Intent result = new Intent(context, MmsDownloadReceiver.class)
+                    .setAction(ACTION_MMS_DOWNLOAD + "." + request)
+                    .putExtra(EXTRA_DESTINATION, destination.getAbsolutePath())
+                    .putExtra(EXTRA_TRANSACTION, notification.transactionId)
+                    .putExtra(EXTRA_CONTENT_LOCATION, notification.contentLocation);
+            PendingIntent callback = PendingIntent.getBroadcast(context, request, result,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             // Null overrides intentionally let Android apply the active carrier's MMS configuration.
             manager.downloadMultimediaMessage(context, notification.contentLocation,
                     destinationUri, (Bundle) null, callback);
-        } catch (RuntimeException e) {
-            destination.delete();
-            releaseTransaction(notification.transactionId);
-            throw e;
+            handedToPlatform = true;
+        } finally {
+            if (!handedToPlatform) {
+                if (destination != null && destination.exists()) destination.delete();
+                releaseTransaction(notification.transactionId);
+            }
         }
     }
 
