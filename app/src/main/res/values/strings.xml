@@ -72,4 +72,15 @@
     <string name="current_location_message">موقعي الحالي: %1$s</string>
     <string name="color_picker_reset">استعادة الافتراضي</string>
 
+    <string name="translation_busy">تجري ترجمة رسالة أخرى، انتظر قليلًا.</string>
+    <string name="translation_already_arabic">هذه الرسالة تحتوي على نص عربي بالفعل.</string>
+    <string name="translation_english_only">الترجمة متاحة حاليًا للرسائل الإنجليزية فقط. لم يتم تغيير الرسالة.</string>
+    <string name="translation_unavailable">تعذّر تحديد لغة الرسالة. بقي النص الأصلي كما هو.</string>
+    <string name="translation_download_title">تنزيل نموذج الترجمة</string>
+    <string name="translation_download_message">يحتاج التطبيق إلى نموذج ترجمة على الجهاز بحجم تقريبي 30 ميجابايت. تتم الترجمة على الجهاز ولا يُرسل نص الرسالة إلى خادم الترجمة. اختر طريقة التنزيل.</string>
+    <string name="translation_wifi_only">تنزيل عبر Wi-Fi فقط</string>
+    <string name="translation_wifi_or_mobile">تنزيل عبر Wi-Fi أو بيانات الهاتف</string>
+    <string name="translation_preparing">جارٍ تجهيز نموذج الترجمة أو ترجمة الرسالة…</string>
+    <string name="translation_failed">تعذّرت الترجمة. تحقق من اتصال الإنترنت ثم حاول مجددًا.</string>
+    <string name="translation_wifi_required">يتطلب تنزيل نموذج الترجمة اتصال Wi-Fi. يمكنك تغيير هذا الخيار من إعدادات الترجمة.</string>
 </resources>

@@ -27,6 +27,8 @@ import android.text.TextWatcher;
 import android.view.*;import androidx.appcompat.widget.PopupMenu;
 import android.widget.*;
 import java.util.*;
+import com.google.mlkit.nl.languageid.*;
+import com.google.mlkit.nl.translate.*;
 
 public class ConversationActivity extends androidx.activity.ComponentActivity {
     Db db; String address; LinearLayout root; RecyclerView messages; ConversationAdapter messageAdapter; EditText search, composer; TextView selectionTitle; ActionMode actionMode; final ArrayList<Long> selected = new ArrayList<>();
@@ -64,7 +66,11 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
     private Uri pendingImageUri;
     private int attachmentPreparationGeneration=0;
     private boolean attachmentPreparing=false;
-    
+    private final Map<Long,String> translatedMessageCache = new HashMap<>();
+    private final Set<Long> translatedMessageVisible = new HashSet<>();
+    private boolean translationInProgress;
+    private Translator activeTranslator;
+
     SubscriptionChoiceCallback pendingSubscriptionAction;
     private boolean pendingForceSimPicker = false;
 
@@ -113,6 +119,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
         loadGeneration.incrementAndGet();
         mainHandler.removeCallbacks(smsUpdateDebounce);
         mainHandler.removeCallbacks(searchDebounce);
+        if(activeTranslator!=null){activeTranslator.close();activeTranslator=null;}
         super.onDestroy();
     }
 
@@ -295,6 +302,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
         private long activeActionMessageId=Long.MIN_VALUE;
         ConversationAdapter(){super(new MessageDiffCallback());}
         void refreshSelection(long id){int position=findPosition(id);if(position>=0)notifyItemChanged(position);}
+        void refreshTranslation(long id){int position=findPosition(id);if(position>=0)notifyItemChanged(position);}
         void showActions(long id){
             long previous=activeActionMessageId;
             activeActionMessageId=previous==id?Long.MIN_VALUE:id;
@@ -337,7 +345,9 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
             if(holder instanceof DateHolder){((DateHolder)holder).text.setText(dateLabel(item.timestamp));return;}
             MessageHolder h=(MessageHolder)holder;boolean outgoing="out".equals(item.type);
             h.line.setGravity(outgoing?Gravity.RIGHT:Gravity.LEFT);h.column.setGravity(outgoing?Gravity.RIGHT:Gravity.LEFT);
-            h.body.setText(item.body);h.body.setTextSize(17f*messageTextScale);h.meta.setTextSize(11f*messageTextScale);h.body.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG);boolean bodyRtl=android.text.TextDirectionHeuristics.FIRSTSTRONG_LTR.isRtl(item.body,0,item.body.length());h.body.setGravity(bodyRtl?Gravity.RIGHT:Gravity.LEFT);h.meta.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG);h.meta.setTextIsSelectable(false);if(item.attachmentPath!=null){android.graphics.BitmapFactory.Options options=new android.graphics.BitmapFactory.Options();options.inSampleSize=4;android.graphics.Bitmap thumbnail=android.graphics.BitmapFactory.decodeFile(item.attachmentPath,options);if(thumbnail!=null){h.media.setImageBitmap(thumbnail);h.media.setVisibility(View.VISIBLE);}else h.media.setVisibility(View.GONE);}else h.media.setVisibility(View.GONE);
+            String visibleBody=translatedMessageVisible.contains(item.id)?translatedMessageCache.get(item.id):item.body;
+            if(visibleBody==null)visibleBody=item.body;
+            h.body.setText(visibleBody);h.body.setTextSize(17f*messageTextScale);h.meta.setTextSize(11f*messageTextScale);h.body.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG);boolean bodyRtl=android.text.TextDirectionHeuristics.FIRSTSTRONG_LTR.isRtl(visibleBody,0,visibleBody.length());h.body.setGravity(bodyRtl?Gravity.RIGHT:Gravity.LEFT);h.meta.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG);h.meta.setTextIsSelectable(false);if(item.attachmentPath!=null){android.graphics.BitmapFactory.Options options=new android.graphics.BitmapFactory.Options();options.inSampleSize=4;android.graphics.Bitmap thumbnail=android.graphics.BitmapFactory.decodeFile(item.attachmentPath,options);if(thumbnail!=null){h.media.setImageBitmap(thumbnail);h.media.setVisibility(View.VISIBLE);}else h.media.setVisibility(View.GONE);}else h.media.setVisibility(View.GONE);
             h.body.setTextColor(UiResources.color(ConversationActivity.this,outgoing?R.color.on_bubble_out:R.color.on_bubble_in));
             String state=outgoing?displayStatus(item.status):"";String time=new java.text.SimpleDateFormat("hh:mm a",new Locale("ar")).format(new Date(item.timestamp));h.meta.setText(outgoing?(state.isEmpty()?time:state+" · "+time):time);CharSequence metaText=h.meta.getText();boolean metaRtl=android.text.TextDirectionHeuristics.FIRSTSTRONG_LTR.isRtl(metaText,0,metaText.length());h.meta.setGravity(metaRtl?Gravity.RIGHT:Gravity.LEFT);
             h.meta.setTextColor(UiResources.color(ConversationActivity.this,outgoing?R.color.on_bubble_out:R.color.on_bubble_in));
@@ -359,7 +369,8 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
             h.bubble.setOnClickListener(tap);h.body.setOnClickListener(tap);h.meta.setOnClickListener(tap);
             h.copy.setOnClickListener(v->copyMessage(item));h.forward.setOnClickListener(v->forwardMessage(item));
             h.reply.setVisibility(outgoing?View.VISIBLE:View.GONE);h.reply.setOnClickListener(v->{if(outgoing){composer.setText(item.body);composer.setSelection(composer.length());composer.requestFocus();}});
-            h.star.setOnClickListener(v->translateMessage(item.body));
+            h.star.setContentDescription(translatedMessageVisible.contains(item.id)?"عرض النص الأصلي":"ترجمة إلى العربية");
+            h.star.setOnClickListener(v->translateMessage(item));
             h.more.setOnClickListener(v->showMessageMenu(v,item));
         }
     }
@@ -442,9 +453,94 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
             .setPositiveButton("إرسال",(dialog,which)->sendForwarded(recipient.getText().toString().trim(),item.body))
             .setNegativeButton("إلغاء",null).show();
     }
-    private void translateMessage(String text){
-        if(text==null||text.trim().isEmpty())return;
-        new AlertDialog.Builder(this).setTitle("ترجمة الرسالة").setMessage("واجهة الترجمة جاهزة، وسيتم ربط خدمة الترجمة في دفعة لاحقة.").setPositiveButton("حسنًا",null).show();
+    private void translateMessage(ConversationMessage item){
+        if(item==null||item.body==null||item.body.trim().isEmpty())return;
+        if(translatedMessageCache.containsKey(item.id)){
+            if(!translatedMessageVisible.add(item.id))translatedMessageVisible.remove(item.id);
+            if(messageAdapter!=null)messageAdapter.refreshTranslation(item.id);
+            return;
+        }
+        if(translationInProgress){Toast.makeText(this,R.string.translation_busy,Toast.LENGTH_SHORT).show();return;}
+        if(item.body.matches("(?s).*[؀-ۿ].*")){
+            Toast.makeText(this,R.string.translation_already_arabic,Toast.LENGTH_SHORT).show();return;
+        }
+        translationInProgress=true;
+        LanguageIdentifier identifier=LanguageIdentification.getClient(
+                new LanguageIdentificationOptions.Builder().setConfidenceThreshold(0.65f).build());
+        identifier.identifyPossibleLanguages(item.body)
+                .addOnSuccessListener(languages->{
+                    identifier.close();
+                    if(isFinishing()||isDestroyed()){translationInProgress=false;return;}
+                    String source=null;float confidence=0f;
+                    for(IdentifiedLanguage language:languages){
+                        if(language.getConfidence()>confidence){source=language.getLanguageTag();confidence=language.getConfidence();}
+                    }
+                    if(!"en".equals(source)||confidence<0.65f){
+                        translationInProgress=false;
+                        Toast.makeText(this,R.string.translation_english_only,Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    requestTranslationConsent(item);
+                })
+                .addOnFailureListener(error->{
+                    identifier.close();translationInProgress=false;
+                    if(!isFinishing()&&!isDestroyed())Toast.makeText(this,R.string.translation_unavailable,Toast.LENGTH_LONG).show();
+                });
+    }
+
+    private void requestTranslationConsent(ConversationMessage item){
+        android.content.SharedPreferences prefs=getSharedPreferences("translation_settings",MODE_PRIVATE);
+        if(prefs.getBoolean("model_download_consented",false)){
+            startEnglishArabicTranslation(item,prefs.getBoolean("wifi_only",true));
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.translation_download_title)
+                .setMessage(R.string.translation_download_message)
+                .setNegativeButton(android.R.string.cancel,(d,w)->translationInProgress=false)
+                .setNeutralButton(R.string.translation_wifi_only,(d,w)->{
+                    prefs.edit().putBoolean("model_download_consented",true).putBoolean("wifi_only",true).apply();
+                    startEnglishArabicTranslation(item,true);
+                })
+                .setPositiveButton(R.string.translation_wifi_or_mobile,(d,w)->{
+                    prefs.edit().putBoolean("model_download_consented",true).putBoolean("wifi_only",false).apply();
+                    startEnglishArabicTranslation(item,false);
+                }).setOnCancelListener(d->translationInProgress=false).show();
+    }
+
+    private void startEnglishArabicTranslation(ConversationMessage item,boolean wifiOnly){
+        TranslatorOptions options=new TranslatorOptions.Builder()
+                .setSourceLanguage(TranslateLanguage.ENGLISH)
+                .setTargetLanguage(TranslateLanguage.ARABIC).build();
+        final Translator translator=Translation.getClient(options);
+        activeTranslator=translator;
+        DownloadConditions.Builder conditions=new DownloadConditions.Builder();
+        if(wifiOnly)conditions.requireWifi();
+        Toast.makeText(this,R.string.translation_preparing,Toast.LENGTH_SHORT).show();
+        translator.downloadModelIfNeeded(conditions.build())
+                .addOnSuccessListener(unused->{
+                    if(isFinishing()||isDestroyed()){translator.close();return;}
+                    translator.translate(item.body).addOnSuccessListener(result->{
+                        translator.close();
+                        if(activeTranslator==translator)activeTranslator=null;
+                        translationInProgress=false;
+                        if(isFinishing()||isDestroyed())return;
+                        translatedMessageCache.put(item.id,result);
+                        translatedMessageVisible.add(item.id);
+                        if(messageAdapter!=null)messageAdapter.refreshTranslation(item.id);
+                    }).addOnFailureListener(error->{
+                        translator.close();
+                        if(activeTranslator==translator)activeTranslator=null;
+                        translationInProgress=false;
+                        if(!isFinishing()&&!isDestroyed())Toast.makeText(this,R.string.translation_failed,Toast.LENGTH_LONG).show();
+                    });
+                })
+                .addOnFailureListener(error->{
+                    translator.close();
+                    if(activeTranslator==translator)activeTranslator=null;
+                    translationInProgress=false;
+                    if(!isFinishing()&&!isDestroyed())Toast.makeText(this,wifiOnly?R.string.translation_wifi_required:R.string.translation_failed,Toast.LENGTH_LONG).show();
+                });
     }
 
     void showMessageMenu(View anchor,ConversationMessage item){
