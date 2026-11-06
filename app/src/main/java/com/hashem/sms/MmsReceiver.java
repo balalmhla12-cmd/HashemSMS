@@ -93,12 +93,27 @@ public final class MmsReceiver extends BroadcastReceiver {
             handedToPlatform = true;
         } finally {
             if (!handedToPlatform) {
-                if (destination != null) {
-                    Uri failedUri = FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", destination);
-                    context.revokeUriPermission(failedUri, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                    if (destination.exists()) destination.delete();
+                try {
+                    if (destination != null) {
+                        try {
+                            Uri failedUri = FileProvider.getUriForFile(context,
+                                    context.getPackageName() + ".fileprovider", destination);
+                            context.revokeUriPermission(failedUri,
+                                    Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                        } catch (RuntimeException e) {
+                            Log.w(TAG, "Unable to revoke failed MMS destination URI grant", e);
+                        }
+                        try {
+                            if (destination.exists() && !destination.delete()) {
+                                Log.w(TAG, "Unable to remove failed MMS destination file");
+                            }
+                        } catch (RuntimeException e) {
+                            Log.w(TAG, "Unable to remove failed MMS destination file", e);
+                        }
+                    }
+                } finally {
+                    releaseTransaction(notification.transactionId);
                 }
-                releaseTransaction(notification.transactionId);
             }
         }
     }
