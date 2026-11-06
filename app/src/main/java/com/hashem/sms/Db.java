@@ -164,7 +164,14 @@ public class Db extends SQLiteOpenHelper{
    Cursor c=getReadableDatabase().rawQuery("SELECT 1 FROM messages WHERE address=? AND type='in' AND read=0 AND trash=0 LIMIT 1",new String[]{address});
    try{return c.moveToFirst();}finally{c.close();}
   }
-  public void markThreadRead(String address){ContentValues v=new ContentValues();v.put("read",1);getWritableDatabase().update("messages",v,"address=? AND type='in'",new String[]{address});}
+  public java.util.Set<String> unreadIncomingConversationAddresses(){
+  java.util.HashSet<String> addresses=new java.util.HashSet<>();
+  Cursor c=null;
+  try{c=getReadableDatabase().rawQuery("SELECT address FROM messages WHERE type='in' AND read=0 AND trash=0 AND address IS NOT NULL AND address!='' GROUP BY address",null);while(c.moveToNext()){String address=c.getString(0);if(address!=null&&!address.trim().isEmpty())addresses.add(address);}}
+  finally{if(c!=null)c.close();}
+  return addresses;
+ }
+ public void markThreadRead(String address){ContentValues v=new ContentValues();v.put("read",1);getWritableDatabase().update("messages",v,"address=? AND type='in'",new String[]{address});}
  public void linkProviderMessage(long localId,long providerId){PROVIDER_SYNC_LOCK.lock();try{ContentValues v=new ContentValues();v.put("provider_id",providerId);getWritableDatabase().update("messages",v,"id=?",new String[]{String.valueOf(localId)});}finally{PROVIDER_SYNC_LOCK.unlock();}}
  public long findRecentIncomingMessage(String address,String body,long timestamp,long windowMillis){if(address==null||body==null)return -1;long center=timestamp>0?timestamp:System.currentTimeMillis();long window=Math.max(1,windowMillis);Cursor c=null;try{c=getReadableDatabase().query("messages",new String[]{"id"},"address=? AND body=? AND type='in' AND (provider_id IS NULL OR provider_id<=0) AND ts BETWEEN ? AND ?",new String[]{address,body,String.valueOf(Math.max(0,center-window)),String.valueOf(center+window)},null,null,"ts DESC","1");return c.moveToFirst()?c.getLong(0):-1;}finally{if(c!=null)c.close();}}
  public boolean importSystemMessageBatch(ArrayList<Object[]> batch){PROVIDER_SYNC_LOCK.lock();SQLiteDatabase localDb=null;boolean started=false,ok=false;try{localDb=getWritableDatabase();localDb.beginTransaction();started=true;for(Object[] row:batch)importSystemMessage((Long)row[0],(String)row[1],(String)row[2],(Integer)row[3],(Long)row[4],(Integer)row[5]);localDb.setTransactionSuccessful();ok=true;}catch(Exception e){Log.e("HashemSMS","SMS import batch failed",e);}finally{try{if(started&&localDb!=null)localDb.endTransaction();}catch(Exception e){Log.e("HashemSMS","Failed to finish SMS batch transaction",e);ok=false;}finally{PROVIDER_SYNC_LOCK.unlock();}}return ok;}
