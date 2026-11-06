@@ -130,4 +130,6 @@
     <string name="app_lock_unavailable">قفل شاشة الجهاز غير متاح؛ أوقفنا قفل التطبيق لتجنب منعك من الوصول إلى رسائلك.</string>
     <string name="app_lock_auth_failed">تعذّر التحقق. حاول مرة أخرى أو استخدم قفل شاشة الجهاز.</string>
     <string name="app_lock_auth_cancelled">لم يتم التحقق؛ لا يزال التطبيق مقفلاً.</string>
+    <string name="backup_activity_description">أنشئ نسخة احتياطية من الرسائل والمجموعات والجدولة وسجل الإرسال والمرفقات، أو استعد نسخة محفوظة.</string>
+    <string name="backup_activity_safety_note">تُفحص سلامة الأرشيف قبل الاستعادة، ويُحتفظ بنسخة أمان من البيانات الحالية قبل استبدالها. تُرفض النسخ التالفة أو الصادرة من إصدار قاعدة بيانات أحدث.</string>
 </resources>
