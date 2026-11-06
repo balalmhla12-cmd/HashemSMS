@@ -61,7 +61,10 @@ jobs:
             adb shell pm grant com.hashem.sms android.permission.RECEIVE_SMS
             adb shell pm grant com.hashem.sms android.permission.READ_SMS
             adb shell pm grant com.hashem.sms android.permission.READ_CONTACTS
-            adb shell pm grant com.hashem.sms android.permission.POST_NOTIFICATIONS
+            api_level="$(adb shell getprop ro.build.version.sdk | tr -d '\r')"
+            if [ "$api_level" -ge 33 ]; then
+              adb shell pm grant com.hashem.sms android.permission.POST_NOTIFICATIONS
+            fi
             mkdir -p ui-screenshots
             set +e
             ./gradlew --no-daemon connectedDebugAndroidTest
