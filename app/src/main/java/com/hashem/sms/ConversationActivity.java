@@ -775,6 +775,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
                 if(active!=null)for(android.telephony.SubscriptionInfo info:active)activeIds.add(info.getSubscriptionId());
                 SimPreferenceStore.RestoreResult restored=store.resolve(key,activeIds);
                 if(restored.isAvailable()){callback.onSelected(restored.subscriptionId);return;}
+                if(restored.state==SimPreferenceStore.State.SYSTEM_DEFAULT){callback.onSelected(-1);return;}
                 if(restored.requiresExplicitSelection()){
                     Toast.makeText(this,restored.wasRemoved()?"الشريحة المحفوظة لم تعد متاحة؛ اختر شريحة أخرى.":"تعذّر التحقق من الشريحة المحفوظة؛ اختر شريحة الإرسال.",Toast.LENGTH_SHORT).show();
                     chooseSmsSubscription(store.remember(key,callback),true);return;

@@ -72,14 +72,17 @@ public class SimPreferenceStoreTest {
     }
 
     @Test
-    public void missingSavedSubscriptionIsRemovedAndRequiresNewSelection() {
+    public void missingSavedSubscriptionRemainsPendingUntilUserChoosesAnother() {
         new SimPreferenceStore(preferences).remember(KEY, new NoOpCallback()).onSelected(23);
 
         SimPreferenceStore.RestoreResult restored =
                 new SimPreferenceStore(preferences).resolve(KEY, Collections.singleton(24));
 
         assertEquals(SimPreferenceStore.State.REMOVED, restored.state);
-        assertFalse(preferences.contains(KEY));
+        assertTrue(restored.requiresExplicitSelection());
+        assertEquals(23, restored.subscriptionId);
+        assertTrue(preferences.contains(KEY));
+        assertEquals(23, preferences.getInt(KEY, -2));
     }
 
     @Test
@@ -97,6 +100,18 @@ public class SimPreferenceStoreTest {
         SimPreferenceStore.RestoreResult absent =
                 store.resolve("no_saved_subscription", Collections.<Integer>emptySet());
         assertFalse(absent.requiresExplicitSelection());
+    }
+
+    @Test
+    public void explicitSystemDefaultSelectionIsRememberedPerContact() {
+        SimPreferenceStore store = new SimPreferenceStore(preferences);
+        store.remember(KEY, new NoOpCallback()).onSelected(-1);
+
+        SimPreferenceStore.RestoreResult restored = store.resolve(KEY, null);
+
+        assertEquals(SimPreferenceStore.State.SYSTEM_DEFAULT, restored.state);
+        assertEquals(-1, restored.subscriptionId);
+        assertTrue(preferences.contains(KEY));
     }
 
     private static final class NoOpCallback implements SubscriptionChoiceCallback {
