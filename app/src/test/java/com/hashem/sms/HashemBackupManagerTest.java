@@ -34,12 +34,14 @@ public final class HashemBackupManagerTest {
         context = RuntimeEnvironment.getApplication();
         context.deleteDatabase("hashem.db");
         deleteRecursively(new File(context.getFilesDir(), "mms"));
+        deleteRecursively(new File(context.getFilesDir(), "safety-backups"));
         database = new Db(context);
     }
 
     @After public void tearDown() {
         if (database != null) database.close();
         deleteRecursively(new File(context.getFilesDir(), "mms"));
+        deleteRecursively(new File(context.getFilesDir(), "safety-backups"));
         deleteRecursively(new File(context.getCacheDir(), "mms"));
         context.deleteDatabase("hashem.db");
     }
@@ -73,6 +75,33 @@ public final class HashemBackupManagerTest {
             assertEquals(bytes.length, restored.length());
             assertArrayEquals(bytes, readBytes(restored));
         }
+    }
+
+    @Test public void restoreCreatesRecoverableSafetyBackupBeforeReplacingCurrentData() throws Exception {
+        database.addMessage("+15551234567", "البيانات القديمة", "out", "تم الإرسال");
+        ByteArrayOutputStream incomingBackup = new ByteArrayOutputStream();
+        HashemBackupManager.exportBackup(context, incomingBackup);
+
+        database.addMessage("+15550000000", "البيانات الحالية", "out", "تم الإرسال");
+        assertEquals(2, countMessages());
+
+        HashemBackupManager.restoreBackup(context,
+                new ByteArrayInputStream(incomingBackup.toByteArray()));
+        assertEquals(1, countMessages());
+
+        File safetyDirectory = new File(context.getFilesDir(), "safety-backups");
+        File[] safetyBackups = safetyDirectory.listFiles(
+                (directory, name) -> name.endsWith(".hsmbackup"));
+        assertTrue(safetyBackups != null && safetyBackups.length == 1);
+        assertTrue(safetyBackups[0].isFile() && safetyBackups[0].length() > 0L);
+
+        database.close();
+        database = null;
+        try (java.io.FileInputStream input = new java.io.FileInputStream(safetyBackups[0])) {
+            HashemBackupManager.restoreBackup(context, input);
+        }
+        database = new Db(context);
+        assertEquals(2, countMessages());
     }
 
     @Test public void corruptArchiveDoesNotChangeCurrentMessages() throws Exception {
