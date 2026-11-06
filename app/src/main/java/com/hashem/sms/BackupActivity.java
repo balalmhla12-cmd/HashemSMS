@@ -31,8 +31,10 @@ public final class BackupActivity extends AppCompatActivity {
     private static final AtomicBoolean BACKUP_OPERATION_RUNNING = new AtomicBoolean(false);
 
     private ActivityResultLauncher<String> backupCreateLauncher;
+    private ActivityResultLauncher<String> csvCreateLauncher;
     private ActivityResultLauncher<String[]> backupOpenLauncher;
     private Button createButton;
+    private Button csvButton;
     private Button restoreButton;
 
     @Override
@@ -43,6 +45,8 @@ public final class BackupActivity extends AppCompatActivity {
                 new ActivityResultContracts.CreateDocument("application/zip"), this::exportBackupTo);
         backupOpenLauncher = registerForActivityResult(
                 new ActivityResultContracts.OpenDocument(), this::confirmBackupRestore);
+        csvCreateLauncher = registerForActivityResult(
+                new ActivityResultContracts.CreateDocument("text/csv"), this::exportCsvTo);
         build();
     }
 
@@ -92,16 +96,24 @@ public final class BackupActivity extends AppCompatActivity {
         card.addView(safety, safetyParams);
 
         createButton = actionButton(getString(R.string.backup_create));
+        csvButton = actionButton(getString(R.string.backup_export_csv));
         restoreButton = actionButton(getString(R.string.backup_restore));
         LinearLayout.LayoutParams actionParams = new LinearLayout.LayoutParams(-1, -2);
         actionParams.topMargin = dp(16);
         card.addView(createButton, actionParams);
+        LinearLayout.LayoutParams csvParams = new LinearLayout.LayoutParams(-1, -2);
+        csvParams.topMargin = dp(8);
+        card.addView(csvButton, csvParams);
         LinearLayout.LayoutParams restoreParams = new LinearLayout.LayoutParams(-1, -2);
         restoreParams.topMargin = dp(8);
         card.addView(restoreButton, restoreParams);
         createButton.setOnClickListener(view -> {
             String stamp = new SimpleDateFormat("yyyyMMdd-HHmm", Locale.ROOT).format(new Date());
             backupCreateLauncher.launch("HashemSMS-backup-" + stamp + ".hsmbackup");
+        });
+        csvButton.setOnClickListener(view -> {
+            String stamp = new SimpleDateFormat("yyyyMMdd-HHmm", Locale.ROOT).format(new Date());
+            csvCreateLauncher.launch("HashemSMS-messages-" + stamp + ".csv");
         });
         restoreButton.setOnClickListener(view ->
                 backupOpenLauncher.launch(new String[]{"application/zip", "application/octet-stream"}));
@@ -116,6 +128,12 @@ public final class BackupActivity extends AppCompatActivity {
         if (destination == null) return;
         runBackupOperation(R.string.backup_export_started, R.string.backup_export_done,
                 () -> HashemBackupManager.exportBackup(getApplicationContext(), destination));
+    }
+
+    private void exportCsvTo(Uri destination) {
+        if (destination == null) return;
+        runBackupOperation(R.string.backup_csv_export_started, R.string.backup_csv_export_done,
+                () -> MessageCsvExporter.exportMessages(getApplicationContext(), destination));
     }
 
     private void confirmBackupRestore(Uri source) {
@@ -167,6 +185,7 @@ public final class BackupActivity extends AppCompatActivity {
 
     private void setActionsEnabled(boolean enabled) {
         if (createButton != null) createButton.setEnabled(enabled);
+        if (csvButton != null) csvButton.setEnabled(enabled);
         if (restoreButton != null) restoreButton.setEnabled(enabled);
     }
 
