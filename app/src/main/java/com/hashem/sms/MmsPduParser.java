@@ -368,6 +368,7 @@ final class MmsPduParser {
             case 0xA5: return "application/vnd.wap.multipart.byteranges";
             case 0xA6: return "application/vnd.wap.multipart.alternative";
             case 0xB3: return "application/vnd.wap.multipart.related";
+            case 0xBE: return "application/vnd.wap.mms-message";
             default: return "application/octet-stream";
         }
     }
