@@ -112,6 +112,9 @@ public final class SettingsActivity extends AppCompatActivity {
         buildAppearance();
         row(R.string.settings_colors, R.string.settings_colors_desc, R.drawable.ic_settings,
                 "الألوان لون الرسائل الواردة الصادرة الخلفية شريحة sim", this::showColorSettings);
+        section(R.string.settings_translation, "الترجمة إنجليزي عربي نموذج تنزيل");
+        row(R.string.settings_translation_manage, R.string.settings_translation_manage_desc, R.drawable.ic_translate,
+                "ترجمة الإنجليزية إلى العربية نموذج الترجمة تنزيل حذف الموافقة", this::manageTranslationModel);
         row(R.string.settings_notifications, R.string.settings_notifications_desc, R.drawable.ic_settings,
                 "الإشعارات التنبيهات", this::openNotificationSettings);
         row(R.string.settings_scheduling, R.string.settings_schedule_desc, R.drawable.ic_schedule,
@@ -269,7 +272,8 @@ public final class SettingsActivity extends AppCompatActivity {
     }
 
     private void manageTranslationModel() {
-        TranslateRemoteModel model = new TranslateRemoteModel.Builder(TranslateLanguage.ARABIC).build();
+        TranslateRemoteModel model = TranslationConfig.targetModel(
+                getSharedPreferences(TranslationConfig.PREFERENCES_NAME, MODE_PRIVATE));
         RemoteModelManager manager = RemoteModelManager.getInstance();
         manager.isModelDownloaded(model)
                 .addOnSuccessListener(downloaded -> {
@@ -286,7 +290,7 @@ public final class SettingsActivity extends AppCompatActivity {
     }
 
     private void showTranslationModelOptions(RemoteModelManager manager, TranslateRemoteModel model, boolean downloaded) {
-        android.content.SharedPreferences prefs = getSharedPreferences("translation_settings", MODE_PRIVATE);
+        android.content.SharedPreferences prefs = getSharedPreferences(TranslationConfig.PREFERENCES_NAME, MODE_PRIVATE);
         String status = getString(downloaded ? R.string.translation_model_downloaded : R.string.translation_model_not_downloaded);
         String[] options = {
                 getString(R.string.translation_change_network),

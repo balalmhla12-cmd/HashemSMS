@@ -370,7 +370,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
             h.bubble.setOnClickListener(tap);h.body.setOnClickListener(tap);h.meta.setOnClickListener(tap);
             h.copy.setOnClickListener(v->copyMessage(item));h.forward.setOnClickListener(v->forwardMessage(item));
             h.reply.setVisibility(outgoing?View.VISIBLE:View.GONE);h.reply.setOnClickListener(v->{if(outgoing){composer.setText(item.body);composer.setSelection(composer.length());composer.requestFocus();}});
-            h.star.setContentDescription(translatedMessageVisible.contains(item.id)?"عرض النص الأصلي":"ترجمة إلى العربية");
+            h.star.setContentDescription(translatedMessageVisible.contains(item.id)?"عرض الأصل":"عرض الترجمة");
             h.star.setOnClickListener(v->translateMessage(item));
             h.more.setOnClickListener(v->showMessageMenu(v,item));
         }
@@ -489,9 +489,9 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
     }
 
     private void requestTranslationConsent(ConversationMessage item){
-        android.content.SharedPreferences prefs=getSharedPreferences("translation_settings",MODE_PRIVATE);
+        android.content.SharedPreferences prefs=getSharedPreferences(TranslationConfig.PREFERENCES_NAME,MODE_PRIVATE);
         if(prefs.getBoolean("model_download_consented",false)){
-            startEnglishArabicTranslation(item,prefs.getBoolean("wifi_only",true));
+            startTranslation(item,prefs.getBoolean("wifi_only",true));
             return;
         }
         new AlertDialog.Builder(this)
@@ -500,18 +500,17 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
                 .setNegativeButton(android.R.string.cancel,(d,w)->translationInProgress=false)
                 .setNeutralButton(R.string.translation_wifi_only,(d,w)->{
                     prefs.edit().putBoolean("model_download_consented",true).putBoolean("wifi_only",true).apply();
-                    startEnglishArabicTranslation(item,true);
+                    startTranslation(item,true);
                 })
                 .setPositiveButton(R.string.translation_wifi_or_mobile,(d,w)->{
                     prefs.edit().putBoolean("model_download_consented",true).putBoolean("wifi_only",false).apply();
-                    startEnglishArabicTranslation(item,false);
+                    startTranslation(item,false);
                 }).setOnCancelListener(d->translationInProgress=false).show();
     }
 
-    private void startEnglishArabicTranslation(ConversationMessage item,boolean wifiOnly){
-        TranslatorOptions options=new TranslatorOptions.Builder()
-                .setSourceLanguage(TranslateLanguage.ENGLISH)
-                .setTargetLanguage(TranslateLanguage.ARABIC).build();
+    private void startTranslation(ConversationMessage item,boolean wifiOnly){
+        android.content.SharedPreferences prefs=getSharedPreferences(TranslationConfig.PREFERENCES_NAME,MODE_PRIVATE);
+        TranslatorOptions options=TranslationConfig.translatorOptions(prefs);
         final Translator translator=Translation.getClient(options);
         activeTranslator=translator;
         DownloadConditions.Builder conditions=new DownloadConditions.Builder();
