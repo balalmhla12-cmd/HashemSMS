@@ -131,6 +131,7 @@ public class Db extends SQLiteOpenHelper{
  private void copyColumn(Cursor c,ContentValues v,String column){int i=c.getColumnIndex(column);if(i<0)return;switch(c.getType(i)){case Cursor.FIELD_TYPE_NULL:v.putNull(column);break;case Cursor.FIELD_TYPE_INTEGER:v.put(column,c.getLong(i));break;case Cursor.FIELD_TYPE_FLOAT:v.put(column,c.getDouble(i));break;case Cursor.FIELD_TYPE_BLOB:v.put(column,c.getBlob(i));break;default:v.put(column,c.getString(i));}}
  private void copyColumnOrDefault(Cursor c,ContentValues v,String column,int fallback){int i=c.getColumnIndex(column);if(i<0)v.put(column,fallback);else copyColumn(c,v,column);}
  public long addMessage(String a,String b,String t,String s){ContentValues v=cv(a,b,t,s);return getWritableDatabase().insert("messages",null,v);}
+ public long addMessageAt(String a,String b,String t,String s,long timestamp){ContentValues v=cv(a,b,t,s);v.put("ts",timestamp>0?timestamp:System.currentTimeMillis());return getWritableDatabase().insert("messages",null,v);}
  public void status(long id,String s){ContentValues v=new ContentValues();v.put("status",s);getWritableDatabase().update("messages",v,"id=?",new String[]{""+id});}
  public void updateDeliveryStatus(long id,String deliveryStatus){
   Cursor c=null;boolean sendFailed=false;
