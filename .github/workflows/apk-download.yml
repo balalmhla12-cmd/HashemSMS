@@ -1,6 +1,16 @@
 name: Build installable HashemSMS APK
 
 on:
+  push:
+    branches: [phase1-ui]
+    paths:
+      - '.github/workflows/apk-download.yml'
+      - 'app/**'
+      - 'gradle/**'
+      - 'gradlew'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle.properties'
   workflow_dispatch:
 
 permissions:
