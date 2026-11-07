@@ -63,4 +63,39 @@ public final class SentReceiverProviderStatusTest {
         assertEquals(42L, db.providerId);
         assertFalse(db.providerSuccess);
     }
+
+    @Test
+    public void nullAndZeroProviderIdsAreIgnoredWithARealSqliteDatabase() {
+        Context context = RuntimeEnvironment.getApplication();
+        context.deleteDatabase("hashem.db");
+        Db db = new Db(context);
+
+        long nullProviderMessage = db.addMessage("+967700001", "null provider", "out", "sending");
+        db.updateSystemProviderStatus(context, nullProviderMessage, true);
+        try (android.database.Cursor row = db.getReadableDatabase().query(
+                "messages", new String[]{"provider_id"}, "id=?",
+                new String[]{String.valueOf(nullProviderMessage)}, null, null, null)) {
+            assertTrue(row.moveToFirst());
+            assertTrue(row.isNull(0));
+        }
+
+        long zeroProviderMessage = db.addMessage("+967700002", "zero provider", "out", "sending");
+        db.getWritableDatabase().execSQL(
+                "UPDATE messages SET provider_id=0 WHERE id=?",
+                new Object[]{zeroProviderMessage});
+        db.updateSystemProviderStatus(context, zeroProviderMessage, false);
+        try (android.database.Cursor row = db.getReadableDatabase().query(
+                "messages", new String[]{"provider_id"}, "id=?",
+                new String[]{String.valueOf(zeroProviderMessage)}, null, null, null)) {
+            assertTrue(row.moveToFirst());
+            assertEquals(0L, row.getLong(0));
+        }
+
+        try (android.database.Cursor rows = db.getReadableDatabase().rawQuery(
+                "SELECT COUNT(*) FROM messages", null)) {
+            assertTrue(rows.moveToFirst());
+            assertEquals(2, rows.getInt(0));
+        }
+        db.close();
+    }
 }
