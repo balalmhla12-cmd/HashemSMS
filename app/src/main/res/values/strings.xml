@@ -41,6 +41,9 @@
     <string name="settings_open_system">فتح إعدادات النظام</string>
     <string name="settings_manage_sim">عرض الشرائح المتاحة</string>
     <string name="settings_sim_note">يظل اختيار شريحة الإرسال داخل المحادثة عند الإرسال؛ لن تتغير الشريحة بصمت من هذه الشاشة.</string>
+    <string name="settings_delivery_reports">تقارير التسليم</string>
+    <string name="settings_delivery_reports_title">تقارير تسليم الرسائل</string>
+    <string name="settings_delivery_reports_system_default">عند استخدام الشريحة الافتراضية للنظام</string>
     <string name="settings_sim_error">تعذّر قراءة معلومات الشرائح من النظام.</string>
     <string name="settings_notifications_desc">إدارة تنبيهات HashemSMS من إعدادات Android.</string>
     <string name="settings_schedule_desc">إدارة إذن المنبهات الدقيقة عند الحاجة إلى الجدولة.</string>
