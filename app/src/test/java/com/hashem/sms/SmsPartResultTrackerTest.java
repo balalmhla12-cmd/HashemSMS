@@ -107,4 +107,25 @@ public final class SmsPartResultTrackerTest {
         receiver.process(context, messageId, 3, 1, Activity.RESULT_OK);
         assertEquals("تم التسليم", status(messageId));
     }
+
+    @Test
+    public void newSendAttemptResetsCompletedPartTrackingForSameMessageId() {
+        long messageId = addPendingMessage("retry same local row");
+        SentReceiver receiver = new SentReceiver();
+
+        receiver.process(context, messageId, 2, 0, Activity.RESULT_OK,
+                "RETRY_TAG", "+15551230003");
+        receiver.process(context, messageId, 2, 1, Activity.RESULT_OK,
+                "RETRY_TAG", "+15551230003");
+        assertEquals("تم الإرسال", status(messageId));
+
+        db.status(messageId, "جارٍ الإرسال");
+        SmsPartResultTracker.reset(context, messageId);
+        receiver.process(context, messageId, 2, 0, Activity.RESULT_OK,
+                "RETRY_TAG", "+15551230003");
+        assertEquals("جارٍ الإرسال", status(messageId));
+        receiver.process(context, messageId, 2, 1, Activity.RESULT_OK,
+                "RETRY_TAG", "+15551230003");
+        assertEquals("تم الإرسال", status(messageId));
+    }
 }
