@@ -60,6 +60,33 @@ jobs:
 
       - name: Build debug APK
         run: ./gradlew --no-daemon assembleDebug
+      - name: Verify APK signature and package metadata
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          BUILD_TOOLS="$ANDROID_HOME/build-tools/36.0.0"
+          test -s "$APK"
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK"
+          BADGING="$("$BUILD_TOOLS/aapt2" dump badging "$APK")"
+          printf '%s\n' "$BADGING" | grep -E "^(package:|sdkVersion:|targetSdkVersion:|native-code:)"
+          printf '%s\n' "$BADGING" | grep -q "^package: name='com.hashem.sms'"
+          printf '%s\n' "$BADGING" | grep -q "versionCode='4'"
+          printf '%s\n' "$BADGING" | grep -q "^sdkVersion:'26'"
+          printf '%s\n' "$BADGING" | grep -q "^native-code:"
+      - name: Print APK SHA-256 and size
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          sha256sum "$APK"
+          stat --printf='APK_SIZE_BYTES=%s\n' "$APK"
+      - name: Upload installable APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HashemSMS-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Run Android lint
         run: ./gradlew --no-daemon lintDebug
@@ -155,3 +182,28 @@ jobs:
             app/build/test-results/testDebugUnitTest/*.xml
             app/build/reports/tests/testDebugUnitTest/**
           if-no-files-found: warn
+
+  publish_release:
+    name: Publish private test pre-release
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/phase1-ui'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download verified APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: HashemSMS-debug-apk
+          path: release-apk
+
+      - name: Publish APK pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: hashemsms-test-${{ github.run_number }}
+          name: HashemSMS test build ${{ github.run_number }}
+          target_commitish: phase1-ui
+          prerelease: true
+          draft: false
+          files: release-apk/app-debug.apk
+          fail_on_unmatched_files: true
