@@ -24,6 +24,22 @@ final class SmsPartResultTracker {
 
     private SmsPartResultTracker() {}
 
+    static void reset(Context context, long messageId) {
+        if (messageId <= 0) return;
+        synchronized (SmsPartResultTracker.class) {
+            SharedPreferences.Editor editor = context.getSharedPreferences(
+                    "hashem_sms_parts", Context.MODE_PRIVATE).edit();
+            for (String direction : new String[]{"sent", "delivery"}) {
+                String prefix = direction + "_" + messageId;
+                editor.remove(prefix + "_count")
+                        .remove(prefix + "_parts")
+                        .remove(prefix + "_failed")
+                        .remove(prefix + "_complete");
+            }
+            editor.apply();
+        }
+    }
+
     static Result record(Context context, String direction, long messageId,
                          int partIndex, int partCount, boolean success) {
         if (messageId <= 0 || partCount < 1 || partIndex < 0 || partIndex >= partCount) {
