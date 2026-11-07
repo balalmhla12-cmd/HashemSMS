@@ -25,6 +25,8 @@ public class SmsSendingTest {
     @Before public void setUp() {
         context = RuntimeEnvironment.getApplication();
         context.deleteDatabase("hashem.db");
+        context.getSharedPreferences(SimPreferenceStore.PREFERENCES_NAME, Context.MODE_PRIVATE)
+                .edit().clear().apply();
         db = new Db(context);
         db.getWritableDatabase();
     }
