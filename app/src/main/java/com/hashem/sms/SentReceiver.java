@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.util.Log;
 
 public final class SentReceiver extends BroadcastReceiver {
@@ -13,7 +12,7 @@ public final class SentReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intent == null) return;
-        long id = intent.getLongExtra("id", -1L);
+        long id = intent.getLongExtra("messageId", intent.getLongExtra("id", -1L));
         int partCount = intent.getIntExtra("partCount", 1);
         int partIndex = intent.getIntExtra("partIndex", 0);
         if (id <= 0 || partCount < 1 || partIndex < 0 || partIndex >= partCount) return;
@@ -39,47 +38,29 @@ public final class SentReceiver extends BroadcastReceiver {
         }
     }
 
-
     static void applyFinalResult(Context context, Db db, long id, boolean success) {
         db.status(id, success ? "تم الإرسال" : "لم يتم الإرسال");
         db.updateSystemProviderStatus(context, id, success);
     }
 
-    private void process(Context context, long id, int partCount, int partIndex,
-                         int resultCode, String tag, String address) {
+    void process(Context context, long messageId, int partCount, int partIndex,
+                 int resultCode, String ignoredTag, String address) {
         boolean success = resultCode == Activity.RESULT_OK;
+        SmsPartResultTracker.Result result = SmsPartResultTracker.record(
+                context, "sent", messageId, partIndex, partCount, success);
+        if (!result.accepted || !result.complete) return;
+
         Db db = new Db(context);
-        boolean finished = false;
-        synchronized (SentReceiver.class) {
-            if (partCount <= 1) {
-                applyFinalResult(context, db, id, success);
-                db.updateBulkRecipientStatus(id, success ? "تم الإرسال" : "لم يتم الإرسال");
-                finished = true;
-            } else {
-                SharedPreferences prefs = context.getSharedPreferences("hashem_sms_parts", Context.MODE_PRIVATE);
-                String key = tag == null ? String.valueOf(id) : tag;
-                String doneKey = "sent_done_" + key;
-                String failedKey = "sent_failed_" + key;
-                int done = prefs.getInt(doneKey, 0);
-                boolean failed = prefs.getBoolean(failedKey, false) || !success;
-                if (done >= partCount) return;
-                done++;
-                boolean allDone = done >= partCount;
-                prefs.edit().putInt(doneKey, done).putBoolean(failedKey, failed).commit();
-                if (allDone) {
-                    prefs.edit().remove(doneKey).remove(failedKey).commit();
-                    applyFinalResult(context, db, id, !failed);
-                    db.updateBulkRecipientStatus(id, failed ? "لم يتم الإرسال" : "تم الإرسال");
-                    finished = true;
-                }
-            }
-        }
-        if (finished) {
-            context.sendBroadcast(new Intent(SmsReceiver.ACTION_SMS_UPDATED).setPackage(context.getPackageName()));
-            if (success && address != null && !address.trim().isEmpty()
-                    && NotificationHelper.isConversationNotificationActive(context, address)) {
-                NotificationHelper.showConversationNotification(context, address);
-            }
+        boolean finalSuccess = !result.failed;
+        applyFinalResult(context, db, messageId, finalSuccess);
+        db.updateBulkRecipientStatus(messageId,
+                finalSuccess ? "تم الإرسال" : "لم يتم الإرسال");
+
+        context.sendBroadcast(new Intent(SmsReceiver.ACTION_SMS_UPDATED)
+                .setPackage(context.getPackageName()));
+        if (finalSuccess && address != null && !address.trim().isEmpty()
+                && NotificationHelper.isConversationNotificationActive(context, address)) {
+            NotificationHelper.showConversationNotification(context, address);
         }
     }
 }
