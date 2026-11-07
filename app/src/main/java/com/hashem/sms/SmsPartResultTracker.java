@@ -24,6 +24,26 @@ final class SmsPartResultTracker {
 
     private SmsPartResultTracker() {}
 
+    // Preserve the four synchronous persistence points formerly in the receivers:
+    // sent progress/cleanup and delivery progress/cleanup.
+    private static boolean commitSentProgress(SharedPreferences.Editor editor) {
+        return editor.commit();
+    }
+
+    private static boolean commitSentCompletion(SharedPreferences.Editor editor,
+                                                String completeKey) {
+        return editor.putBoolean(completeKey, true).commit();
+    }
+
+    private static boolean commitDeliveryProgress(SharedPreferences.Editor editor) {
+        return editor.commit();
+    }
+
+    private static boolean commitDeliveryCompletion(SharedPreferences.Editor editor,
+                                                    String completeKey) {
+        return editor.putBoolean(completeKey, true).commit();
+    }
+
     static void reset(Context context, long messageId) {
         if (messageId <= 0) return;
         synchronized (SmsPartResultTracker.class) {
@@ -80,8 +100,23 @@ final class SmsPartResultTracker {
                     .putInt(countKey, partCount)
                     .putStringSet(partsKey, indexes)
                     .putBoolean(failedKey, failed);
-            if (complete) editor.putBoolean(completeKey, true);
-            editor.apply();
+            if ("sent".equals(direction)) {
+                commitSentProgress(editor);
+            } else if ("delivery".equals(direction)) {
+                commitDeliveryProgress(editor);
+            }
+
+            if (complete) {
+                SharedPreferences.Editor cleanup = prefs.edit()
+                        .remove(countKey)
+                        .remove(partsKey)
+                        .remove(failedKey);
+                if ("sent".equals(direction)) {
+                    commitSentCompletion(cleanup, completeKey);
+                } else if ("delivery".equals(direction)) {
+                    commitDeliveryCompletion(cleanup, completeKey);
+                }
+            }
 
             return new Result(true, false, complete, failed);
         }

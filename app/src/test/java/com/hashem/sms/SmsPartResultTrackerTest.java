@@ -128,4 +128,28 @@ public final class SmsPartResultTrackerTest {
                 "RETRY_TAG", "+15551230003");
         assertEquals("تم الإرسال", status(messageId));
     }
+    @Test
+    public void failedMultipartAttemptCanBeRetriedWithoutCountingOldParts() {
+        long messageId = addPendingMessage("retry after partial failure");
+        SentReceiver receiver = new SentReceiver();
+
+        receiver.process(context, messageId, 2, 0, Activity.RESULT_CANCELED,
+                "SAME_TAG", "+15551230003");
+        receiver.process(context, messageId, 2, 0, Activity.RESULT_OK,
+                "SAME_TAG", "+15551230003");
+        assertEquals("sending", status(messageId));
+        receiver.process(context, messageId, 2, 1, Activity.RESULT_OK,
+                "SAME_TAG", "+15551230003");
+        assertEquals("لم يتم الإرسال", status(messageId));
+
+        db.status(messageId, "جارٍ الإرسال");
+        SmsPartResultTracker.reset(context, messageId);
+        receiver.process(context, messageId, 2, 0, Activity.RESULT_OK,
+                "SAME_TAG", "+15551230003");
+        assertEquals("جارٍ الإرسال", status(messageId));
+        receiver.process(context, messageId, 2, 1, Activity.RESULT_OK,
+                "SAME_TAG", "+15551230003");
+        assertEquals("تم الإرسال", status(messageId));
+    }
+
 }
