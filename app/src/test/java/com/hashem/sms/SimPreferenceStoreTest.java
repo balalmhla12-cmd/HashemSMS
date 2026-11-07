@@ -114,6 +114,30 @@ public class SimPreferenceStoreTest {
         assertTrue(preferences.contains(KEY));
     }
 
+    @Test
+    public void deliveryReportsDefaultToEnabledAndAreIndependentPerSubscription() {
+        SimPreferenceStore store = new SimPreferenceStore(preferences);
+
+        assertTrue(store.deliveryReportsEnabled(11));
+        assertTrue(store.deliveryReportsEnabled(22));
+        store.setDeliveryReportsEnabled(11, false);
+
+        assertFalse(store.deliveryReportsEnabled(11));
+        assertTrue(store.deliveryReportsEnabled(22));
+        assertTrue(store.deliveryReportsEnabled(-1));
+    }
+
+    @Test
+    public void systemDefaultDeliveryReportPreferenceIsIndependentFromPhysicalSims() {
+        SimPreferenceStore store = new SimPreferenceStore(preferences);
+        store.setDeliveryReportsEnabled(-1, false);
+        store.setDeliveryReportsEnabled(11, true);
+
+        assertFalse(store.deliveryReportsEnabled(-1));
+        assertTrue(store.deliveryReportsEnabled(11));
+        assertTrue(store.deliveryReportsEnabled(22));
+    }
+
     private static final class NoOpCallback implements SubscriptionChoiceCallback {
         @Override public void onSelected(int subscriptionId) { }
         @Override public void onCancelled() { }
