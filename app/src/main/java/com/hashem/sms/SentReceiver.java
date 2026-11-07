@@ -39,6 +39,12 @@ public final class SentReceiver extends BroadcastReceiver {
         }
     }
 
+
+    static void applyFinalResult(Context context, Db db, long id, boolean success) {
+        db.status(id, success ? "تم الإرسال" : "لم يتم الإرسال");
+        db.updateSystemProviderStatus(context, id, success);
+    }
+
     private void process(Context context, long id, int partCount, int partIndex,
                          int resultCode, String tag, String address) {
         boolean success = resultCode == Activity.RESULT_OK;
@@ -46,8 +52,7 @@ public final class SentReceiver extends BroadcastReceiver {
         boolean finished = false;
         synchronized (SentReceiver.class) {
             if (partCount <= 1) {
-                db.status(id, success ? "تم الإرسال" : "لم يتم الإرسال");
-                if (success) db.saveOutgoingToSystemProvider(context, id);
+                applyFinalResult(context, db, id, success);
                 db.updateBulkRecipientStatus(id, success ? "تم الإرسال" : "لم يتم الإرسال");
                 finished = true;
             } else {
@@ -63,8 +68,7 @@ public final class SentReceiver extends BroadcastReceiver {
                 prefs.edit().putInt(doneKey, done).putBoolean(failedKey, failed).commit();
                 if (allDone) {
                     prefs.edit().remove(doneKey).remove(failedKey).commit();
-                    db.status(id, failed ? "لم يتم الإرسال" : "تم الإرسال");
-                    if (!failed) db.saveOutgoingToSystemProvider(context, id);
+                    applyFinalResult(context, db, id, !failed);
                     db.updateBulkRecipientStatus(id, failed ? "لم يتم الإرسال" : "تم الإرسال");
                     finished = true;
                 }
