@@ -33,12 +33,12 @@ final class SmsSending {
    if(recipient==null||recipient.trim().isEmpty())throw new IllegalArgumentException("SMS recipient is empty");
    if(body==null||body.isEmpty())throw new IllegalArgumentException("SMS body is empty");
    db.saveOutgoingToSystemProvider(app,id);SmsGateway gateway=gatewayOverride==null?createSmsGateway(subscriptionId):gatewayOverride;
-   ArrayList<String> parts=gateway.divideMessage(body);SmsPartResultTracker.reset(app,id);ArrayList<PendingIntent> sent=new ArrayList<>(),delivered=new ArrayList<>();
+   ArrayList<String> parts=gateway.divideMessage(body);SmsPartResultTracker.reset(app,id);boolean deliveryReportsEnabled=new SimPreferenceStore(app.getSharedPreferences(SimPreferenceStore.PREFERENCES_NAME,Context.MODE_PRIVATE)).deliveryReportsEnabled(subscriptionId);ArrayList<PendingIntent> sent=new ArrayList<>(),delivered=deliveryReportsEnabled?new ArrayList<>():null;
    for(int i=0;i<parts.size();i++){
     Intent si=new Intent(app,SentReceiver.class);si.putExtra("id",id);si.putExtra("messageId",id);si.putExtra("partCount",parts.size());si.putExtra("partIndex",i);si.putExtra("tag",tag);si.putExtra(NotificationHelper.EXTRA_ADDRESS,recipient);si.setAction(app.getPackageName()+"."+tag+"_SENT."+id+"."+i);
     Intent di=new Intent(app,DeliveredReceiver.class);di.putExtra("id",id);di.putExtra("messageId",id);di.putExtra("partCount",parts.size());di.putExtra("partIndex",i);di.setAction(app.getPackageName()+"."+tag+"_DELIVERED."+id+"."+i);
     sent.add(PendingIntent.getBroadcast(app,sentBase+(int)(id%100000)*10+i,si,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));
-    delivered.add(PendingIntent.getBroadcast(app,deliveredBase+(int)(id%100000)*10+i,di,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));
+    if(delivered!=null)delivered.add(PendingIntent.getBroadcast(app,deliveredBase+(int)(id%100000)*10+i,di,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));
    }
    gateway.sendMultipartTextMessage(recipient,parts,sent,delivered);app.sendBroadcast(new Intent(SmsReceiver.ACTION_SMS_UPDATED).setPackage(app.getPackageName()));
    if(showProgress)postToast(app,"بدأت محاولة إرسال الرسالة؛ ستظهر الحالة بعد وصول نتائج الأجزاء.",Toast.LENGTH_SHORT);return true;
