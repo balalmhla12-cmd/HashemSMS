@@ -96,4 +96,26 @@ public class SmsSendingTest {
             assertEquals("لم يتم الإرسال", c.getString(2));
         }
     }
+
+    @Test public void retryReusesExistingMessageIdWithoutCreatingAnotherLocalRecord() {
+        long messageId = db.addMessage(ADDRESS, BODY, "out", "لم يتم الإرسال");
+        assertTrue(messageId > 0);
+        RecordingGateway gateway = new RecordingGateway();
+
+        boolean started = SmsSending.sendSmsInBackground(context, db, ADDRESS, BODY,
+                "RETRY", 9000, 10000, -1, false, messageId, 0L, gateway);
+
+        assertTrue(started);
+        try (Cursor c = db.getReadableDatabase().rawQuery(
+                "SELECT COUNT(*) FROM messages WHERE address=? AND body=?",
+                new String[]{ADDRESS, BODY})) {
+            assertTrue(c.moveToFirst());
+            assertEquals(1, c.getInt(0));
+        }
+        try (Cursor c = db.getReadableDatabase().rawQuery(
+                "SELECT status FROM messages WHERE id=?", new String[]{String.valueOf(messageId)})) {
+            assertTrue(c.moveToFirst());
+            assertEquals("جارٍ الإرسال", c.getString(0));
+        }
+    }
 }
