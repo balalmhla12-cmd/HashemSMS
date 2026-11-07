@@ -5,6 +5,8 @@ import java.util.Set;
 
 /** Persists and validates a conversation's preferred SMS subscription. */
 final class SimPreferenceStore {
+    static final String PREFERENCES_NAME = "hashem_ui";
+    private static final String DELIVERY_REPORT_PREFIX = "delivery_reports_subscription_";
     enum State { NONE, AVAILABLE, SYSTEM_DEFAULT, REMOVED, UNVERIFIED }
 
     static final class RestoreResult {
@@ -22,6 +24,18 @@ final class SimPreferenceStore {
     }
 
     private final SharedPreferences preferences;
+
+    static String deliveryReportsKey(int subscriptionId) {
+        return DELIVERY_REPORT_PREFIX + subscriptionId;
+    }
+
+    boolean deliveryReportsEnabled(int subscriptionId) {
+        return preferences.getBoolean(deliveryReportsKey(subscriptionId), true);
+    }
+
+    void setDeliveryReportsEnabled(int subscriptionId, boolean enabled) {
+        preferences.edit().putBoolean(deliveryReportsKey(subscriptionId), enabled).apply();
+    }
 
     SimPreferenceStore(SharedPreferences preferences) {
         this.preferences = preferences;
