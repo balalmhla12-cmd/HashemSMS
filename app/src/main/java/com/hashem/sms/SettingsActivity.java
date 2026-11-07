@@ -21,6 +21,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import androidx.appcompat.widget.SwitchCompat;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.activity.result.ActivityResultLauncher;
@@ -45,7 +46,7 @@ public final class SettingsActivity extends AppCompatActivity {
     private TextView empty, defaultDetail, permissionsDetail, simDetail;
     private final ArrayList<Entry> entries = new ArrayList<>();
     private final ArrayList<TextView> sectionTitles = new ArrayList<>();
-    private static final String PREFS = "hashem_ui";
+    private static final String PREFS = SimPreferenceStore.PREFERENCES_NAME;
     private static final String NIGHT_KEY = "night_mode";
     private static final ExecutorService BACKUP_EXECUTOR = Executors.newSingleThreadExecutor();
     private final AtomicBoolean backupOperationRunning = new AtomicBoolean(false);
@@ -593,6 +594,8 @@ public final class SettingsActivity extends AppCompatActivity {
                         Toast.makeText(this, "تم حفظ شريحة الإرسال الافتراضية", Toast.LENGTH_SHORT).show();
                         simDetail.setText(simStatus());
                     })
+                    .setPositiveButton(R.string.settings_delivery_reports, (dialog, which) ->
+                            showDeliveryReportSettings(active, preferences))
                     .setNeutralButton(R.string.settings_open_system, (dialog, which) -> openAppSettings())
                     .setNegativeButton(android.R.string.cancel, null).show();
         } catch (SecurityException | IllegalStateException error) {
@@ -602,6 +605,47 @@ public final class SettingsActivity extends AppCompatActivity {
             android.util.Log.w("HashemSMS", "Unable to load active SIM subscriptions", error);
             Toast.makeText(this, R.string.settings_sim_error, Toast.LENGTH_LONG).show();
         }
+    }
+
+    private void showDeliveryReportSettings(List<SubscriptionInfo> active,
+            android.content.SharedPreferences preferences) {
+        SimPreferenceStore store = new SimPreferenceStore(preferences);
+        LinearLayout rows = new LinearLayout(this);
+        rows.setOrientation(LinearLayout.VERTICAL);
+        rows.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        rows.setPadding(dp(20), dp(8), dp(20), dp(8));
+
+        addDeliveryReportSwitch(rows, store, -1,
+                getString(R.string.settings_delivery_reports_system_default));
+        for (int i = 0; i < active.size(); i++) {
+            SubscriptionInfo info = active.get(i);
+            CharSequence name = info.getDisplayName();
+            CharSequence carrier = info.getCarrierName();
+            CharSequence label = name == null || name.length() == 0 ? carrier : name;
+            String title = "SIM " + (info.getSimSlotIndex() + 1) + " — "
+                    + (label == null || label.length() == 0 ? "الشريحة " + (i + 1) : label);
+            addDeliveryReportSwitch(rows, store, info.getSubscriptionId(), title);
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.settings_delivery_reports_title)
+                .setView(rows)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
+    }
+
+    private void addDeliveryReportSwitch(LinearLayout parent, SimPreferenceStore store,
+            int subscriptionId, String label) {
+        SwitchCompat toggle = new SwitchCompat(this);
+        toggle.setText(label);
+        toggle.setTextSize(15);
+        toggle.setTextColor(col(R.color.on_surface));
+        toggle.setPadding(0, dp(10), 0, dp(10));
+        toggle.setMinHeight(dp(52));
+        toggle.setChecked(store.deliveryReportsEnabled(subscriptionId));
+        toggle.setOnCheckedChangeListener((button, enabled) ->
+                store.setDeliveryReportsEnabled(subscriptionId, enabled));
+        parent.addView(toggle, new LinearLayout.LayoutParams(-1, -2));
     }
 
     private void requestDefaultRole() {
