@@ -223,6 +223,29 @@ public class Db extends SQLiteOpenHelper{
  }
  public void saveSchedule(long id,String address,String body,long at){ContentValues v=new ContentValues();v.put("id",id);v.put("address",address);v.put("body",body);v.put("at",at);getWritableDatabase().insertWithOnConflict("schedules",null,v,SQLiteDatabase.CONFLICT_REPLACE);}
  public Cursor listSchedules(){return getReadableDatabase().query("schedules",new String[]{"id","address","body","at"},null,null,null,null,"at ASC");}
+ public ScheduleRecord schedule(long id){
+  Cursor c=null;
+  try{c=getReadableDatabase().query("schedules",new String[]{"id","address","body","at"},"id=?",new String[]{String.valueOf(id)},null,null,null,"1");if(!c.moveToFirst())return null;return new ScheduleRecord(c.getLong(0),c.getString(1),c.getString(2),c.getLong(3));}
+  finally{if(c!=null)c.close();}
+ }
+ public boolean updateFailedMessageBody(long id,String body){
+  if(body==null||body.trim().isEmpty())return false;
+  ContentValues v=new ContentValues();v.put("body",body);
+  String where="id=? AND type='out' AND (LOWER(status) LIKE '%fail%' OR status IN ('فشل','لم يتم الإرسال')) AND NOT EXISTS (SELECT 1 FROM schedules WHERE schedules.id=messages.id)";
+  return getWritableDatabase().update("messages",v,where,new String[]{String.valueOf(id)})==1;
+ }
+ public boolean updateScheduledMessage(long id,String body,long at){
+  if(body==null||body.trim().isEmpty()||at<=System.currentTimeMillis())return false;
+  SQLiteDatabase d=getWritableDatabase();d.beginTransaction();
+  try{
+   ContentValues scheduleValues=new ContentValues();scheduleValues.put("body",body);scheduleValues.put("at",at);
+   int scheduleChanged=d.update("schedules",scheduleValues,"id=?",new String[]{String.valueOf(id)});
+   ContentValues messageValues=new ContentValues();messageValues.put("body",body);
+   int messageChanged=d.update("messages",messageValues,"id=? AND type='out' AND status='scheduled'",new String[]{String.valueOf(id)});
+   if(scheduleChanged!=1||messageChanged!=1)return false;
+   d.setTransactionSuccessful();return true;
+  }finally{d.endTransaction();}
+ }
  public static final class ScheduleRecord{public final long id,at;public final String address,body;public ScheduleRecord(long i,String a,String b,long t){id=i;address=a;body=b;at=t;}}
  public ScheduleRecord claimSchedule(long id){
   SQLiteDatabase d=getWritableDatabase();d.beginTransaction();ScheduleRecord row=null;Cursor c=null;

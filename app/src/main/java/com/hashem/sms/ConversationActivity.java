@@ -488,7 +488,7 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
             h.bubble.setOnLongClickListener(longPress);h.body.setOnLongClickListener(longPress);h.meta.setOnLongClickListener(longPress);h.selector.setOnLongClickListener(longPress);
             h.bubble.setOnClickListener(tap);h.body.setOnClickListener(tap);h.meta.setOnClickListener(tap);
             h.copy.setOnClickListener(v->copyMessage(item));h.forward.setOnClickListener(v->forwardMessage(item));
-            h.reply.setVisibility(outgoing?View.VISIBLE:View.GONE);h.reply.setOnClickListener(v->{if(outgoing){composer.setText(item.body);composer.setSelection(composer.length());composer.requestFocus();}});
+            h.reply.setVisibility(outgoing?View.VISIBLE:View.GONE);h.reply.setContentDescription("تعديل");h.reply.setOnClickListener(v->{if(outgoing){if(isFailed(item.status)||"scheduled".equalsIgnoreCase(item.status))editMessage(item);else{composer.setText(item.body);composer.setSelection(composer.length());composer.requestFocus();}}});
             h.star.setContentDescription(translatedMessageVisible.contains(item.id)?"عرض الأصل":"عرض الترجمة");
             h.star.setOnClickListener(v->translateMessage(item));
             h.more.setOnClickListener(v->showMessageMenu(v,item));
@@ -661,11 +661,87 @@ public class ConversationActivity extends androidx.activity.ComponentActivity {
                 });
     }
 
+
+    private void editMessage(ConversationMessage item){
+        if(item==null||!"out".equals(item.type))return;
+        if(isFailed(item.status)){showFailedMessageEditor(item);return;}
+        if(!"scheduled".equalsIgnoreCase(item.status))return;
+        MESSAGE_EXECUTOR.execute(()->{
+            Db workerDb=new Db(getApplicationContext());
+            Db.ScheduleRecord schedule=workerDb.schedule(item.id);
+            runOnUiThread(()->{
+                if(isFinishing()||isDestroyed())return;
+                if(schedule==null){Toast.makeText(this,"لم تعد الرسالة مجدولة؛ حدّث المحادثة.",Toast.LENGTH_SHORT).show();loadMessages(false);return;}
+                showScheduledMessageEditor(item,schedule);
+            });
+        });
+    }
+
+    private EditText messageEditField(String body){
+        EditText input=new EditText(this);input.setText(body==null?"":body);input.setMinLines(2);input.setMaxLines(8);
+        input.setGravity(Gravity.TOP|Gravity.START);input.setPadding(UiResources.dp(this,12),UiResources.dp(this,8),UiResources.dp(this,12),UiResources.dp(this,8));
+        return input;
+    }
+
+    private void showFailedMessageEditor(ConversationMessage item){
+        EditText input=messageEditField(item.body);
+        new AlertDialog.Builder(this).setTitle("تعديل الرسالة الفاشلة").setView(input)
+                .setNegativeButton("إلغاء",null).setPositiveButton("حفظ",(dialog,which)->{
+                    String body=input.getText().toString().trim();
+                    if(body.isEmpty()){Toast.makeText(this,"لا يمكن حفظ رسالة فارغة",Toast.LENGTH_SHORT).show();return;}
+                    MESSAGE_EXECUTOR.execute(()->{
+                        boolean saved=new Db(getApplicationContext()).updateFailedMessageBody(item.id,body);
+                        mainHandler.post(()->{
+                            if(saved){Toast.makeText(this,"تم تحديث الرسالة الفاشلة",Toast.LENGTH_SHORT).show();loadMessages(false);}
+                            else Toast.makeText(this,"تعذّر تعديل الرسالة؛ ربما تغيرت حالتها.",Toast.LENGTH_LONG).show();
+                        });
+                    });
+                }).show();
+    }
+
+    private void showScheduledMessageEditor(ConversationMessage item,Db.ScheduleRecord original){
+        EditText input=messageEditField(item.body);
+        new AlertDialog.Builder(this).setTitle("تعديل الرسالة المجدولة").setMessage("عدّل النص ثم اختر الموعد الجديد.")
+                .setView(input).setNegativeButton("إلغاء",null).setPositiveButton("اختيار الموعد",(dialog,which)->{
+                    String body=input.getText().toString().trim();
+                    if(body.isEmpty()){Toast.makeText(this,"لا يمكن حفظ رسالة فارغة",Toast.LENGTH_SHORT).show();return;}
+                    Calendar initial=Calendar.getInstance();initial.setTimeInMillis(original.at);
+                    new DatePickerDialog(this,(datePicker,year,month,day)->{
+                        Calendar chosen=Calendar.getInstance();chosen.setTimeInMillis(original.at);
+                        chosen.set(Calendar.YEAR,year);chosen.set(Calendar.MONTH,month);chosen.set(Calendar.DAY_OF_MONTH,day);
+                        new TimePickerDialog(this,(timePicker,hour,minute)->{
+                            chosen.set(Calendar.HOUR_OF_DAY,hour);chosen.set(Calendar.MINUTE,minute);
+                            chosen.set(Calendar.SECOND,0);chosen.set(Calendar.MILLISECOND,0);
+                            long newAt=chosen.getTimeInMillis();
+                            if(newAt<=System.currentTimeMillis()){Toast.makeText(this,"اختر وقتاً في المستقبل",Toast.LENGTH_SHORT).show();return;}
+                            saveScheduledMessageEdit(item.id,original,body,newAt);
+                        },initial.get(Calendar.HOUR_OF_DAY),initial.get(Calendar.MINUTE),true).show();
+                    },initial.get(Calendar.YEAR),initial.get(Calendar.MONTH),initial.get(Calendar.DAY_OF_MONTH)).show();
+                }).show();
+    }
+
+    private void saveScheduledMessageEdit(long id,Db.ScheduleRecord original,String body,long newAt){
+        MESSAGE_EXECUTOR.execute(()->{
+            Context app=getApplicationContext();Db workerDb=new Db(app);
+            AlarmScheduler.cancel(app,id,original.address,original.body);
+            boolean saved=workerDb.updateScheduledMessage(id,body,newAt);
+            if(saved)AlarmScheduler.scheduleBestEffort(app,id,original.address,body,newAt);
+            else{
+                Db.ScheduleRecord current=workerDb.schedule(id);
+                if(current!=null)AlarmScheduler.scheduleBestEffort(app,id,current.address,current.body,current.at);
+            }
+            mainHandler.post(()->{
+                if(saved){Toast.makeText(this,"تم تحديث الرسالة وموعد إرسالها",Toast.LENGTH_SHORT).show();loadMessages(false);}
+                else Toast.makeText(this,"تعذّر تعديل الرسالة؛ ربما بدأ إرسالها بالفعل.",Toast.LENGTH_LONG).show();
+            });
+        });
+    }
+
     void showMessageMenu(View anchor,ConversationMessage item){
         PopupMenu menu=new PopupMenu(this,anchor);menu.setForceShowIcon(true);
-        menu.getMenu().add("تمييز بنجمة").setIcon(R.drawable.ic_star);menu.getMenu().add("حذف").setIcon(R.drawable.ic_delete);menu.getMenu().add("تفاصيل الرسالة").setIcon(R.drawable.ic_more_vert);
+        menu.getMenu().add("تمييز بنجمة").setIcon(R.drawable.ic_star);if("out".equals(item.type)&&(isFailed(item.status)||"scheduled".equalsIgnoreCase(item.status)))menu.getMenu().add("تعديل").setIcon(android.R.drawable.ic_menu_edit);menu.getMenu().add("حذف").setIcon(R.drawable.ic_delete);menu.getMenu().add("تفاصيل الرسالة").setIcon(R.drawable.ic_more_vert);
         menu.setOnMenuItemClickListener(choice->{
-            if("تمييز بنجمة".contentEquals(choice.getTitle())){MESSAGE_EXECUTOR.execute(()->{db.starMessages(new ArrayList<>(Collections.singletonList(item.id)));mainHandler.post(()->loadMessages(false));});return true;}if("تفاصيل الرسالة".contentEquals(choice.getTitle())){
+            if("تمييز بنجمة".contentEquals(choice.getTitle())){MESSAGE_EXECUTOR.execute(()->{db.starMessages(new ArrayList<>(Collections.singletonList(item.id)));mainHandler.post(()->loadMessages(false));});return true;}if("تعديل".contentEquals(choice.getTitle())){editMessage(item);return true;}if("تفاصيل الرسالة".contentEquals(choice.getTitle())){
                 String direction="out".equals(item.type)?"صادرة":"واردة",status=displayStatus(item.status);if(status.isEmpty())status="غير معروفة";
                 new AlertDialog.Builder(this).setTitle("تفاصيل الرسالة").setMessage(direction+"\n"+status+"\n\n"+item.body).setPositiveButton("إغلاق",null).show();
             }else new AlertDialog.Builder(this).setTitle("حذف الرسالة؟").setMessage("هل تريد حذف هذه الرسالة؟").setNegativeButton("إلغاء",null).setPositiveButton("حذف",(dialog,which)->{
