@@ -37,6 +37,8 @@ public class SmsSendingTest {
         String recipient;
         java.util.ArrayList<String> parts;
         boolean fail;
+        boolean deliveryIntentsNull;
+        int deliveryIntentCount;
         @Override public java.util.ArrayList<String> divideMessage(String body) {
             return new java.util.ArrayList<>(java.util.Collections.singletonList(body));
         }
@@ -48,7 +50,8 @@ public class SmsSendingTest {
             this.recipient = recipient;
             this.parts = parts;
             assertEquals(1, sent.size());
-            assertEquals(1, delivered.size());
+            deliveryIntentsNull = delivered == null;
+            deliveryIntentCount = delivered == null ? 0 : delivered.size();
         }
     }
 
@@ -67,6 +70,34 @@ public class SmsSendingTest {
             assertEquals(BODY, c.getString(1));
             assertEquals("sending", c.getString(2));
         }
+    }
+
+    @Test public void disabledDeliveryReportsPassNullForSelectedSubscriptionOnly() {
+        new SimPreferenceStore(context.getSharedPreferences(
+                SimPreferenceStore.PREFERENCES_NAME, Context.MODE_PRIVATE))
+                .setDeliveryReportsEnabled(23, false);
+        RecordingGateway disabledGateway = new RecordingGateway();
+
+        assertTrue(SmsSending.sendSmsInBackground(context, db, ADDRESS, BODY,
+                "SIM23", 11000, 12000, 23, false, 0L, 0L, disabledGateway));
+        assertTrue(disabledGateway.deliveryIntentsNull);
+
+        RecordingGateway otherSimGateway = new RecordingGateway();
+        assertTrue(SmsSending.sendSmsInBackground(context, db, ADDRESS, BODY,
+                "SIM24", 13000, 14000, 24, false, 0L, 0L, otherSimGateway));
+        assertFalse(otherSimGateway.deliveryIntentsNull);
+        assertEquals(1, otherSimGateway.deliveryIntentCount);
+    }
+
+    @Test public void systemDefaultSubscriptionUsesItsOwnDeliveryReportPreference() {
+        new SimPreferenceStore(context.getSharedPreferences(
+                SimPreferenceStore.PREFERENCES_NAME, Context.MODE_PRIVATE))
+                .setDeliveryReportsEnabled(-1, false);
+        RecordingGateway systemDefaultGateway = new RecordingGateway();
+
+        assertTrue(SmsSending.sendSmsInBackground(context, db, ADDRESS, BODY,
+                "DEFAULT_SIM", 15000, 16000, -1, false, 0L, 0L, systemDefaultGateway));
+        assertTrue(systemDefaultGateway.deliveryIntentsNull);
     }
 
     @Test public void smsServiceFailurePreservesOutgoingRecordAsFailed() {
