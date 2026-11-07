@@ -71,7 +71,9 @@ jobs:
           printf '%s\n' "$BADGING" | grep -E "^(package:|sdkVersion:|targetSdkVersion:|native-code:)"
           printf '%s\n' "$BADGING" | grep -q "^package: name='com.hashem.sms'"
           printf '%s\n' "$BADGING" | grep -q "versionCode='4'"
-          printf '%s\n' "$BADGING" | grep -q "^sdkVersion:'26'"
+          MIN_SDK="$("$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest min-sdk "$APK")"
+          printf 'minSdkVersion=%s\n' "$MIN_SDK"
+          test "$MIN_SDK" = "26"
           printf '%s\n' "$BADGING" | grep -q "^native-code:"
       - name: Print APK SHA-256 and size
         run: |
