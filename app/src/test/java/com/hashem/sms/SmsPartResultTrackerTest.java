@@ -26,7 +26,7 @@ public final class SmsPartResultTrackerTest {
         context = RuntimeEnvironment.getApplication();
         context.deleteDatabase("hashem.db");
         context.getSharedPreferences("hashem_sms_parts", Context.MODE_PRIVATE)
-                .edit().clear().commit();
+                .edit().clear().apply();
         db = new Db(context);
         db.getWritableDatabase();
     }
