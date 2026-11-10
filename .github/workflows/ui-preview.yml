@@ -15,7 +15,7 @@ concurrency:
 jobs:
   preview:
     name: Build and capture real Android screen
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 35
     steps:
       - name: Checkout phase1-ui source
@@ -47,11 +47,11 @@ jobs:
       - name: Run app on Android Emulator and capture home screen
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 30
           target: google_apis
           arch: x86_64
-          profile: pixel_6
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          profile: pixel_2
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -wipe-data
           disable-animations: true
           script: |
             set -euo pipefail
