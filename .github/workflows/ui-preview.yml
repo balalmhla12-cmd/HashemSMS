@@ -1,0 +1,95 @@
+name: HashemSMS UI Preview
+
+on:
+  push:
+    branches: [phase1-ui]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hashemsms-ui-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    name: Build and capture real Android screen
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout phase1-ui source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 1
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install required Android SDK packages
+        run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Build the exact checked-out app
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon assembleDebug
+
+      - name: Run app on Android Emulator and capture home screen
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: true
+          script: |
+            set -euo pipefail
+            APK="app/build/outputs/apk/debug/app-debug.apk"
+            test -s "$APK"
+            adb install -r "$APK"
+
+            # Grant only runtime permissions needed to keep first-run permission
+            # dialogs from covering the actual application screen in this preview.
+            for permission in \
+              android.permission.SEND_SMS \
+              android.permission.RECEIVE_SMS \
+              android.permission.READ_SMS \
+              android.permission.READ_CONTACTS \
+              android.permission.POST_NOTIFICATIONS \
+              android.permission.ACCESS_FINE_LOCATION \
+              android.permission.ACCESS_COARSE_LOCATION \
+              android.permission.READ_PHONE_STATE; do
+              adb shell pm grant com.hashem.sms "$permission" || true
+            done
+
+            adb shell settings put system font_scale 1.0
+            adb shell wm size 1080x2400
+            adb shell wm density 420
+            adb shell am force-stop com.hashem.sms
+            adb shell am start -W -n com.hashem.sms/.MainActivity
+            sleep 12
+
+            mkdir -p preview-artifacts
+            adb shell screencap -p /sdcard/hashemsms-home.png
+            adb pull /sdcard/hashemsms-home.png preview-artifacts/hashemsms-home.png
+            test -s preview-artifacts/hashemsms-home.png
+            adb shell dumpsys activity activities | grep -E "mResumedActivity|topResumedActivity" > preview-artifacts/foreground-activity.txt || true
+            sha256sum preview-artifacts/hashemsms-home.png | tee preview-artifacts/screenshot-sha256.txt
+            git rev-parse HEAD | tee preview-artifacts/source-commit.txt
+
+      - name: Upload real emulator screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: HashemSMS-UI-Preview-${{ github.sha }}
+          path: preview-artifacts/
+          if-no-files-found: error
+          retention-days: 14
