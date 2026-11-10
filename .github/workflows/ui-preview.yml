@@ -55,7 +55,7 @@ jobs:
           disable-animations: true
           script: |
             set -euo pipefail
-            APK="app/build/outputs/apk/debug/app-debug.apk"
+            APK="$GITHUB_WORKSPACE/app/build/outputs/apk/debug/app-debug.apk"
             test -s "$APK"
             adb install -r "$APK"
 
@@ -80,13 +80,13 @@ jobs:
             adb shell am start -W -n com.hashem.sms/.MainActivity
             sleep 12
 
-            mkdir -p preview-artifacts
+            mkdir -p "$GITHUB_WORKSPACE/preview-artifacts"
             adb shell screencap -p /sdcard/hashemsms-home.png
-            adb pull /sdcard/hashemsms-home.png preview-artifacts/hashemsms-home.png
-            test -s preview-artifacts/hashemsms-home.png
-            adb shell dumpsys activity activities | grep -E "mResumedActivity|topResumedActivity" > preview-artifacts/foreground-activity.txt || true
-            sha256sum preview-artifacts/hashemsms-home.png | tee preview-artifacts/screenshot-sha256.txt
-            git rev-parse HEAD | tee preview-artifacts/source-commit.txt
+            adb pull /sdcard/hashemsms-home.png "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-home.png"
+            test -s "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-home.png"
+            adb shell dumpsys activity activities | grep -E "mResumedActivity|topResumedActivity" > "$GITHUB_WORKSPACE/preview-artifacts/foreground-activity.txt" || true
+            sha256sum "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-home.png" | tee "$GITHUB_WORKSPACE/preview-artifacts/screenshot-sha256.txt"
+            git -C "$GITHUB_WORKSPACE" rev-parse HEAD | tee "$GITHUB_WORKSPACE/preview-artifacts/source-commit.txt"
 
       - name: Upload real emulator screenshot
         uses: actions/upload-artifact@v4
