@@ -16,7 +16,7 @@ jobs:
   preview:
     name: Build and capture real Android screen
     runs-on: ubuntu-22.04
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - name: Checkout phase1-ui source
         uses: actions/checkout@v4
@@ -37,61 +37,113 @@ jobs:
           packages: platform-tools
 
       - name: Install required Android SDK packages
-        run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+        run: |
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" "emulator" "system-images;android-30;google_apis;x86_64"
 
       - name: Build the exact checked-out app
         run: |
           chmod +x ./gradlew
           ./gradlew --no-daemon assembleDebug
 
-      - name: Run app on Android Emulator and capture home screen
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 30
-          target: google_apis
-          arch: x86_64
-          profile: pixel_2
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -wipe-data
-          disable-animations: true
-          script: |
-            set -euo pipefail
-            APK="$GITHUB_WORKSPACE/app/build/outputs/apk/debug/app-debug.apk"
-            test -s "$APK"
-            adb install -r "$APK"
+      - name: Start emulator directly and capture home screen
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/preview-artifacts"
 
-            # Grant only runtime permissions needed to keep first-run permission
-            # dialogs from covering the actual application screen in this preview.
-            for permission in \
-              android.permission.SEND_SMS \
-              android.permission.RECEIVE_SMS \
-              android.permission.READ_SMS \
-              android.permission.READ_CONTACTS \
-              android.permission.POST_NOTIFICATIONS \
-              android.permission.ACCESS_FINE_LOCATION \
-              android.permission.ACCESS_COARSE_LOCATION \
-              android.permission.READ_PHONE_STATE; do
-              adb shell pm grant com.hashem.sms "$permission" || true
-            done
+          AVD_NAME="hashemsms-preview"
+          echo "no" | avdmanager create avd --force --name "$AVD_NAME" --package "system-images;android-30;google_apis;x86_64" --device "pixel_2"
 
-            adb shell settings put system font_scale 1.0
-            adb shell wm size 1080x2400
-            adb shell wm density 420
-            adb shell am force-stop com.hashem.sms
-            adb shell am start -W -n com.hashem.sms/.MainActivity
-            sleep 12
+          "$ANDROID_HOME/emulator/emulator" -avd "$AVD_NAME" \
+            -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim \
+            -no-snapshot -wipe-data -memory 2048 -cores 2 \
+            > "$GITHUB_WORKSPACE/preview-artifacts/emulator.log" 2>&1 &
+          EMULATOR_PID=$!
+          echo "$EMULATOR_PID" > "$GITHUB_WORKSPACE/preview-artifacts/emulator.pid"
 
-            mkdir -p "$GITHUB_WORKSPACE/preview-artifacts"
-            adb shell screencap -p /sdcard/hashemsms-home.png
-            adb pull /sdcard/hashemsms-home.png "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-home.png"
-            test -s "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-home.png"
-            adb shell dumpsys activity activities | grep -E "mResumedActivity|topResumedActivity" > "$GITHUB_WORKSPACE/preview-artifacts/foreground-activity.txt" || true
-            sha256sum "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-home.png" | tee "$GITHUB_WORKSPACE/preview-artifacts/screenshot-sha256.txt"
-            git -C "$GITHUB_WORKSPACE" rev-parse HEAD | tee "$GITHUB_WORKSPACE/preview-artifacts/source-commit.txt"
+          on_exit() {
+            result=$?
+            if [ "$result" -ne 0 ]; then
+              adb -s emulator-5554 logcat -d > "$GITHUB_WORKSPACE/preview-artifacts/logcat-on-failure.txt" 2>&1 || true
+              adb -s emulator-5554 shell getprop > "$GITHUB_WORKSPACE/preview-artifacts/device-properties-on-failure.txt" 2>&1 || true
+            fi
+            adb -s emulator-5554 emu kill >/dev/null 2>&1 || true
+            wait "$EMULATOR_PID" 2>/dev/null || true
+            exit "$result"
+          }
+          trap on_exit EXIT
+
+          adb -s emulator-5554 wait-for-device
+          booted=0
+          for attempt in $(seq 1 600); do
+            state="$(adb -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+            if [ "$state" = "1" ]; then
+              booted=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$booted" -ne 1 ]; then
+            echo "Android emulator did not finish booting within 10 minutes."
+            exit 1
+          fi
+
+          # Do not inject key events; the emulator is controlled only through
+          # shell settings and normal package/activity commands.
+          sleep 15
+          adb -s emulator-5554 shell settings put global window_animation_scale 0
+          adb -s emulator-5554 shell settings put global transition_animation_scale 0
+          adb -s emulator-5554 shell settings put global animator_duration_scale 0
+
+          APK="$GITHUB_WORKSPACE/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          adb -s emulator-5554 install -r "$APK"
+
+          for permission in \
+            android.permission.SEND_SMS \
+            android.permission.RECEIVE_SMS \
+            android.permission.READ_SMS \
+            android.permission.READ_CONTACTS \
+            android.permission.POST_NOTIFICATIONS \
+            android.permission.ACCESS_FINE_LOCATION \
+            android.permission.ACCESS_COARSE_LOCATION \
+            android.permission.READ_PHONE_STATE; do
+            adb -s emulator-5554 shell pm grant com.hashem.sms "$permission" || true
+          done
+
+          adb -s emulator-5554 shell settings put system font_scale 1.0
+          adb -s emulator-5554 shell wm size 1080x2400
+          adb -s emulator-5554 shell wm density 420
+          adb -s emulator-5554 shell am force-stop com.hashem.sms
+          adb -s emulator-5554 shell am start -W -n com.hashem.sms/.MainActivity
+          sleep 15
+
+          adb -s emulator-5554 exec-out screencap -p > "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-home.png"
+          test -s "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-home.png"
+          adb -s emulator-5554 shell dumpsys activity activities | grep -E "mResumedActivity|topResumedActivity" > "$GITHUB_WORKSPACE/preview-artifacts/foreground-activity.txt" || true
+          sha256sum "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-home.png" | tee "$GITHUB_WORKSPACE/preview-artifacts/screenshot-sha256.txt"
+          git -C "$GITHUB_WORKSPACE" rev-parse HEAD | tee "$GITHUB_WORKSPACE/preview-artifacts/source-commit.txt"
 
       - name: Upload real emulator screenshot
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: HashemSMS-UI-Preview-${{ github.sha }}
-          path: preview-artifacts/
+          path: preview-artifacts/hashemsms-home.png
           if-no-files-found: error
           retention-days: 14
+
+      - name: Upload emulator diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HashemSMS-UI-Preview-Diagnostics-${{ github.sha }}
+          path: |
+            preview-artifacts/emulator.log
+            preview-artifacts/logcat-on-failure.txt
+            preview-artifacts/device-properties-on-failure.txt
+            preview-artifacts/foreground-activity.txt
+            preview-artifacts/screenshot-sha256.txt
+            preview-artifacts/source-commit.txt
+          if-no-files-found: ignore
+          retention-days: 7
