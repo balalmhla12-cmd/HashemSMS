@@ -39,4 +39,8 @@
     <color name="card_stroke">#164B73</color>
     <color name="background_top">#05234A</color>
     <color name="background_bottom">#001028</color>
+    <color name="home_header">#0B2A52</color>
+    <color name="home_toggle_background">#29FFFFFF</color>
+    <color name="home_toggle_active">#FFFFFF</color>
+    <color name="home_toggle_inactive">#BFE3F5</color>
 </resources>

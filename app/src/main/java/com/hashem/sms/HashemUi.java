@@ -25,7 +25,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
 
     HashemUi(Context context) {
         int mode = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .getInt(KEY_NIGHT, AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+                .getInt(KEY_NIGHT, AppCompatDelegate.MODE_NIGHT_NO);
         AppCompatDelegate.setDefaultNightMode(mode);
     }
 
@@ -112,6 +112,70 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
                     }
                 }
             }
+            View actionsView = bar.getChildAt(2);
+            if (actionsView instanceof LinearLayout) {
+                addThemeToggle((LinearLayout) actionsView);
+            }
+        }
+
+        private void addThemeToggle(LinearLayout actions) {
+            if (actions.findViewWithTag("hashem_theme_toggle") != null) return;
+            LinearLayout toggle = new LinearLayout(main);
+            toggle.setTag("hashem_theme_toggle");
+            toggle.setOrientation(LinearLayout.HORIZONTAL);
+            toggle.setGravity(Gravity.CENTER);
+            toggle.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+            toggle.setPadding(dp(3), 0, dp(3), 0);
+            android.graphics.drawable.GradientDrawable track =
+                    new android.graphics.drawable.GradientDrawable();
+            track.setColor(UiResources.color(main, R.color.home_toggle_background));
+            track.setCornerRadius(dp(18));
+            toggle.setBackground(track);
+
+            TextView sun = themeIcon("☀", "الوضع العادي");
+            TextView moon = themeIcon("☾", "الوضع الداكن");
+            toggle.addView(sun, new LinearLayout.LayoutParams(dp(30), dp(30)));
+            toggle.addView(moon, new LinearLayout.LayoutParams(dp(30), dp(30)));
+
+            Runnable refresh = () -> {
+                boolean night = (main.getResources().getConfiguration().uiMode
+                        & android.content.res.Configuration.UI_MODE_NIGHT_MASK)
+                        == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+                styleThemeIcon(sun, !night);
+                styleThemeIcon(moon, night);
+            };
+            sun.setOnClickListener(v -> setNightMode(false));
+            moon.setOnClickListener(v -> setNightMode(true));
+            toggle.setContentDescription("التبديل بين الوضع العادي والداكن");
+            actions.addView(toggle, 0, new LinearLayout.LayoutParams(dp(66), dp(36)));
+            refresh.run();
+        }
+
+        private TextView themeIcon(String glyph, String description) {
+            TextView icon = new TextView(main);
+            icon.setText(glyph);
+            icon.setTextSize(16);
+            icon.setGravity(Gravity.CENTER);
+            icon.setContentDescription(description);
+            return icon;
+        }
+
+        private void styleThemeIcon(TextView icon, boolean selected) {
+            android.graphics.drawable.GradientDrawable background =
+                    new android.graphics.drawable.GradientDrawable();
+            background.setColor(selected ? UiResources.color(main, R.color.home_toggle_active)
+                    : android.graphics.Color.TRANSPARENT);
+            background.setCornerRadius(dp(15));
+            icon.setBackground(background);
+            icon.setTextColor(UiResources.color(main, selected
+                    ? R.color.home_header : R.color.home_toggle_inactive));
+        }
+
+        private void setNightMode(boolean night) {
+            int mode = night ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO;
+            main.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                    .putInt(KEY_NIGHT, mode).apply();
+            AppCompatDelegate.setDefaultNightMode(mode);
         }
 
         /** Move the existing compose button to the requested bottom-left position without restyling it. */
