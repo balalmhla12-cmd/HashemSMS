@@ -97,7 +97,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             logo.setImageResource(R.drawable.ic_launcher_foreground);
             logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
             LinearLayout.LayoutParams logoParams =
-                    new LinearLayout.LayoutParams(dp(44), dp(44));
+                    new LinearLayout.LayoutParams(dp(52), dp(52));
             logoParams.setMarginEnd(dp(8));
             bar.addView(logo, 0, logoParams);
             bar.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
