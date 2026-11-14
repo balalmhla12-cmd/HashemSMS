@@ -179,7 +179,7 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             AppCompatDelegate.setDefaultNightMode(mode);
         }
 
-        /** Move the existing compose button to the requested bottom-left position without restyling it. */
+        /** Render the compose action as the reference pill at the bottom-end of the RTL screen. */
         private void compose() {
             Button button = main.composeButton;
             if (button == null || main.contentHost == null) return;
@@ -187,9 +187,34 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             ViewGroup parent = (ViewGroup) button.getParent();
             if (parent != null) parent.removeView(button);
 
+            button.setText("＋   بدء محادثة");
+            button.setAllCaps(false);
+            button.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+            button.setTypeface(androidx.core.content.res.ResourcesCompat.getFont(
+                    main, R.font.almarai_bold));
+            button.setTextColor(UiResources.color(main, R.color.on_primary));
+            button.setTextDirection(View.TEXT_DIRECTION_RTL);
+            button.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+            button.setGravity(Gravity.CENTER);
+            button.setPadding(dp(22), 0, dp(22), 0);
+            button.setMinWidth(0);
+            button.setMinimumWidth(0);
+            button.setMinHeight(0);
+            button.setMinimumHeight(0);
+            button.setContentDescription("بدء محادثة جديدة");
+
+            android.graphics.drawable.GradientDrawable background =
+                    new android.graphics.drawable.GradientDrawable();
+            background.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+            background.setColor(UiResources.color(main, R.color.fab));
+            background.setCornerRadius(dp(30));
+            button.setBackground(background);
+            button.setElevation(dp(6));
+            button.setStateListAnimator(null);
+
             FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
-                    -2, -2, Gravity.BOTTOM | Gravity.START);
-            params.setMargins(dp(16), 0, dp(16), dp(16));
+                    dp(168), dp(56), Gravity.BOTTOM | Gravity.END);
+            params.setMargins(dp(16), 0, dp(24), dp(16));
             main.contentHost.addView(button, params);
 
             if (main.threadsRecycler != null) {
