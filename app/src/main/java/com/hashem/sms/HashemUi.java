@@ -88,15 +88,16 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
 
         /** Add the requested slightly larger app mark without rebuilding the header actions. */
         private void header() {
-            if (!(main.root.getChildAt(0) instanceof LinearLayout)) return;
-            LinearLayout bar = (LinearLayout) main.root.getChildAt(0);
+            View barView = main.root.findViewWithTag("hashem_header_bar");
+            if (!(barView instanceof LinearLayout)) return;
+            LinearLayout bar = (LinearLayout) barView;
             if (bar.getChildCount() < 2) return;
 
             ImageView logo = new ImageView(main);
             logo.setImageResource(R.drawable.ic_launcher_foreground);
             logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
             LinearLayout.LayoutParams logoParams =
-                    new LinearLayout.LayoutParams(dp(40), dp(40));
+                    new LinearLayout.LayoutParams(dp(44), dp(44));
             logoParams.setMarginEnd(dp(8));
             bar.addView(logo, 0, logoParams);
             bar.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);

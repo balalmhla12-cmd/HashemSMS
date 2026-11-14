@@ -43,4 +43,6 @@
     <color name="home_toggle_background">#29FFFFFF</color>
     <color name="home_toggle_active">#FFFFFF</color>
     <color name="home_toggle_inactive">#BFE3F5</color>
+    <color name="home_header_text">#FFFFFF</color>
+    <color name="home_header_subtext">#CFE8F8</color>
 </resources>
