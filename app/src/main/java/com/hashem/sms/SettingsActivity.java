@@ -62,7 +62,7 @@ public final class SettingsActivity extends AppCompatActivity {
                 new ActivityResultContracts.OpenDocument(), this::confirmBackupRestore);
         build();
         if (getIntent().getBooleanExtra("open_app_lock_settings", false)) {
-            new Handler(Looper.getMainLooper()).post(this::showPrivacySettings);
+            new android.os.Handler(android.os.Looper.getMainLooper()).post(this::showPrivacySettings);
         }
     }
 
