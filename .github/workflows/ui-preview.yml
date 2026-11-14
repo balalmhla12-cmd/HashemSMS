@@ -165,6 +165,14 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Print screenshot as base64 in the job log (retrieval channel)
+        if: success()
+        run: |
+          echo "PNG_B64_BEGIN"
+          base64 -w0 preview-artifacts/hashemsms-home.png
+          echo
+          echo "PNG_B64_END"
+
       - name: Upload emulator diagnostics
         if: always()
         uses: actions/upload-artifact@v4
