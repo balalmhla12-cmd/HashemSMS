@@ -61,6 +61,9 @@ public final class SettingsActivity extends AppCompatActivity {
         backupOpenLauncher = registerForActivityResult(
                 new ActivityResultContracts.OpenDocument(), this::confirmBackupRestore);
         build();
+        if (getIntent().getBooleanExtra("open_app_lock_settings", false)) {
+            new Handler(Looper.getMainLooper()).post(this::showPrivacySettings);
+        }
     }
 
     @Override protected void onResume() {
@@ -671,7 +674,7 @@ public final class SettingsActivity extends AppCompatActivity {
     }
 
 
-    private void showPrivacySettings() {
+    void showPrivacySettings() {
         boolean enabled = AppLockController.isEnabled(this);
         String[] options = enabled
                 ? new String[]{getString(R.string.app_lock_disable), getString(R.string.app_lock_timeout),
