@@ -16,6 +16,8 @@ jobs:
   preview:
     name: Build and capture real Android screen
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
     timeout-minutes: 40
     steps:
       - name: Checkout phase1-ui source
@@ -165,28 +167,16 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Publish screenshot as annotations (retrieval channel, part 1)
+      - name: Publish screenshot as temporary pre-release asset (retrieval channel)
         if: success()
-        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          B64="$(base64 -w0 preview-artifacts/hashemsms-home.png)"
-          echo "png_bytes=$(stat -c%s preview-artifacts/hashemsms-home.png) b64_chars=${#B64}"
-          for i in $(seq 0 9); do
-            chunk="${B64:$((i*30000)):30000}"
-            [ -n "$chunk" ] && echo "::notice title=png-b64-part-$(printf '%02d' $i)::$chunk"
-          done
-          true
-
-      - name: Publish screenshot as annotations (retrieval channel, part 2)
-        if: success()
-        shell: bash
-        run: |
-          B64="$(base64 -w0 preview-artifacts/hashemsms-home.png)"
-          for i in $(seq 10 19); do
-            chunk="${B64:$((i*30000)):30000}"
-            [ -n "$chunk" ] && echo "::notice title=png-b64-part-$(printf '%02d' $i)::$chunk"
-          done
-          true
+          stat -c 'png_bytes=%s' preview-artifacts/hashemsms-home.png
+          gh release create "ui-preview-shot-${{ github.run_id }}" preview-artifacts/hashemsms-home.png \
+            --repo "${{ github.repository }}" --target "${{ github.sha }}" --prerelease \
+            --title "Temporary UI preview screenshot ${{ github.run_id }}" \
+            --notes "Temporary release holding one emulator screenshot. Safe to delete."
 
       - name: Upload emulator diagnostics
         if: always()
