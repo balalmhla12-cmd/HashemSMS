@@ -19,6 +19,12 @@
     <color name="surface_variant">#10294D</color>
     <color name="outline">#17608B</color>
     <color name="avatar_container">#0B1C36</color>
+    <color name="avatar_palette_1">#183860</color>
+    <color name="avatar_palette_2">#3B2C48</color>
+    <color name="avatar_palette_3">#1F463E</color>
+    <color name="avatar_palette_4">#4B2E35</color>
+    <color name="avatar_palette_5">#303B61</color>
+    <color name="avatar_palette_6">#4B4226</color>
     <color name="primary_variant">#4DD0FF</color>
     <color name="on_surface_emphasis">#E9F2FC</color>
     <color name="on_surface_subtle">#8EA7C0</color>

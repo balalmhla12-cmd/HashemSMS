@@ -189,19 +189,19 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
 
             button.setText("＋   بدء محادثة");
             button.setAllCaps(false);
-            button.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+            button.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
             button.setTypeface(androidx.core.content.res.ResourcesCompat.getFont(
                     main, R.font.almarai_bold));
             button.setTextColor(UiResources.color(main, R.color.on_primary));
             button.setTextDirection(View.TEXT_DIRECTION_RTL);
             button.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
             button.setGravity(Gravity.CENTER);
-            button.setPadding(dp(22), 0, dp(22), 0);
+            button.setPadding(dp(16), 0, dp(16), 0);
             button.setMinWidth(0);
             button.setMinimumWidth(0);
             button.setMinHeight(0);
             button.setMinimumHeight(0);
-            button.setContentDescription("بدء محادثة جديدة");
+            button.setContentDescription("بدء محادثة");
 
             android.graphics.drawable.GradientDrawable background =
                     new android.graphics.drawable.GradientDrawable();
@@ -213,8 +213,8 @@ final class HashemUi implements Application.ActivityLifecycleCallbacks {
             button.setStateListAnimator(null);
 
             FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
-                    dp(168), dp(56), Gravity.BOTTOM | Gravity.END);
-            params.setMargins(dp(16), 0, dp(24), dp(16));
+                    dp(154), dp(48), Gravity.BOTTOM | Gravity.END);
+            params.setMargins(dp(12), 0, dp(16), dp(8));
             main.contentHost.addView(button, params);
 
             if (main.threadsRecycler != null) {
