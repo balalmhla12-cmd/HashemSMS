@@ -152,8 +152,28 @@ jobs:
 
           timeout 60 adb -s emulator-5554 exec-out screencap -p > "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-home.png"
           test -s "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-home.png"
+
+          # Tap the real RTL menu button in the app header, then capture its screen.
+          adb -s emulator-5554 shell input tap 980 180
+          sleep 3
+          timeout 60 adb -s emulator-5554 exec-out screencap -p > "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-options.png"
+          test -s "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-options.png"
+
+          # Assert that the options screen exposes all expected existing destinations.
+          adb -s emulator-5554 shell uiautomator dump /sdcard/hashemsms-options.xml >/dev/null
+          adb -s emulator-5554 pull /sdcard/hashemsms-options.xml "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-options.xml" >/dev/null
+          for label in "المحادثات المؤرشفة" "المهملات" "الرسائل غير المرغوب فيها والأرقام المحظورة" "إعدادات الرسائل" "قفل التطبيق" "النسخ الاحتياطي والاستعادة" "المساعدة والملاحظات"; do
+            if ! grep -Fq "$label" "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-options.xml"; then
+              echo "Expected options item missing from emulator UI: $label"
+              exit 1
+            fi
+          done
+          if grep -Fq 'text="المزيد"' "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-options.xml"; then
+            echo "Obsolete 'المزيد' title is still visible."
+            exit 1
+          fi
           adb -s emulator-5554 shell dumpsys activity activities | grep -E "mResumedActivity|topResumedActivity" > "$GITHUB_WORKSPACE/preview-artifacts/foreground-activity.txt" || true
-          sha256sum "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-home.png" | tee "$GITHUB_WORKSPACE/preview-artifacts/screenshot-sha256.txt"
+          sha256sum "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-home.png" "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-options.png" | tee "$GITHUB_WORKSPACE/preview-artifacts/screenshot-sha256.txt"
           git -C "$GITHUB_WORKSPACE" rev-parse HEAD | tee "$GITHUB_WORKSPACE/preview-artifacts/source-commit.txt"
 
       - name: Upload real emulator screenshot
@@ -161,7 +181,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: HashemSMS-UI-Preview-${{ github.sha }}
-          path: preview-artifacts/hashemsms-home.png
+          path: |
+            preview-artifacts/hashemsms-home.png
+            preview-artifacts/hashemsms-options.png
           if-no-files-found: error
           retention-days: 14
 
