@@ -51,4 +51,5 @@
     <color name="home_toggle_inactive">#BFE3F5</color>
     <color name="home_header_text">#E9F2FC</color>
     <color name="home_header_subtext">#8EA7C0</color>
+    <color name="bulk_success">#4CC46A</color>
 </resources>

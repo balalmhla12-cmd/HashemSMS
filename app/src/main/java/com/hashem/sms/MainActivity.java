@@ -537,15 +537,45 @@ void pickContactsForCompose(EditText destination){
  }
  void bulkScreen(){
   list.setPadding(UiResources.dp(this,12),UiResources.dp(this,12),UiResources.dp(this,12),UiResources.dp(this,16));
-  addBulkScreenHeader("الرسائل الجماعية","all");
-  addBulkHomeCard("إنشاء رسالة جماعية","إرسال رسالة إلى عدة مستلمين","♟",()->{filter="bulk-compose";render();});
-  addBulkHomeCard("مجموعاتي","إدارة مجموعات جهات الاتصال","👥",()->{filter="groups";render();});
-  addBulkHomeCard("المسودات والقوالب","الرسائل المحفوظة","▣",()->{filter="bulk-templates";render();});
-  addBulkHomeCard("سجل الحملات السابقة","عرض الحملات السابقة","◷",()->{filter="bulk-history";render();});
+  threadHandler.removeCallbacks(bulkActiveRefresh);
+  if(addActiveBulkCampaignCard())threadHandler.postDelayed(bulkActiveRefresh,1000L);
+  addBulkHomeCard("إنشاء رسالة جماعية","إرسال رسالة إلى عدة مستلمين",R.drawable.ic_bulk_groups,()->{filter="bulk-compose";render();});
+  addBulkHomeCard("مجموعاتي","إدارة مجموعات جهات الاتصال",R.drawable.ic_group,()->{filter="groups";render();});
+  addBulkHomeCard("سجل الحملات السابقة","عرض الحملات السابقة",R.drawable.ic_bulk_history,()->{filter="bulk-history";render();});
+  addBulkHomeCard("المسودات والقوالب","الرسائل المحفوظة",R.drawable.ic_bulk_draft,()->{filter="bulk-templates";render();});
  }
- void addBulkHomeCard(String heading,String subtitle,String symbol,Runnable action){
+ final Runnable bulkActiveRefresh=()->{if("bulk".equals(filter)&&list!=null)render();};
+ boolean addActiveBulkCampaignCard(){
+  long activeId=SmsSending.ACTIVE_BULK_CAMPAIGN_ID;if(activeId<=0)return false;
+  String name=null;int total=0,sent=0,failed=0;android.database.Cursor c=db.listBulkCampaigns();
+  try{while(c.moveToNext()){if(c.getLong(c.getColumnIndexOrThrow("id"))==activeId){name=c.getString(c.getColumnIndexOrThrow("name"));total=c.getInt(c.getColumnIndexOrThrow("recipient_count"));sent=c.getInt(c.getColumnIndexOrThrow("sent_count"));failed=c.getInt(c.getColumnIndexOrThrow("failed_count"));break;}}}finally{c.close();}
+  if(name==null||total<=0)return false;
+  final String campaignName=name;final long campaignId=activeId;int done=Math.min(total,sent+failed);int pct=Math.round(done*100f/total);
+  int green=UiResources.color(this,R.color.bulk_success),blue=UiResources.color(this,R.color.primary_variant);
+  LinearLayout card=new LinearLayout(this);card.setOrientation(LinearLayout.VERTICAL);card.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);card.setPadding(UiResources.dp(this,16),UiResources.dp(this,14),UiResources.dp(this,16),UiResources.dp(this,12));card.setBackground(rounded(UiResources.color(this,R.color.card_surface),UiResources.color(this,R.color.card_stroke),UiResources.dp(this,22)));
+  LinearLayout top=new LinearLayout(this);top.setOrientation(LinearLayout.HORIZONTAL);top.setGravity(Gravity.CENTER_VERTICAL);
+  LinearLayout iconBox=new LinearLayout(this);iconBox.setGravity(Gravity.CENTER);iconBox.setBackground(rounded(UiResources.color(this,R.color.primary_container),0,UiResources.dp(this,14)));ImageView ic=new ImageView(this);ic.setImageResource(R.drawable.ic_send);iconBox.addView(ic,new LinearLayout.LayoutParams(UiResources.dp(this,28),UiResources.dp(this,28)));top.addView(iconBox,new LinearLayout.LayoutParams(UiResources.dp(this,52),UiResources.dp(this,52)));
+  LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.setPadding(UiResources.dp(this,12),0,UiResources.dp(this,8),0);TextView title=tv("حملة نشطة",18);title.setGravity(Gravity.START);try{title.setTypeface(androidx.core.content.res.ResourcesCompat.getFont(this,R.font.almarai_bold));}catch(Exception ignored){title.setTypeface(Typeface.DEFAULT,Typeface.BOLD);}TextView sub=tv(campaignName,14);sub.setTextColor(UiResources.color(this,R.color.on_surface_variant));sub.setGravity(Gravity.START);labels.addView(title);labels.addView(sub);top.addView(labels,new LinearLayout.LayoutParams(0,-2,1));
+  TextView pill=tv("جارِ الإرسال",14);pill.setTextColor(0xFFFFFFFF);pill.setGravity(Gravity.CENTER);pill.setPadding(UiResources.dp(this,14),UiResources.dp(this,6),UiResources.dp(this,14),UiResources.dp(this,6));pill.setBackground(rounded(green,0,UiResources.dp(this,20)));top.addView(pill,new LinearLayout.LayoutParams(-2,-2));
+  card.addView(top,new LinearLayout.LayoutParams(-1,-2));
+  LinearLayout stats=new LinearLayout(this);stats.setOrientation(LinearLayout.HORIZONTAL);stats.setGravity(Gravity.CENTER_VERTICAL);
+  TextView counts=tv(done+" من "+total+" رسالة",16);counts.setTextColor(blue);counts.setGravity(Gravity.START);stats.addView(counts,new LinearLayout.LayoutParams(0,-2,1));
+  TextView percent=tv(pct+"%",26);percent.setTextColor(blue);percent.setGravity(Gravity.END);stats.addView(percent,new LinearLayout.LayoutParams(-2,-2));
+  LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(-1,-2);sp.topMargin=UiResources.dp(this,10);card.addView(stats,sp);
+  LinearLayout bar=new LinearLayout(this);bar.setOrientation(LinearLayout.HORIZONTAL);bar.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);bar.setBackground(rounded(UiResources.color(this,R.color.primary_container),0,UiResources.dp(this,8)));
+  View fill=new View(this);fill.setBackground(rounded(blue,0,UiResources.dp(this,8)));bar.addView(fill,new LinearLayout.LayoutParams(0,-1,Math.max(pct,0)));bar.addView(new View(this),new LinearLayout.LayoutParams(0,-1,Math.max(100-pct,0)));
+  LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-1,UiResources.dp(this,10));bp.topMargin=UiResources.dp(this,6);card.addView(bar,bp);
+  LinearLayout foot=new LinearLayout(this);foot.setOrientation(LinearLayout.HORIZONTAL);foot.setGravity(Gravity.CENTER_VERTICAL);
+  TextView details=tv("التفاصيل",16);details.setTextColor(blue);details.setGravity(Gravity.START);details.setPadding(0,UiResources.dp(this,6),0,UiResources.dp(this,6));details.setOnClickListener(v->showBulkCampaignDetails(campaignId,campaignName));foot.addView(details,new LinearLayout.LayoutParams(0,-2,1));
+  TextView ok=tv("✔ "+sent+" ناجحة",16);ok.setTextColor(green);foot.addView(ok,new LinearLayout.LayoutParams(0,-2,1));
+  TextView bad=tv("✖ "+failed+" فاشلة",16);bad.setTextColor(UiResources.color(this,R.color.error));bad.setGravity(Gravity.END);foot.addView(bad,new LinearLayout.LayoutParams(0,-2,1));
+  LinearLayout.LayoutParams fp=new LinearLayout.LayoutParams(-1,-2);fp.topMargin=UiResources.dp(this,10);card.addView(foot,fp);
+  LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(-1,-2);cp.setMargins(UiResources.dp(this,8),UiResources.dp(this,5),UiResources.dp(this,8),UiResources.dp(this,9));list.addView(card,cp);
+  return true;
+ }
+ void addBulkHomeCard(String heading,String subtitle,int iconRes,Runnable action){
   LinearLayout card=new LinearLayout(this);card.setOrientation(LinearLayout.HORIZONTAL);card.setGravity(Gravity.CENTER_VERTICAL);card.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);card.setPadding(UiResources.dp(this,12),UiResources.dp(this,10),UiResources.dp(this,12),UiResources.dp(this,10));card.setBackground(rounded(UiResources.color(this,R.color.card_surface),UiResources.color(this,R.color.card_stroke),UiResources.dp(this,22)));card.setClickable(true);card.setFocusable(true);card.setOnClickListener(v->action.run());
-  LinearLayout iconBox=new LinearLayout(this);iconBox.setGravity(Gravity.CENTER);iconBox.setBackground(rounded(UiResources.color(this,R.color.primary_container),0,UiResources.dp(this,18)));TextView icon=tv(symbol,28);icon.setGravity(Gravity.CENTER);icon.setTextColor(UiResources.color(this,R.color.primary_variant));icon.setPadding(0,0,0,0);iconBox.addView(icon,new LinearLayout.LayoutParams(-1,-1));int iconSize=UiResources.dp(this,66);card.addView(iconBox,new LinearLayout.LayoutParams(iconSize,iconSize));
+  LinearLayout iconBox=new LinearLayout(this);iconBox.setGravity(Gravity.CENTER);iconBox.setBackground(rounded(UiResources.color(this,R.color.primary_container),0,UiResources.dp(this,18)));ImageView icon=new ImageView(this);icon.setImageResource(iconRes);iconBox.addView(icon,new LinearLayout.LayoutParams(UiResources.dp(this,34),UiResources.dp(this,34)));int iconSize=UiResources.dp(this,66);card.addView(iconBox,new LinearLayout.LayoutParams(iconSize,iconSize));
   LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.setGravity(Gravity.CENTER_VERTICAL|Gravity.START);labels.setPadding(UiResources.dp(this,12),0,UiResources.dp(this,8),0);TextView titleText=tv(heading,18);titleText.setGravity(Gravity.CENTER_VERTICAL|Gravity.START);titleText.setPadding(0,0,0,UiResources.dp(this,3));try{titleText.setTypeface(androidx.core.content.res.ResourcesCompat.getFont(this,R.font.almarai_bold));}catch(Exception ignored){titleText.setTypeface(Typeface.DEFAULT,Typeface.BOLD);}TextView detail=tv(subtitle,14);detail.setTextColor(UiResources.color(this,R.color.on_surface_variant));detail.setGravity(Gravity.CENTER_VERTICAL|Gravity.START);detail.setPadding(0,0,0,0);labels.addView(titleText);labels.addView(detail);card.addView(labels,new LinearLayout.LayoutParams(0,-2,1));
   LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(-1,UiResources.dp(this,92));cp.setMargins(UiResources.dp(this,8),UiResources.dp(this,5),UiResources.dp(this,8),UiResources.dp(this,5));list.addView(card,cp);
  }
