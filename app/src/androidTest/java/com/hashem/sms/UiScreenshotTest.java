@@ -78,19 +78,13 @@ public final class UiScreenshotTest {
             UiObject2 menu = device.wait(Until.findObject(By.desc("القائمة")), 5000);
             assertNotNull("Main menu button not found", menu);
             menu.click();
-            UiObject2 more = device.wait(Until.findObject(By.text("المزيد")), 3000);
-            assertNotNull("More menu item not found", more);
-            more.click();
             waitForUi();
             save(output, "05-sidebar-" + theme + ".png");
 
             device.pressBack();
             waitForUi();
-            menu = device.wait(Until.findObject(By.desc("القائمة")), 5000);
-            assertNotNull("Main menu button not found after returning", menu);
-            menu.click();
-            UiObject2 bulk = device.wait(Until.findObject(By.text("الرسائل الجماعية")), 3000);
-            assertNotNull("Bulk messages menu item not found", bulk);
+            UiObject2 bulk = device.wait(Until.findObject(By.text("الجماعية")), 5000);
+            assertNotNull("Bulk filter tab not found", bulk);
             bulk.click();
             waitForUi();
             assertNotNull("Bulk screen title not visible",
