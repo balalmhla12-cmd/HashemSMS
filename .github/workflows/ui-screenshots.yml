@@ -72,10 +72,6 @@ jobs:
             tar -tf ui-screenshots.tar
             tar -xf ui-screenshots.tar -C ui-screenshots
             rm -f ui-screenshots.tar
-            echo "BULK_SCREENSHOT_BASE64_BEGIN"
-            base64 -w0 ui-screenshots/HashemSMS-Screenshots/04-bulk-light.png || true
-            echo
-            echo "BULK_SCREENSHOT_BASE64_END"
             screenshot_dir="ui-screenshots/HashemSMS-Screenshots"
             test -d "$screenshot_dir"
             screenshot_count="$(find "$screenshot_dir" -maxdepth 1 -type f -name '*.png' | wc -l)"
@@ -97,3 +93,11 @@ jobs:
           path: ui-screenshots/HashemSMS-Screenshots/*.png
           if-no-files-found: error
           retention-days: 30
+
+      - name: Print bulk screenshot as base64 in the job log (retrieval channel)
+        if: always()
+        run: |
+          echo "BULK_B64_BEGIN"
+          base64 -w0 ui-screenshots/HashemSMS-Screenshots/04-bulk-light.png || true
+          echo
+          echo "BULK_B64_END"
