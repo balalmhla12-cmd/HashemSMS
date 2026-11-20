@@ -83,7 +83,7 @@ public final class UiScreenshotTest {
 
             device.pressBack();
             waitForUi();
-            UiObject2 bulk = device.wait(Until.findObject(By.text("الجماعية")), 5000);
+            UiObject2 bulk = device.wait(Until.findObject(By.textContains("جماعية")), 5000);
             assertNotNull("Bulk filter tab not found", bulk);
             bulk.click();
             waitForUi();
