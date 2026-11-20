@@ -63,14 +63,19 @@ jobs:
             adb shell pm grant com.hashem.sms android.permission.READ_CONTACTS
             mkdir -p ui-screenshots
             set +e
-            ./gradlew --no-daemon connectedDebugAndroidTest
-            test_status=$?
+            ./gradlew --no-daemon installDebug installDebugAndroidTest
+            adb shell am instrument -w -r com.hashem.sms.test/androidx.test.runner.AndroidJUnitRunner | tee instrument.log
+            if grep -q "INSTRUMENTATION_CODE: -1" instrument.log && ! grep -qE "FAILURES|shortMsg|Process crashed" instrument.log; then test_status=0; else test_status=1; fi
             set -e
             adb exec-out run-as com.hashem.sms sh -c 'cd files && tar -cf - HashemSMS-Screenshots' > ui-screenshots.tar
             test -s ui-screenshots.tar
             tar -tf ui-screenshots.tar
             tar -xf ui-screenshots.tar -C ui-screenshots
             rm -f ui-screenshots.tar
+            echo "BULK_SCREENSHOT_BASE64_BEGIN"
+            base64 -w0 ui-screenshots/HashemSMS-Screenshots/04-bulk-light.png || true
+            echo
+            echo "BULK_SCREENSHOT_BASE64_END"
             screenshot_dir="ui-screenshots/HashemSMS-Screenshots"
             test -d "$screenshot_dir"
             screenshot_count="$(find "$screenshot_dir" -maxdepth 1 -type f -name '*.png' | wc -l)"
