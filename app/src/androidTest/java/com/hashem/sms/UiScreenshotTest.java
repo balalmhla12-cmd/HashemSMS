@@ -95,7 +95,7 @@ public final class UiScreenshotTest {
             assertNotNull("Create bulk card not found", createCard);
             createCard.click();
             assertNotNull("Bulk compose screen not visible",
-                    device.wait(Until.findObject(By.text("مراجعة ثم إرسال")), 5000));
+                    device.wait(Until.findObject(By.textStartsWith("اختيار من جهات الاتصال")), 5000));
             UiObject2 nameField = device.wait(Until.findObject(By.clazz("android.widget.EditText")), 3000);
             assertNotNull("Campaign name field not found", nameField);
             nameField.setText("حملة اختبار");
@@ -115,7 +115,7 @@ public final class UiScreenshotTest {
             assertNotNull("Next button not found", next);
             next.click();
             assertNotNull("Compose screen not restored after next",
-                    device.wait(Until.findObject(By.text("مراجعة ثم إرسال")), 5000));
+                    device.wait(Until.findObject(By.textStartsWith("اختيار من جهات الاتصال")), 5000));
             assertNotNull("Campaign name was lost after picker",
                     device.wait(Until.findObject(By.text("حملة اختبار")), 3000));
         }
