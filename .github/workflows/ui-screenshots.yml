@@ -62,28 +62,25 @@ jobs:
             adb shell pm grant com.hashem.sms android.permission.READ_SMS
             adb shell pm grant com.hashem.sms android.permission.READ_CONTACTS
             mkdir -p ui-screenshots
-            set +e
             ./gradlew --no-daemon installDebug installDebugAndroidTest
             adb shell am instrument -w -r com.hashem.sms.test/androidx.test.runner.AndroidJUnitRunner | tee instrument.log
-            if grep -q "INSTRUMENTATION_CODE: -1" instrument.log && ! grep -qE "FAILURES|shortMsg|Process crashed" instrument.log; then test_status=0; else test_status=1; fi
-            set -e
+            grep -q "INSTRUMENTATION_CODE: -1" instrument.log
+            grep -q "^OK (1 test)" instrument.log
             adb exec-out run-as com.hashem.sms sh -c 'cd files && tar -cf - HashemSMS-Screenshots' > ui-screenshots.tar
             test -s ui-screenshots.tar
-            tar -tf ui-screenshots.tar
             tar -xf ui-screenshots.tar -C ui-screenshots
             rm -f ui-screenshots.tar
-            screenshot_dir="ui-screenshots/HashemSMS-Screenshots"
-            test -d "$screenshot_dir"
-            screenshot_count="$(find "$screenshot_dir" -maxdepth 1 -type f -name '*.png' | wc -l)"
-            test "$screenshot_count" -eq 10
-            for theme in light dark; do
-              for screen in 01-home 02-conversation 03-composer 04-bulk 05-sidebar; do
-                test -s "$screenshot_dir/$screen-$theme.png"
-              done
+
+      - name: Verify all ten screenshots exist
+        run: |
+          set -eu
+          dir=ui-screenshots/HashemSMS-Screenshots
+          test "$(find "$dir" -maxdepth 1 -type f -name '*.png' | wc -l)" -eq 10
+          for theme in light dark; do
+            for screen in 01-home 02-conversation 03-composer 04-bulk 05-sidebar; do
+              test -s "$dir/$screen-$theme.png"
             done
-            if [ "$test_status" -ne 0 ]; then
-              exit "$test_status"
-            fi
+          done
 
       - name: Upload light and dark screenshots only
         if: always()
