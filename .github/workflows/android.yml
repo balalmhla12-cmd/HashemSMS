@@ -2,13 +2,13 @@ name: Build HashemSMS APK
 
 on:
   push:
-    branches: [main]
+    branches: [main, phase1-ui]
   pull_request:
     branches: [main]
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: android-build-v2-${{ github.ref }}
@@ -60,17 +60,68 @@ jobs:
 
       - name: Build debug APK
         run: ./gradlew --no-daemon assembleDebug
-
-      - name: Upload APK
+      - name: Verify APK signature and package metadata
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          BUILD_TOOLS="$ANDROID_HOME/build-tools/36.0.0"
+          test -s "$APK"
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK"
+          BADGING="$("$BUILD_TOOLS/aapt2" dump badging "$APK")"
+          printf '%s\n' "$BADGING" | grep -E "^(package:|sdkVersion:|targetSdkVersion:|native-code:)"
+          printf '%s\n' "$BADGING" | grep -q "^package: name='com.hashem.sms'"
+          printf '%s\n' "$BADGING" | grep -q "versionCode='4'"
+          MIN_SDK="$("$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest min-sdk "$APK")"
+          printf 'minSdkVersion=%s\n' "$MIN_SDK"
+          test "$MIN_SDK" = "26"
+          printf '%s\n' "$BADGING" | grep -q "^native-code:"
+      - name: Print APK SHA-256 and size
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          sha256sum "$APK"
+          stat --printf='APK_SIZE_BYTES=%s\n' "$APK"
+      - name: Upload installable APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: HashemSMS-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+          compression-level: 0
           if-no-files-found: error
+          retention-days: 14
 
       - name: Run Android lint
         run: ./gradlew --no-daemon lintDebug
 
+      - name: Print Android lint warnings (diagnostic only)
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import os, xml.etree.ElementTree as ET
+          from collections import Counter
+          def rows(p):
+              if not os.path.exists(p): return None
+              out = []
+              for i in ET.parse(p).getroot().findall('.//issue'):
+                  if (i.get('severity') or '').lower() != 'warning': continue
+                  loc = i.find('location')
+                  f = (loc.get('file') if loc is not None else '') or ''
+                  ln = (loc.get('line') if loc is not None else '') or ''
+                  out.append((i.get('id') or '', f.split('/app/')[-1], ln, (i.get('message') or '').splitlines()[0]))
+              return out
+          base = rows(os.path.join(os.environ['RUNNER_TEMP'], 'lint-baseline.xml'))
+          cur = rows('app/build/reports/lint-results-debug.xml')
+          for name, r in (('BASELINE', base), ('CURRENT', cur)):
+              print('=== ' + name + ' ===')
+              if r is None:
+                  print('missing')
+                  continue
+              for x in sorted(r): print(' | '.join(x))
+          if base is not None and cur is not None:
+              d = Counter(x[0] for x in cur) - Counter(x[0] for x in base)
+              print('=== EXTRA IDS (current minus baseline) ===')
+              for k, v in d.items(): print(k, v)
+          PY
       - name: Compare lint baseline and write summary
         if: always()
         run: |
@@ -100,17 +151,19 @@ jobs:
               out.write(f"- Baseline commit: `a5854817b880921f486f39385d9480239b470acd`\n")
               out.write(f"- Baseline warnings: **{bw}**; baseline errors/fatals: **{be}**\n")
               out.write(f"- Current warnings: **{cw}**; current errors/fatals: **{ce}**\n")
+              out.write("- Maximum allowed current warnings: **14**\n")
               out.write("- Top 3 baseline warning categories:\n")
               for issue_id, count in bk.most_common(3):
                   out.write(f"  - `{issue_id}` ({count}): {bm.get(issue_id, '')}\n")
-              if cw > bw or ce > be:
-                  out.write("\n**FAIL:** lint count exceeds the baseline.\n")
+              if cw > 14 or cw > bw or ce > be:
+                  out.write("\n**FAIL:** lint exceeds the 14-warning cap or the baseline.\n")
               else:
-                  out.write("\n**PASS:** warning/error counts do not exceed the baseline.\n")
+                  out.write("\n**PASS:** current warnings are <= 14 and warning/error counts do not exceed the baseline.\n")
           print(f"BASELINE_LINT_WARNINGS={bw} BASELINE_LINT_ERRORS={be}")
           print("BASELINE_LINT_WARNING_TYPES=" + ", ".join(f"{name}:{count}" for name, count in bk.most_common(3)))
           print(f"CURRENT_LINT_WARNINGS={cw} CURRENT_LINT_ERRORS={ce}")
-          if cw > bw or ce > be: sys.exit(1)
+          print("MAX_ALLOWED_LINT_WARNINGS=14")
+          if cw > 14 or cw > bw or ce > be: sys.exit(1)
           PY
 
       - name: Upload Android Lint reports
@@ -122,21 +175,37 @@ jobs:
             app/build/reports/lint-results-debug.xml
             app/build/reports/lint-results-debug.html
           if-no-files-found: warn
+      - name: Upload unit test XML and HTML reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HashemSMS-unit-test-reports
+          path: |
+            app/build/test-results/testDebugUnitTest/*.xml
+            app/build/reports/tests/testDebugUnitTest/**
+          if-no-files-found: warn
 
-      - name: Prepare stable APK filename
-        run: cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/HashemSMS-debug.apk
+  publish_release:
+    name: Publish private test pre-release
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/phase1-ui'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download verified APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: HashemSMS-debug-apk
+          path: release-apk
 
-      - name: Publish stable latest-debug release
-        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if gh release view latest-debug >/dev/null 2>&1; then
-            gh release delete latest-debug --yes --cleanup-tag
-          else
-            git push origin :refs/tags/latest-debug >/dev/null 2>&1 || true
-          fi
-          gh release create latest-debug app/build/outputs/apk/debug/HashemSMS-debug.apk \
-            --target "$GITHUB_SHA" \
-            --title "HashemSMS latest debug" \
-            --notes "Automated debug APK for commit $GITHUB_SHA. This is a debug build, not a production-signed release."
+      - name: Publish APK pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: hashemsms-test-${{ github.run_number }}
+          name: HashemSMS test build ${{ github.run_number }}
+          target_commitish: phase1-ui
+          prerelease: true
+          draft: false
+          files: release-apk/app-debug.apk
+          fail_on_unmatched_files: true

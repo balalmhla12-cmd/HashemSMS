@@ -1,0 +1,211 @@
+name: HashemSMS UI Preview
+
+on:
+  push:
+    branches: [phase1-ui]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hashemsms-ui-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    name: Build and capture real Android screen
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    steps:
+      - name: Checkout phase1-ui source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 1
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install required Android SDK packages
+        run: |
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" "emulator" "system-images;android-30;google_apis;x86_64"
+
+      - name: Build the exact checked-out app
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon assembleDebug
+
+      - name: Enable KVM acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+
+      - name: Start emulator directly and capture home screen
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/preview-artifacts"
+
+          # avdmanager and emulator must agree on where AVDs live.
+          export ANDROID_AVD_HOME="$HOME/.android/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+
+          AVD_NAME="hashemsms-preview"
+          echo "no" | avdmanager create avd --force --name "$AVD_NAME" --package "system-images;android-30;google_apis;x86_64" --device "pixel_2"
+
+          "$ANDROID_HOME/emulator/emulator" -avd "$AVD_NAME" \
+            -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim \
+            -no-snapshot -wipe-data -memory 2048 -cores 2 -accel on \
+            > "$GITHUB_WORKSPACE/preview-artifacts/emulator.log" 2>&1 &
+          EMULATOR_PID=$!
+          echo "$EMULATOR_PID" > "$GITHUB_WORKSPACE/preview-artifacts/emulator.pid"
+
+          on_exit() {
+            result=$?
+            if [ "$result" -ne 0 ]; then
+              timeout 30 adb -s emulator-5554 logcat -d > "$GITHUB_WORKSPACE/preview-artifacts/logcat-on-failure.txt" 2>&1 || true
+              timeout 30 adb -s emulator-5554 shell getprop > "$GITHUB_WORKSPACE/preview-artifacts/device-properties-on-failure.txt" 2>&1 || true
+              # Surface diagnostics as annotations (readable without downloading artifacts).
+              for f in emulator.log logcat-on-failure.txt; do
+                tail -n 40 "$GITHUB_WORKSPACE/preview-artifacts/$f" 2>/dev/null | head -c 20000 | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g' | sed "s/^/::error title=$f::/" || true
+                echo
+              done
+            fi
+            timeout 30 adb -s emulator-5554 emu kill >/dev/null 2>&1 || true
+            kill "$EMULATOR_PID" 2>/dev/null || true
+            exit "$result"
+          }
+          trap on_exit EXIT
+
+          # Bounded wait for the emulator to appear; fail fast if the process died.
+          appeared=0
+          for attempt in $(seq 1 180); do
+            if ! kill -0 "$EMULATOR_PID" 2>/dev/null; then
+              echo "Emulator process exited early."
+              exit 1
+            fi
+            if adb devices | grep -q '^emulator-5554[[:space:]]*device'; then
+              appeared=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$appeared" -ne 1 ]; then
+            echo "Emulator never appeared in adb within 6 minutes."
+            exit 1
+          fi
+          booted=0
+          for attempt in $(seq 1 600); do
+            state="$(adb -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+            if [ "$state" = "1" ]; then
+              booted=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$booted" -ne 1 ]; then
+            echo "Android emulator did not finish booting within 10 minutes."
+            exit 1
+          fi
+
+          # Do not inject key events; the emulator is controlled only through
+          # shell settings and normal package/activity commands.
+          sleep 15
+          adb -s emulator-5554 shell settings put global window_animation_scale 0
+          adb -s emulator-5554 shell settings put global transition_animation_scale 0
+          adb -s emulator-5554 shell settings put global animator_duration_scale 0
+
+          APK="$GITHUB_WORKSPACE/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          timeout 240 adb -s emulator-5554 install -r "$APK"
+
+          for permission in \
+            android.permission.SEND_SMS \
+            android.permission.RECEIVE_SMS \
+            android.permission.READ_SMS \
+            android.permission.READ_CONTACTS \
+            android.permission.POST_NOTIFICATIONS \
+            android.permission.ACCESS_FINE_LOCATION \
+            android.permission.ACCESS_COARSE_LOCATION \
+            android.permission.READ_PHONE_STATE; do
+            adb -s emulator-5554 shell pm grant com.hashem.sms "$permission" || true
+          done
+
+          adb -s emulator-5554 shell settings put system font_scale 1.0
+          adb -s emulator-5554 shell wm size 1080x2400
+          adb -s emulator-5554 shell wm density 420
+          adb -s emulator-5554 shell am force-stop com.hashem.sms
+          timeout 120 adb -s emulator-5554 shell am start -W -n com.hashem.sms/.MainActivity
+          sleep 15
+
+          timeout 60 adb -s emulator-5554 exec-out screencap -p > "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-home.png"
+          test -s "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-home.png"
+
+          # Tap the real RTL menu button in the app header, then capture its screen.
+          adb -s emulator-5554 shell input tap 980 180
+          sleep 3
+          timeout 60 adb -s emulator-5554 exec-out screencap -p > "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-options.png"
+          test -s "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-options.png"
+
+          # Assert that the options screen exposes all expected existing destinations.
+          adb -s emulator-5554 shell uiautomator dump /sdcard/hashemsms-options.xml >/dev/null
+          adb -s emulator-5554 pull /sdcard/hashemsms-options.xml "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-options.xml" >/dev/null
+          for label in "المحادثات المؤرشفة" "المهملات" "الرسائل غير المرغوب فيها والأرقام المحظورة" "إعدادات الرسائل" "قفل التطبيق" "النسخ الاحتياطي والاستعادة" "المساعدة والملاحظات"; do
+            if ! grep -Fq "$label" "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-options.xml"; then
+              echo "Expected options item missing from emulator UI: $label"
+              exit 1
+            fi
+          done
+          if grep -Fq 'text="المزيد"' "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-options.xml"; then
+            echo "Obsolete 'المزيد' title is still visible."
+            exit 1
+          fi
+          adb -s emulator-5554 shell dumpsys activity activities | grep -E "mResumedActivity|topResumedActivity" > "$GITHUB_WORKSPACE/preview-artifacts/foreground-activity.txt" || true
+          sha256sum "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-home.png" "$GITHUB_WORKSPACE/preview-artifacts/hashemsms-options.png" | tee "$GITHUB_WORKSPACE/preview-artifacts/screenshot-sha256.txt"
+          git -C "$GITHUB_WORKSPACE" rev-parse HEAD | tee "$GITHUB_WORKSPACE/preview-artifacts/source-commit.txt"
+
+      - name: Upload real emulator screenshot
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HashemSMS-UI-Preview-${{ github.sha }}
+          path: |
+            preview-artifacts/hashemsms-home.png
+            preview-artifacts/hashemsms-options.png
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Print screenshot as base64 in the job log (retrieval channel)
+        if: success()
+        run: |
+          echo "PNG_B64_BEGIN"
+          base64 -w0 preview-artifacts/hashemsms-home.png
+          echo
+          echo "PNG_B64_END"
+
+      - name: Upload emulator diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HashemSMS-UI-Preview-Diagnostics-${{ github.sha }}
+          path: |
+            preview-artifacts/emulator.log
+            preview-artifacts/logcat-on-failure.txt
+            preview-artifacts/device-properties-on-failure.txt
+            preview-artifacts/foreground-activity.txt
+            preview-artifacts/screenshot-sha256.txt
+            preview-artifacts/source-commit.txt
+          if-no-files-found: ignore
+          retention-days: 7

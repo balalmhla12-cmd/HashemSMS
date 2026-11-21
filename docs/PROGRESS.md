@@ -1,22 +1,34 @@
 # HashemSMS — Progress
 
-## Verified completed stages
-- Stage A — contact permission fallback and AndroidX Activity/build verification: commit `b136bfa89ca3062b46bf7fb5331633e8c4ce4f32`; Actions run [39083276990](https://github.com/balalmhla12-cmd/HashemSMS/actions/runs/39083276990) succeeded.
-- Stage B — palette and contrast adjustments: commits `03a6a6608f401d19bedae6688b0d3917c3c46745`, `68b9df3daa1abd391a81237df6289b6139c3b613`, and `fd2e3a22e050c6b28b4730bb8e805618a6e9e2d5`; final green verification was run [39087432075](https://github.com/balalmhla12-cmd/HashemSMS/actions/runs/39087432075).
-- Stage C — conversation list card treatment: commit `4c57670bce6dcb9b23c7cf5046c918ac9d6ab92d`; Actions run [39087826065](https://github.com/balalmhla12-cmd/HashemSMS/actions/runs/39087826065) succeeded.
-- Stage D — conversation header and message metadata styling: commit `7376b7029338d4795d77aa7f99cf783f9b983ac8`; Actions run [39088935788](https://github.com/balalmhla12-cmd/HashemSMS/actions/runs/39088935788) succeeded.
-- Stage E — shared themed card styling across existing management screens: commits `b34ba2c801dd780e51c8950196deddbf04b0700d` and `99260c53d62df5fcb010e0185dc87a1917e954fc`; latest Actions run [39149736252](https://github.com/balalmhla12-cmd/HashemSMS/actions/runs/39149736252) (run 274) completed successfully, including Android Lint, lint-baseline comparison, tests, debug APK build, and publishing the latest-debug release.
+## آخر مراجعة
+- الفرع `phase1-ui`، PR #6 مفتوح وغير مدمج، والمستودع Private.
+- رأس الكود قبل تنظيف الموارد: `4ad058fd5eadb0cf310a009a891420f498623003`.
 
-## Palette sampling notes
-Previously recorded sample notes: image dimensions 1536×1536; dominant sampled flat-region colors after 8-bit quantization included #001830, #001028, #001838, #002040, #002848, #183860 and #003070. These are prior notes, not a fresh resampling in this stage. Do not infer exact accent colors from anti-aliased edges. The separately discussed design reference file `docs/reference/design_reference.png` was not saved in the repository; the written design specification remains the reference.
+## A
+- التبويبات الستة المعتمدة وشاشة الرسائل الفاشلة بعد استعادة التجميع حسب المحادثة.
+- HashemUi خُفف لإزالة فرض الوضع الداكن وشريط البحث المكرر وتغييرات التنقل والصور الرمزية والشارات غير المطلوبة.
+- README.md وREADME-TERMUX.md أُعيدا إلى محتواهما السابق.
+- A غير معتمدة حتى نجاح CI النهائي وتسوية بديل الصور.
 
-## Current stage
-- Stage F — audit/update release documentation and verify the latest main build/release state. No device-level SMS tests have been performed or claimed.
+## لقطات الشاشة
+محاولتان فقط، دون Artifact: الأولى انقطاع ADB بعد الإقلاع؛ الثانية نجح فيها KVM والإقلاع ثم فشل السكربت عند pipefail في POSIX sh. أُصلح السكربت إلى set -eu دون محاولة ثالثة. ينتظر اختيار المستخدم بين Robolectric وPaparazzi.
 
-## Remaining
-- Stage F: review README/release workflow and ensure progress documentation matches the verified state; run and verify final Actions after any changes.
-- Stage G: ask the user to choose among unimplemented features shown in the reference; do not implement any before their choice.
-- Manual phone checks remain unverified: send/receive, scheduling across reboot, notifications/reply, contacts matching, and light/dark appearance.
+## B
+- شريط كتابة مرن، زر (+)/(×)، وردود سريعة قابلة للإضافة والتعديل والحذف والحفظ.
+- المعرض والكاميرا وGIF الأصلي والملفات وجهات الاتصال والموقع لمرة واحدة والجدولة؛ الموقع المباشر مؤجل.
+- الملصقات تدرج الرموز التعبيرية في الحقل.
+- حفظ SIM لكل رقم؛ الإرسال العادي وإعادة التوجيه وMMS والجماعي والجدولة تستخدم تفضيل المستلم. جدولة المحادثة والرئيسية تطلب SIM وتحفظ سجل الرسالة بمعرّف حقيقي.
+- التكبير بإصبعين يشمل النص والأزرار. جدولة مرفقات MMS غير مدعومة حاليًا ويظهر تنبيه.
+- Db.java: MIME allowlist فقط، دون تغيير المخطط أو الإصدار 12؛ اختبارات حفظ/رفض GIF والوثائق وبايتات GIF الأصلية.
 
-## Constraints
-Package `com.hashem.sms`, database version 9, SMS receive/send/schedule/notification behavior, existing features and private repository visibility must remain unchanged. No device testing is claimed.
+## CI للرأس 4ad058f
+- https://github.com/balalmhla12-cmd/HashemSMS/actions/runs/41930521660
+- البناء والاختبارات وفحوص الألوان/WCAG: PASS.
+- Lint: 20 تحذيرًا مقابل baseline 15، صفر أخطاء. ستة تحذيرات UnusedResources تخص أيقونتي المظهر وأربعة نصوص قديمة؛ تُحذف الآن في commit توثيق/تنظيف واحد، ثم يعاد الفحص على الرأس الجديد.
+- لا تعتمد B قبل نجاح البناء والاختبارات وLint على الرأس النهائي (حد أقصى 14 تحذيرًا).
+
+## المتبقي
+- إعادة فحص الرأس بعد إزالة الموارد غير المستخدمة.
+- C: الجماعي والمجموعات والسجل والقائمة الجانبية والإعدادات ونافذة الألوان والنسخ الاحتياطي. قرار الترجمة على الجهاز أو الإنترنت مطلوب قبل C.
+- D: الأداء والأذونات والمزامنة والاختبارات النهائية.
+- اختبار الهاتف الحقيقي لاحقًا؛ لا APK نهائي أو Release الآن.

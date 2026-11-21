@@ -14,7 +14,9 @@ public final class NotificationActionReceiver extends android.content.BroadcastR
    Log.e(TAG,"Notification action failed",e);
    if(intent!=null){String address=intent.getStringExtra(NotificationHelper.EXTRA_ADDRESS);if(address!=null&&!address.trim().isEmpty())NotificationHelper.showConversationNotification(app,address);}
   }finally{pending.finish();}});}
-  catch(RuntimeException e){Log.e(TAG,"Unable to queue notification action",e);try{
+  catch(RuntimeException e){Log.e(TAG,"Unable to queue notification action",e);
+   // With the executor queue rejected, show the reply failure notification directly on this fallback path.
+   try{
    if(intent!=null&&NotificationHelper.ACTION_REPLY.equals(intent.getAction())){String address=intent.getStringExtra(NotificationHelper.EXTRA_ADDRESS);
     if(address!=null&&!address.trim().isEmpty()){android.os.Bundle b=RemoteInput.getResultsFromIntent(intent);CharSequence input=b==null?null:b.getCharSequence(NotificationHelper.REPLY_KEY);NotificationHelper.showConversationNotification(app,address,input==null?"تعذّر تجهيز الرد":input.toString());}}
   }catch(Exception nested){Log.e(TAG,"Unable to show reply failure",nested);}finally{pending.finish();}}
