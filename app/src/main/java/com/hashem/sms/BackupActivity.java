@@ -63,7 +63,7 @@ public final class BackupActivity extends AppCompatActivity {
         header.setGravity(Gravity.CENTER_VERTICAL);
 
         ImageButton back = new ImageButton(this);
-        back.setImageResource(R.drawable.ic_arrow_back);
+        back.setImageResource(R.drawable.ic_arrow_back_right);
         back.setContentDescription(getString(R.string.settings_title));
         back.setColorFilter(color(R.color.primary_variant));
         back.setBackground(background(color(R.color.surface_variant), 0, dp(24)));

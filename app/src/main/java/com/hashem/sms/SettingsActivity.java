@@ -84,7 +84,7 @@ public final class SettingsActivity extends AppCompatActivity {
         header.setGravity(Gravity.CENTER_VERTICAL);
         header.setOrientation(LinearLayout.HORIZONTAL);
         ImageButton back = new ImageButton(this);
-        back.setImageResource(R.drawable.ic_arrow_back);
+        back.setImageResource(R.drawable.ic_arrow_back_right);
         back.setContentDescription(getString(R.string.settings_title));
         back.setColorFilter(col(R.color.primary_variant));
         back.setBackground(round(col(R.color.surface_variant), 0, dp(24)));
