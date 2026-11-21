@@ -31,11 +31,55 @@ public final class UiScreenshotTest {
     private final UiDevice device = UiDevice.getInstance(
             InstrumentationRegistry.getInstrumentation());
 
+    private static void seedPreviewContacts(Context target) throws Exception {
+        android.app.UiAutomation automation =
+                InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        automation.adoptShellPermissionIdentity("android.permission.WRITE_CONTACTS",
+                "android.permission.READ_CONTACTS");
+        try {
+            String[][] people = {{"أحمد محمد", "777123456"}, {"محمد عبدالله", "733456789"},
+                    {"علي حسن", "711222333"}, {"خالد أحمد", "770555222"}};
+            ArrayList<android.content.ContentProviderOperation> ops = new ArrayList<>();
+            for (String[] person : people) {
+                int raw = ops.size();
+                ops.add(android.content.ContentProviderOperation.newInsert(
+                        android.provider.ContactsContract.RawContacts.CONTENT_URI)
+                        .withValue(android.provider.ContactsContract.RawContacts.ACCOUNT_TYPE, null)
+                        .withValue(android.provider.ContactsContract.RawContacts.ACCOUNT_NAME, null)
+                        .build());
+                ops.add(android.content.ContentProviderOperation.newInsert(
+                        android.provider.ContactsContract.Data.CONTENT_URI)
+                        .withValueBackReference(
+                                android.provider.ContactsContract.Data.RAW_CONTACT_ID, raw)
+                        .withValue(android.provider.ContactsContract.Data.MIMETYPE,
+                                android.provider.ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
+                        .withValue(android.provider.ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME,
+                                person[0])
+                        .build());
+                ops.add(android.content.ContentProviderOperation.newInsert(
+                        android.provider.ContactsContract.Data.CONTENT_URI)
+                        .withValueBackReference(
+                                android.provider.ContactsContract.Data.RAW_CONTACT_ID, raw)
+                        .withValue(android.provider.ContactsContract.Data.MIMETYPE,
+                                android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE)
+                        .withValue(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER,
+                                person[1])
+                        .withValue(android.provider.ContactsContract.CommonDataKinds.Phone.TYPE,
+                                android.provider.ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE)
+                        .build());
+            }
+            target.getContentResolver().applyBatch(android.provider.ContactsContract.AUTHORITY, ops);
+        } finally {
+            automation.dropShellPermissionIdentity();
+        }
+    }
+
     @Test
     public void captureMainConversationComposerBulkAndSidebarInBothThemes() throws Exception {
         Context target = InstrumentationRegistry.getInstrumentation().getTargetContext();
         target.deleteDatabase("hashem.db");
         seedPreviewData(target);
+        seedPreviewContacts(target);
         File output = new File(target.getFilesDir(), "HashemSMS-Screenshots");
         if (!output.exists() && !output.mkdirs()) {
             throw new AssertionError("Unable to create screenshot directory: " + output);
@@ -45,7 +89,7 @@ public final class UiScreenshotTest {
         captureTheme(target, AppCompatDelegate.MODE_NIGHT_YES, "dark", output);
         String[] screenshots = output.list((dir, name) -> name.endsWith(".png"));
         assertNotNull("Screenshot directory could not be listed", screenshots);
-        assertTrue("Expected ten screenshots, found " + screenshots.length, screenshots.length == 10);
+        assertTrue("Expected twelve screenshots, found " + screenshots.length, screenshots.length == 12);
     }
 
     private void seedPreviewData(Context context) {
