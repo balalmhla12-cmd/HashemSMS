@@ -140,4 +140,5 @@
     <string name="backup_activity_safety_note">تُفحص سلامة الأرشيف قبل الاستعادة، ويُحتفظ بنسخة أمان من البيانات الحالية قبل استبدالها. تُرفض النسخ التالفة أو الصادرة من إصدار قاعدة بيانات أحدث.</string>
     <string name="backup_manage">إدارة النسخ الاحتياطي</string>
     <string name="backup_manage_desc">إنشاء نسخة أو استعادة نسخة محفوظة من الرسائل والمرفقات.</string>
+    <string name="pick_selected_bar">%1$d جهات اتصال محددة</string>
 </resources>

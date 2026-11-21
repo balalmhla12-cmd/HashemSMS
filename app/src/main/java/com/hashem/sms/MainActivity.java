@@ -3,7 +3,7 @@ import android.app.*;import android.app.role.RoleManager;import android.telephon
 
 public class MainActivity extends androidx.appcompat.app.AppCompatActivity{
  BroadcastReceiver smsUpdatedReceiver=new BroadcastReceiver(){@Override public void onReceive(Context context,Intent intent){if(list!=null&&!isFinishing()&&!isDestroyed())onSmsUpdated();}}; boolean smsUpdatedReceiverRegistered=false; boolean basePermissionRequestPending=false;
- LinearLayout root,list,bulkCampaignHistory,headerBand; EditText search,bulkCampaignName,bulkNumbers,bulkBody; Db db; SubscriptionChoiceCallback pendingSubscriptionAction; boolean pendingForceSimPicker=false; int purple; TextView title; int unreadMessageCount=0,failedMessageCount=0; long filterCountGeneration=0; String filter="all",selectedBottomTab="conversations"; volatile boolean systemSynced=false; boolean syncStarted=false;
+ LinearLayout root,list,bulkCampaignHistory,headerBand,bulkPickBar; String bulkDraftName="",bulkDraftNumbers="",bulkDraftBody="",bulkPickQuery=""; ArrayList<String[]> bulkPickAll; final LinkedHashMap<String,String[]> bulkPickSelected=new LinkedHashMap<>(); EditText search,bulkCampaignName,bulkNumbers,bulkBody; Db db; SubscriptionChoiceCallback pendingSubscriptionAction; boolean pendingForceSimPicker=false; int purple; TextView title; int unreadMessageCount=0,failedMessageCount=0; long filterCountGeneration=0; String filter="all",selectedBottomTab="conversations"; volatile boolean systemSynced=false; boolean syncStarted=false;
  static final java.util.concurrent.ExecutorService DATA_EXECUTOR=java.util.concurrent.Executors.newSingleThreadExecutor();
  static final java.util.concurrent.ExecutorService IMAGE_EXECUTOR=java.util.concurrent.Executors.newFixedThreadPool(2);
  final HashMap<String,ContactData> contactCache=new HashMap<>(); final android.util.LruCache<String,android.graphics.Bitmap> contactBitmapCache=new android.util.LruCache<String,android.graphics.Bitmap>(50){@Override protected int sizeOf(String key,android.graphics.Bitmap value){return 1;}}; final HashSet<String> contactPhotoPending=new HashSet<>(); final HashSet<String> contactLookupPending=new HashSet<>(); long contactCacheGeneration=0; boolean contactsObserverRegistered=false; final android.os.Handler contactsObserverHandler=new android.os.Handler(android.os.Looper.getMainLooper()); final Runnable contactsObserverDebounceRunnable=()->invalidateContactCaches(); final android.database.ContentObserver contactsObserver=new android.database.ContentObserver(new android.os.Handler(android.os.Looper.getMainLooper())){@Override public void onChange(boolean selfChange){contactsObserverHandler.removeCallbacks(contactsObserverDebounceRunnable);contactsObserverHandler.postDelayed(contactsObserverDebounceRunnable,600);}};
@@ -146,7 +146,7 @@ public class MainActivity extends androidx.appcompat.app.AppCompatActivity{
   boolean isThreadListFilter(String value){return "all".equals(value)||"unread".equals(value)||"archived".equals(value)||"blocked".equals(value)||"unknown".equals(value);}
   void onSmsUpdated(){ConversationListCache.invalidateAll();refreshFilterCounts();if(isThreadListFilter(filter)){threadHandler.removeCallbacks(threadRefreshRunnable);threadHandler.postDelayed(threadRefreshRunnable,250);}else if("bulk-history".equals(filter))renderBulkCampaignHistory();else render();}
   void onSearchChanged(){if("contacts".equals(filter)){contactsHandler.removeCallbacks(contactsSearchRunnable);contactsHandler.postDelayed(contactsSearchRunnable,200);}else if(isThreadListFilter(filter)){threadHandler.removeCallbacks(searchFilterRunnable);threadHandler.postDelayed(searchFilterRunnable,200);}else render();}
-  void render(){if(list==null)return;updateBottomNavigation();updateFilterTabs();refreshFilterCounts();boolean special="contacts".equals(filter)||"more".equals(filter);if(filtersScroll!=null)filtersScroll.setVisibility(special?View.GONE:View.VISIBLE);if(composeButton!=null)composeButton.setVisibility(special?View.GONE:View.VISIBLE);if("contacts".equals(filter)){showContactsScreen();return;}if("more".equals(filter)){contactsScreen.setVisibility(View.GONE);showMoreScreen();return;}contactsScreen.setVisibility(View.GONE);if(isThreadListFilter(filter)){otherScroll.setVisibility(View.GONE);threadsRecycler.setVisibility(View.VISIBLE);emptyThreadsView.setVisibility(View.GONE);loadThreadRows();return;}threadHandler.removeCallbacks(threadRefreshRunnable);threadHandler.removeCallbacks(searchFilterRunnable);threadsRecycler.setVisibility(View.GONE);emptyThreadsView.setVisibility(View.GONE);otherScroll.setVisibility(View.VISIBLE);list.removeAllViews();if("trash".equals(filter)){trashScreen();styleSecondaryScreen();return;}if("bulk".equals(filter)){bulkScreen();styleSecondaryScreen();return;}if("bulk-compose".equals(filter)){bulkComposeScreen();styleSecondaryScreen();return;}if("bulk-history".equals(filter)){renderBulkCampaignHistory();styleSecondaryScreen();return;}if("bulk-templates".equals(filter)){bulkTemplatesScreen();styleSecondaryScreen();return;}if("groups".equals(filter)){groupsScreen();styleSecondaryScreen();return;}if("scheduled".equals(filter)){scheduledScreen();styleSecondaryScreen();return;}if("failed".equals(filter)){failedScreen();styleSecondaryScreen();return;}}
+  void render(){if(list==null)return;updateBottomNavigation();updateFilterTabs();refreshFilterCounts();boolean picking="bulk-pick".equals(filter);if(!picking&&bulkPickBar!=null){if(contentHost!=null)contentHost.removeView(bulkPickBar);bulkPickBar=null;}if(headerBand!=null)headerBand.setVisibility(picking?View.GONE:View.VISIBLE);if(bottomNavigation!=null)bottomNavigation.setVisibility(picking?View.GONE:View.VISIBLE);boolean special="contacts".equals(filter)||"more".equals(filter)||picking;if(filtersScroll!=null)filtersScroll.setVisibility(special?View.GONE:View.VISIBLE);if(composeButton!=null)composeButton.setVisibility(special?View.GONE:View.VISIBLE);if("contacts".equals(filter)){showContactsScreen();return;}if("more".equals(filter)){contactsScreen.setVisibility(View.GONE);showMoreScreen();return;}contactsScreen.setVisibility(View.GONE);if(isThreadListFilter(filter)){otherScroll.setVisibility(View.GONE);threadsRecycler.setVisibility(View.VISIBLE);emptyThreadsView.setVisibility(View.GONE);loadThreadRows();return;}threadHandler.removeCallbacks(threadRefreshRunnable);threadHandler.removeCallbacks(searchFilterRunnable);threadsRecycler.setVisibility(View.GONE);emptyThreadsView.setVisibility(View.GONE);otherScroll.setVisibility(View.VISIBLE);list.removeAllViews();if("trash".equals(filter)){trashScreen();styleSecondaryScreen();return;}if("bulk".equals(filter)){bulkScreen();styleSecondaryScreen();return;}if("bulk-compose".equals(filter)){bulkComposeScreen();styleSecondaryScreen();return;}if("bulk-pick".equals(filter)){renderBulkPicker();return;}if("bulk-history".equals(filter)){renderBulkCampaignHistory();styleSecondaryScreen();return;}if("bulk-templates".equals(filter)){bulkTemplatesScreen();styleSecondaryScreen();return;}if("groups".equals(filter)){groupsScreen();styleSecondaryScreen();return;}if("scheduled".equals(filter)){scheduledScreen();styleSecondaryScreen();return;}if("failed".equals(filter)){failedScreen();styleSecondaryScreen();return;}}
   void loadThreadRows(){
    if(!isThreadListFilter(filter)||isFinishing()||isDestroyed())return;
    final String requestedFilter=filter;
@@ -408,7 +408,7 @@ void pickContactsForCompose(EditText destination){
   clearButton.setOnClickListener(v->{selected.clear();refresh.run();});refresh.run();
   AlertDialog dlg=new AlertDialog.Builder(this).setTitle("اختيار المستلمين").setView(panel).setNegativeButton("إلغاء",null).setPositiveButton("إضافة المحددين",null).create();dlg.setOnShowListener(v->dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(btn->{if(selected.isEmpty()){Toast.makeText(this,"حدد مستلمًا واحدًا على الأقل",Toast.LENGTH_SHORT).show();return;}StringBuilder result=new StringBuilder();for(String[] item:selected.values()){if(result.length()>0)result.append("\\n");result.append(item[1]);}destination.setText(result.toString());dlg.dismiss();}));dlg.show();
  }
- void sendToComposeRecipients(String raw,String body){String[] tokens=(raw==null?"":raw.trim()).split("[,;\\n]");LinkedHashMap<String,String[]> unique=new LinkedHashMap<>();for(String token:tokens){String number=token.trim().replaceAll("[\\s()\\-]","");if(number.isEmpty())continue;if(!number.matches("\\+?[0-9]{5,20}")){Toast.makeText(this,"رقم غير صالح: "+token.trim(),Toast.LENGTH_LONG).show();return;}unique.put(number,new String[]{number,""});}if(unique.isEmpty()||body==null||body.trim().isEmpty()){Toast.makeText(this,"أدخل رقمًا واحدًا على الأقل ونص الرسالة",Toast.LENGTH_SHORT).show();return;}if(unique.size()==1){String only=unique.keySet().iterator().next();send(only,body);openContactConversation(only);return;}ArrayList<String[]> recipients=new ArrayList<>(unique.values());final android.content.Context appContext=getApplicationContext();final Db appDb=new Db(appContext);chooseSmsSubscription(new SubscriptionChoiceCallback(){public void onSelected(int subId){rememberSimForRecipients(recipients,subId);SmsSending.enqueueBulkSend(appContext,appDb,recipients,body,subId);}public void onCancelled(){}});}
+ void sendToComposeRecipients(String raw,String body){String[] tokens=(raw==null?"":raw.trim()).split("[,;\\n]");LinkedHashMap<String,String[]> unique=new LinkedHashMap<>();for(String token:tokens){String number=token.trim().replaceAll("[\\s()\\-]","");if(number.isEmpty())continue;if(!number.matches("\\+?[0-9]{5,20}")){Toast.makeText(this,"رقم غير صالح: "+token.trim(),Toast.LENGTH_LONG).show();return;}unique.put(number,new String[]{number,""});}if(unique.isEmpty()||body==null||body.trim().isEmpty()){Toast.makeText(this,"أدخل رقمًا واحدًا على الأقل ونص الرسالة",Toast.LENGTH_SHORT).show();return;}if(unique.size()==1){String only=unique.keySet().iterator().next();send(only,body);openContactConversation(only);return;}ArrayList<String[]> recipients=new ArrayList<>(unique.values());final android.content.Context appContext=getApplicationContext();final Db appDb=new Db(appContext);chooseSmsSubscription(new SubscriptionChoiceCallback(){public void onSelected(int subId){bulkDraftName="";bulkDraftNumbers="";bulkDraftBody="";rememberSimForRecipients(recipients,subId);SmsSending.enqueueBulkSend(appContext,appDb,recipients,body,subId);}public void onCancelled(){}});}
 
  private void rememberSimForRecipients(ArrayList<String[]> recipients,int subscriptionId){
   if(recipients==null||recipients.isEmpty())return;
@@ -583,12 +583,12 @@ void pickContactsForCompose(EditText destination){
   addBulkScreenHeader("إنشاء رسالة جماعية","bulk");
   LinearLayout createCard=new LinearLayout(this);createCard.setOrientation(LinearLayout.VERTICAL);styleScreenCard(createCard);
   createCard.addView(tv("إرسال رسالة واحدة إلى عدة مستلمين",19));
-  bulkCampaignName=new EditText(this);bulkCampaignName.setHint("اسم الحملة، مثل تعميم بداية الاختبارات");createCard.addView(bulkCampaignName);
+  bulkCampaignName=new EditText(this);bulkCampaignName.setHint("اسم الحملة، مثل تعميم بداية الاختبارات");bulkCampaignName.setText(bulkDraftName);bulkCampaignName.addTextChangedListener(draftWatcher(0));createCard.addView(bulkCampaignName);
   createCard.addView(tv("اكتب رقمًا في كل سطر، ويمكن إضافة الاسم بعد فاصلة: 777123456, أحمد. استخدم {name} داخل نص الرسالة للتخصيص.",14));
   Button imp=button("استيراد ملف نصي أو CSV");imp.setOnClickListener(v->importFile());createCard.addView(imp);
-  Button contacts=button("اختيار من جهات الاتصال · بحث وتحديد الكل");contacts.setOnClickListener(v->pickContactsForBulk());createCard.addView(contacts);
-  bulkNumbers=new EditText(this);bulkNumbers.setHint("الرقم أو الرقم, الاسم — سطر لكل مستلم");bulkNumbers.setMinLines(5);bulkNumbers.setGravity(Gravity.TOP);createCard.addView(bulkNumbers);
-  bulkBody=new EditText(this);bulkBody.setHint("نص الرسالة. مثال: مرحبًا {name}");bulkBody.setMinLines(4);bulkBody.setGravity(Gravity.TOP);createCard.addView(bulkBody);
+  Button contacts=button("اختيار من جهات الاتصال · بحث وتحديد الكل");contacts.setOnClickListener(v->{bulkPickAll=null;filter="bulk-pick";selectedBottomTab="conversations";render();});createCard.addView(contacts);
+  bulkNumbers=new EditText(this);bulkNumbers.setHint("الرقم أو الرقم, الاسم — سطر لكل مستلم");bulkNumbers.setMinLines(5);bulkNumbers.setGravity(Gravity.TOP);bulkNumbers.setText(bulkDraftNumbers);bulkNumbers.addTextChangedListener(draftWatcher(1));createCard.addView(bulkNumbers);
+  bulkBody=new EditText(this);bulkBody.setHint("نص الرسالة. مثال: مرحبًا {name}");bulkBody.setMinLines(4);bulkBody.setGravity(Gravity.TOP);bulkBody.setText(bulkDraftBody);bulkBody.addTextChangedListener(draftWatcher(2));createCard.addView(bulkBody);
   Button send=button("مراجعة ثم إرسال");send.setOnClickListener(v->confirmBulk());createCard.addView(send);
   list.addView(createCard);
  }
@@ -633,22 +633,26 @@ void pickContactsForCompose(EditText destination){
   ScrollView scroll=new ScrollView(this);scroll.setFillViewport(false);scroll.addView(content);
   new AlertDialog.Builder(this).setTitle("تفاصيل الحملة: "+campaignName).setView(scroll).setPositiveButton("إغلاق",null).show();
  }
- void pickContactsForBulk(){
+ ArrayList<String[]> loadBulkPickerContacts(){
    ArrayList<String[]> all=new ArrayList<>();
    if(checkSelfPermission("android.permission.READ_CONTACTS")!=PackageManager.PERMISSION_GRANTED){
     android.database.Cursor known=null;
     try{known=db.listThreads("all");while(known.moveToNext()){String number=known.getString(known.getColumnIndexOrThrow("address"));if(number!=null&&!number.trim().isEmpty())all.add(new String[]{"",number.trim()});}}
     catch(Exception e){android.util.Log.w("HashemSMS","Unable to load known conversation numbers for bulk picker",e);}
     finally{if(known!=null)try{known.close();}catch(Exception ignored){}}
-    if(all.isEmpty()){Toast.makeText(this,"إذن جهات الاتصال غير ممنوح ولا توجد أرقام محادثات محفوظة. يمكنك إدخال الأرقام يدويًا.",Toast.LENGTH_LONG).show();return;}
+    if(all.isEmpty()){Toast.makeText(this,"إذن جهات الاتصال غير ممنوح ولا توجد أرقام محادثات محفوظة. يمكنك إدخال الأرقام يدويًا.",Toast.LENGTH_LONG).show();return null;}
     Toast.makeText(this,"إذن جهات الاتصال غير ممنوح؛ يعرض المنتقي أرقام المحادثات المحفوظة فقط.",Toast.LENGTH_LONG).show();
    }else{
     android.database.Cursor c=null;
     try{c=getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,new String[]{ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,ContactsContract.CommonDataKinds.Phone.NUMBER},null,null,ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME+" COLLATE NOCASE ASC");if(c!=null)while(c.moveToNext()){String name=c.getString(0),number=c.getString(1);if(number==null)continue;number=number.trim();if(number.isEmpty())continue;all.add(new String[]{name==null?"":name,number});}}
-    catch(Exception e){android.util.Log.e("HashemSMS","Unable to read contacts for bulk picker",e);Toast.makeText(this,"تعذّر قراءة جهات الاتصال. تحقق من الإذن.",Toast.LENGTH_LONG).show();return;}
+    catch(Exception e){android.util.Log.e("HashemSMS","Unable to read contacts for bulk picker",e);Toast.makeText(this,"تعذّر قراءة جهات الاتصال. تحقق من الإذن.",Toast.LENGTH_LONG).show();return null;}
     finally{if(c!=null)try{c.close();}catch(Exception ignored){}}
    }
-   if(all.isEmpty()){Toast.makeText(this,"لا توجد أرقام في جهات الاتصال.",Toast.LENGTH_LONG).show();return;}
+   if(all.isEmpty()){Toast.makeText(this,"لا توجد أرقام في جهات الاتصال.",Toast.LENGTH_LONG).show();return null;}
+   return all;
+  }
+ void pickContactsForBulk(){
+   ArrayList<String[]> all=loadBulkPickerContacts();if(all==null)return;
    LinkedHashMap<String,String[]> selected=new LinkedHashMap<>();
    LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(4,4,4,4);
    EditText query=new EditText(this);query.setSingleLine(true);query.setHint("ابحث باسم أو جزء من الرقم");panel.addView(query,new LinearLayout.LayoutParams(-1,-2));
@@ -674,6 +678,103 @@ void pickContactsForCompose(EditText destination){
    dialog.show();
   }
   boolean bulkContainsNumber(String current,String number){String target=number.replaceAll("[\\s()\\-]","");for(String line:current.split("\\r?\\n")){String first=line.trim().split(",",2)[0].replaceAll("[\\s()\\-]","");if(first.equals(target))return true;}return false;}
+
+ android.text.TextWatcher draftWatcher(int which){return new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int st,int c,int a){}public void onTextChanged(CharSequence s,int st,int b,int c){String v=s.toString();if(which==0)bulkDraftName=v;else if(which==1)bulkDraftNumbers=v;else bulkDraftBody=v;}public void afterTextChanged(android.text.Editable e){}};}
+ static final int[] PICK_AVATAR_BG={0xFFCFE0FF,0xFFE3D5FB,0xFFD3F0E4,0xFFFBDDB8,0xFFD0D8EC,0xFFFAD3E2};
+ static final int[] PICK_AVATAR_FG={0xFF1F5FD6,0xFF5B2FA6,0xFF1B8A6E,0xFFD9822B,0xFF3E5BA0,0xFFC93B7A};
+ String pickKey(String number){return number.replaceAll("[\\s()\\-]","");}
+ View pickAvatar(int index,int sizeDp){
+  LinearLayout box=new LinearLayout(this);box.setGravity(Gravity.CENTER);GradientDrawable bg=new GradientDrawable();bg.setShape(GradientDrawable.OVAL);bg.setColor(PICK_AVATAR_BG[index%PICK_AVATAR_BG.length]);box.setBackground(bg);
+  ImageView ic=new ImageView(this);ic.setImageResource(R.drawable.ic_nav_contacts);ic.setColorFilter(PICK_AVATAR_FG[index%PICK_AVATAR_FG.length]);box.addView(ic,new LinearLayout.LayoutParams(UiResources.dp(this,sizeDp*5/9),UiResources.dp(this,sizeDp*5/9)));
+  box.setLayoutParams(new LinearLayout.LayoutParams(UiResources.dp(this,sizeDp),UiResources.dp(this,sizeDp)));return box;
+ }
+ void renderBulkPicker(){
+  list.setPadding(UiResources.dp(this,4),UiResources.dp(this,4),UiResources.dp(this,4),UiResources.dp(this,8));
+  if(bulkPickAll==null){bulkPickAll=loadBulkPickerContacts();if(bulkPickAll==null){bulkPickAll=null;filter="bulk-compose";render();return;}}
+  final int primary=UiResources.color(this,R.color.primary),cardBg=UiResources.color(this,R.color.card_surface),stroke=UiResources.color(this,R.color.card_stroke),dim=UiResources.color(this,R.color.on_surface_variant);
+  addBulkScreenHeader("اختيار المستلمين","bulk-compose");
+  // search
+  LinearLayout searchRow=new LinearLayout(this);searchRow.setOrientation(LinearLayout.HORIZONTAL);searchRow.setGravity(Gravity.CENTER_VERTICAL);searchRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);searchRow.setPadding(UiResources.dp(this,14),0,UiResources.dp(this,14),0);searchRow.setBackground(rounded(cardBg,stroke,UiResources.dp(this,26)));
+  ImageView sIcon=new ImageView(this);sIcon.setImageResource(R.drawable.ic_search);sIcon.setColorFilter(dim);searchRow.addView(sIcon,new LinearLayout.LayoutParams(UiResources.dp(this,22),UiResources.dp(this,22)));
+  EditText q=new EditText(this);q.setHint("ابحث بالاسم أو رقم الهاتف...");q.setSingleLine(true);q.setBackground(null);q.setTextSize(14);q.setTextColor(UiResources.color(this,R.color.on_surface));q.setHintTextColor(dim);q.setGravity(Gravity.CENTER_VERTICAL|Gravity.START);q.setText(bulkPickQuery);searchRow.addView(q,new LinearLayout.LayoutParams(0,UiResources.dp(this,48),1));
+  LinearLayout.LayoutParams sLp=new LinearLayout.LayoutParams(-1,UiResources.dp(this,50));sLp.setMargins(UiResources.dp(this,4),UiResources.dp(this,4),UiResources.dp(this,4),UiResources.dp(this,8));list.addView(searchRow,sLp);
+  // selected strip card
+  LinearLayout stripCard=new LinearLayout(this);stripCard.setOrientation(LinearLayout.VERTICAL);stripCard.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);stripCard.setPadding(UiResources.dp(this,14),UiResources.dp(this,12),UiResources.dp(this,14),UiResources.dp(this,10));stripCard.setBackground(rounded(cardBg,stroke,UiResources.dp(this,20)));
+  LinearLayout stripHead=new LinearLayout(this);stripHead.setOrientation(LinearLayout.HORIZONTAL);stripHead.setGravity(Gravity.CENTER_VERTICAL);
+  TextView stripTitle=tv("جهات الاتصال المحددة",16);boldFont(stripTitle);stripTitle.setGravity(Gravity.START);stripHead.addView(stripTitle,new LinearLayout.LayoutParams(0,-2,1));
+  TextView badge=tv("",13);badge.setTextColor(0xFFFFFFFF);badge.setGravity(Gravity.CENTER);badge.setPadding(UiResources.dp(this,14),UiResources.dp(this,4),UiResources.dp(this,14),UiResources.dp(this,4));badge.setBackground(rounded(primary,0,UiResources.dp(this,16)));stripHead.addView(badge,new LinearLayout.LayoutParams(-2,-2));
+  stripCard.addView(stripHead,new LinearLayout.LayoutParams(-1,-2));
+  HorizontalScrollView stripScroll=new HorizontalScrollView(this);stripScroll.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);stripScroll.setHorizontalScrollBarEnabled(false);LinearLayout strip=new LinearLayout(this);strip.setOrientation(LinearLayout.HORIZONTAL);stripScroll.addView(strip);
+  LinearLayout.LayoutParams ssLp=new LinearLayout.LayoutParams(-1,-2);ssLp.topMargin=UiResources.dp(this,8);stripCard.addView(stripScroll,ssLp);
+  LinearLayout.LayoutParams scLp=new LinearLayout.LayoutParams(-1,-2);scLp.setMargins(UiResources.dp(this,4),0,UiResources.dp(this,4),UiResources.dp(this,8));list.addView(stripCard,scLp);
+  // contacts card
+  LinearLayout listCard=new LinearLayout(this);listCard.setOrientation(LinearLayout.VERTICAL);listCard.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);listCard.setBackground(rounded(cardBg,stroke,UiResources.dp(this,20)));
+  LinearLayout head=new LinearLayout(this);head.setOrientation(LinearLayout.HORIZONTAL);head.setGravity(Gravity.CENTER_VERTICAL);head.setPadding(UiResources.dp(this,14),UiResources.dp(this,10),UiResources.dp(this,14),UiResources.dp(this,10));
+  TextView listTitle=tv("جهات الاتصال",16);boldFont(listTitle);listTitle.setGravity(Gravity.START);head.addView(listTitle,new LinearLayout.LayoutParams(0,-2,1));
+  TextView selAllText=tv("تحديد الكل",14);selAllText.setTextColor(primary);head.addView(selAllText,new LinearLayout.LayoutParams(-2,-2));
+  CheckBox selAll=new CheckBox(this);head.addView(selAll,new LinearLayout.LayoutParams(-2,-2));listCard.addView(head,new LinearLayout.LayoutParams(-1,-2));
+  LinearLayout rows=new LinearLayout(this);rows.setOrientation(LinearLayout.VERTICAL);listCard.addView(rows,new LinearLayout.LayoutParams(-1,-2));
+  LinearLayout.LayoutParams lcLp=new LinearLayout.LayoutParams(-1,-2);lcLp.setMargins(UiResources.dp(this,4),0,UiResources.dp(this,4),0);list.addView(listCard,lcLp);
+  list.addView(new View(this),new LinearLayout.LayoutParams(1,UiResources.dp(this,96)));
+  // bottom bar
+  if(bulkPickBar!=null&&contentHost!=null)contentHost.removeView(bulkPickBar);
+  bulkPickBar=new LinearLayout(this);bulkPickBar.setOrientation(LinearLayout.HORIZONTAL);bulkPickBar.setGravity(Gravity.CENTER_VERTICAL);bulkPickBar.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);bulkPickBar.setPadding(UiResources.dp(this,14),UiResources.dp(this,10),UiResources.dp(this,14),UiResources.dp(this,10));bulkPickBar.setBackground(rounded(cardBg,stroke,UiResources.dp(this,22)));bulkPickBar.setElevation(UiResources.dp(this,6));
+  LinearLayout barText=new LinearLayout(this);barText.setOrientation(LinearLayout.VERTICAL);TextView barCount=tv("",16);barCount.setTextColor(primary);boldFont(barCount);barCount.setGravity(Gravity.START);TextView barHint=tv("يمكنك إضافة المزيد قبل المتابعة",12);barHint.setTextColor(dim);barHint.setGravity(Gravity.START);barText.addView(barCount);barText.addView(barHint);bulkPickBar.addView(barText,new LinearLayout.LayoutParams(0,-2,1));
+  TextView next=tv("التالي",17);next.setTextColor(0xFFFFFFFF);boldFont(next);next.setGravity(Gravity.CENTER);next.setBackground(rounded(primary,0,UiResources.dp(this,26)));next.setClickable(true);next.setFocusable(true);bulkPickBar.addView(next,new LinearLayout.LayoutParams(UiResources.dp(this,140),UiResources.dp(this,48)));
+  FrameLayout.LayoutParams barLp=new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM);barLp.setMargins(UiResources.dp(this,4),0,UiResources.dp(this,4),UiResources.dp(this,6));contentHost.addView(bulkPickBar,barLp);
+  final ArrayList<String[]> shown=new ArrayList<>();
+  Runnable refreshSelection=()->{
+   badge.setText(getString(R.string.compose_selected_count_short,bulkPickSelected.size()));stripCard.setVisibility(bulkPickSelected.isEmpty()?View.GONE:View.VISIBLE);
+   strip.removeAllViews();
+   for(String[] person:new ArrayList<>(bulkPickSelected.values())){
+    int idx=Math.max(0,bulkPickAll.indexOf(findPerson(person[1])));
+    LinearLayout item=new LinearLayout(this);item.setOrientation(LinearLayout.VERTICAL);item.setGravity(Gravity.CENTER_HORIZONTAL);item.setPadding(UiResources.dp(this,8),0,UiResources.dp(this,8),0);
+    FrameLayout av=new FrameLayout(this);av.addView(pickAvatar(idx,56));TextView x=tv("✕",10);x.setPadding(0,0,0,0);x.setTextColor(0xFFFFFFFF);x.setGravity(Gravity.CENTER);x.setBackground(rounded(UiResources.color(this,R.color.error),0,UiResources.dp(this,10)));av.addView(x,new FrameLayout.LayoutParams(UiResources.dp(this,20),UiResources.dp(this,20),Gravity.BOTTOM|Gravity.END));
+    item.addView(av,new LinearLayout.LayoutParams(UiResources.dp(this,60),UiResources.dp(this,60)));
+    String label=person[0].trim().isEmpty()?person[1]:person[0].trim();TextView nm=tv(label,13);nm.setGravity(Gravity.CENTER);nm.setSingleLine(true);nm.setEllipsize(android.text.TextUtils.TruncateAt.END);nm.setMaxWidth(UiResources.dp(this,76));item.addView(nm);
+    final String key=pickKey(person[1]);item.setOnClickListener(v->{bulkPickSelected.remove(key);renderPickRows(rows,shown,selAll);});
+    strip.addView(item);
+   }
+   barCount.setText(getString(R.string.pick_selected_bar,bulkPickSelected.size()));
+   boolean all=!shown.isEmpty();for(String[] person:shown)if(!bulkPickSelected.containsKey(pickKey(person[1]))){all=false;break;}
+   selAll.setOnCheckedChangeListener(null);selAll.setChecked(all);selAll.setOnCheckedChangeListener(selAllListener(shown,rows,selAll));
+  };
+  pickRefresh=refreshSelection;
+  q.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int st,int c,int a){}public void onTextChanged(CharSequence s,int st,int b,int c){bulkPickQuery=s.toString().trim();renderPickRows(rows,shown,selAll);}public void afterTextChanged(android.text.Editable e){}});
+  selAllText.setOnClickListener(v->selAll.setChecked(!selAll.isChecked()));
+  next.setOnClickListener(v->{
+   if(bulkPickSelected.isEmpty()){Toast.makeText(this,"حدد مستلمًا واحدًا على الأقل",Toast.LENGTH_SHORT).show();return;}
+   StringBuilder text=new StringBuilder(bulkDraftNumbers.trim());int added=0;
+   for(String[] person:bulkPickSelected.values()){String number=person[1];if(bulkContainsNumber(text.toString(),number))continue;if(text.length()>0)text.append('\n');text.append(number);if(!person[0].trim().isEmpty())text.append(", ").append(person[0].trim());added++;}
+   bulkDraftNumbers=text.toString();Toast.makeText(this,"أُضيف "+added+" جهة محددة إلى القائمة؛ راجع التكرار قبل الإرسال.",Toast.LENGTH_LONG).show();
+   bulkPickSelected.clear();bulkPickQuery="";filter="bulk-compose";render();
+  });
+  renderPickRows(rows,shown,selAll);
+ }
+ Runnable pickRefresh;
+ String[] findPerson(String number){String key=pickKey(number);for(String[] p:bulkPickAll)if(pickKey(p[1]).equals(key))return p;return null;}
+ void boldFont(TextView t){try{t.setTypeface(androidx.core.content.res.ResourcesCompat.getFont(this,R.font.almarai_bold));}catch(Exception ignored){t.setTypeface(Typeface.DEFAULT,Typeface.BOLD);}}
+ android.widget.CompoundButton.OnCheckedChangeListener selAllListener(ArrayList<String[]> shown,LinearLayout rows,CheckBox selAll){return (v,checked)->{for(String[] person:shown){String key=pickKey(person[1]);if(checked)bulkPickSelected.put(key,new String[]{person[0],key});else bulkPickSelected.remove(key);}renderPickRows(rows,shown,selAll);};}
+ void renderPickRows(LinearLayout rows,ArrayList<String[]> shown,CheckBox selAll){
+  rows.removeAllViews();shown.clear();String qq=bulkPickQuery.toLowerCase(Locale.ROOT);
+  for(int i=0;i<bulkPickAll.size();i++){
+   String[] person=bulkPickAll.get(i);String name=person[0],number=person[1];
+   if(!qq.isEmpty()&&!name.toLowerCase(Locale.ROOT).contains(qq)&&!number.toLowerCase(Locale.ROOT).contains(qq))continue;
+   shown.add(person);final String key=pickKey(number);
+   LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.HORIZONTAL);row.setGravity(Gravity.CENTER_VERTICAL);row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);row.setPadding(UiResources.dp(this,12),UiResources.dp(this,8),UiResources.dp(this,8),UiResources.dp(this,8));
+   View av=pickAvatar(i,48);row.addView(av);
+   LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.setPadding(UiResources.dp(this,12),0,UiResources.dp(this,8),0);
+   TextView nm=tv(name.isEmpty()?number:name,16);boldFont(nm);nm.setGravity(Gravity.START);labels.addView(nm);
+   if(!name.isEmpty()){TextView num=tv(number,14);num.setTextColor(UiResources.color(this,R.color.on_surface_variant));num.setGravity(Gravity.START);num.setTextDirection(View.TEXT_DIRECTION_LTR);labels.addView(num);}
+   row.addView(labels,new LinearLayout.LayoutParams(0,-2,1));
+   CheckBox cb=new CheckBox(this);cb.setChecked(bulkPickSelected.containsKey(key));cb.setOnCheckedChangeListener((v,checked)->{if(checked)bulkPickSelected.put(key,new String[]{name,key});else bulkPickSelected.remove(key);if(pickRefresh!=null)pickRefresh.run();});row.addView(cb);
+   row.setOnClickListener(v->cb.setChecked(!cb.isChecked()));
+   rows.addView(row,new LinearLayout.LayoutParams(-1,-2));
+   View line=new View(this);line.setBackgroundColor(UiResources.color(this,R.color.divider));LinearLayout.LayoutParams ll=new LinearLayout.LayoutParams(-1,1);ll.setMargins(UiResources.dp(this,12),0,UiResources.dp(this,12),0);rows.addView(line,ll);
+  }
+  if(shown.isEmpty())rows.addView(tv("لا توجد نتائج مطابقة",15));
+  if(pickRefresh!=null)pickRefresh.run();
+ }
  void confirmBulk(){
   String campaignName=bulkCampaignName==null?"":bulkCampaignName.getText().toString().trim();String raw=bulkNumbers.getText().toString().trim(),body=bulkBody.getText().toString().trim();if(campaignName.isEmpty()){Toast.makeText(this,"أدخل اسم الحملة أولًا",Toast.LENGTH_SHORT).show();return;}if(raw.isEmpty()||body.isEmpty()){Toast.makeText(this,"أدخل المستلمين ونص الرسالة أولًا",Toast.LENGTH_SHORT).show();return;}
   ArrayList<String[]> recipients=new ArrayList<>();HashSet<String> seenNumbers=new HashSet<>();int invalid=0;boolean firstLine=true;

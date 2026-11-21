@@ -90,6 +90,34 @@ public final class UiScreenshotTest {
             assertNotNull("Bulk screen title not visible",
                     device.wait(Until.findObject(By.text("إنشاء رسالة جماعية")), 3000));
             save(output, "04-bulk-" + theme + ".png");
+
+            UiObject2 createCard = device.wait(Until.findObject(By.text("إنشاء رسالة جماعية")), 3000);
+            assertNotNull("Create bulk card not found", createCard);
+            createCard.click();
+            assertNotNull("Bulk compose screen not visible",
+                    device.wait(Until.findObject(By.text("مراجعة ثم إرسال")), 5000));
+            UiObject2 nameField = device.wait(Until.findObject(By.clazz("android.widget.EditText")), 3000);
+            assertNotNull("Campaign name field not found", nameField);
+            nameField.setText("حملة اختبار");
+            UiObject2 pickButton = device.wait(
+                    Until.findObject(By.textStartsWith("اختيار من جهات الاتصال")), 3000);
+            assertNotNull("Contact picker button not found", pickButton);
+            pickButton.click();
+            assertNotNull("Recipient picker not visible",
+                    device.wait(Until.findObject(By.text("اختيار المستلمين")), 5000));
+            java.util.List<UiObject2> boxes = device.wait(
+                    Until.findObjects(By.clazz("android.widget.CheckBox")), 3000);
+            assertNotNull("Picker checkboxes not found", boxes);
+            if (boxes.size() > 1) boxes.get(1).click();
+            waitForUi();
+            save(output, "06-bulk-picker-" + theme + ".png");
+            UiObject2 next = device.wait(Until.findObject(By.text("التالي")), 3000);
+            assertNotNull("Next button not found", next);
+            next.click();
+            assertNotNull("Compose screen not restored after next",
+                    device.wait(Until.findObject(By.text("مراجعة ثم إرسال")), 5000));
+            assertNotNull("Campaign name was lost after picker",
+                    device.wait(Until.findObject(By.text("حملة اختبار")), 3000));
         }
 
         Intent conversation = new Intent(target, ConversationActivity.class);
