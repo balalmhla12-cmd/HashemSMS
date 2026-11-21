@@ -823,10 +823,20 @@ void pickContactsForCompose(EditText destination){
   LinearLayout.LayoutParams cLp=new LinearLayout.LayoutParams(-1,-2);cLp.setMargins(UiResources.dp(this,4),0,UiResources.dp(this,4),UiResources.dp(this,10));list.addView(card,cLp);
   // names card
   LinearLayout names=new LinearLayout(this);names.setOrientation(LinearLayout.VERTICAL);names.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);names.setPadding(UiResources.dp(this,14),UiResources.dp(this,12),UiResources.dp(this,14),UiResources.dp(this,14));names.setBackground(rounded(cardBg,stroke,UiResources.dp(this,20)));
-  TextView gl=tvp("اسم المجموعة (اختياري)",15);boldFont(gl);gl.setGravity(Gravity.START);names.addView(gl,new LinearLayout.LayoutParams(-1,-2));
-  EditText groupField=reviewField("مثال: الأصدقاء",bulkDraftGroup,1);LinearLayout.LayoutParams gfLp=new LinearLayout.LayoutParams(-1,UiResources.dp(this,48));gfLp.topMargin=UiResources.dp(this,8);names.addView(groupField,gfLp);
-  TextView save=tvp("حفظ المستلمين كمجموعة",14);save.setTextColor(primary);boldFont(save);save.setGravity(Gravity.CENTER);save.setBackground(rounded(UiResources.color(this,R.color.primary_container),0,UiResources.dp(this,16)));save.setClickable(true);save.setOnClickListener(v->saveReviewAsGroup(recipients));LinearLayout.LayoutParams svLp=new LinearLayout.LayoutParams(-1,UiResources.dp(this,44));svLp.topMargin=UiResources.dp(this,8);names.addView(save,svLp);
-  TextView cl=tvp("اسم الحملة (اختياري)",15);boldFont(cl);cl.setGravity(Gravity.START);LinearLayout.LayoutParams clLp=new LinearLayout.LayoutParams(-1,-2);clLp.topMargin=UiResources.dp(this,16);names.addView(cl,clLp);
+  LinearLayout groupRow=new LinearLayout(this);groupRow.setOrientation(LinearLayout.HORIZONTAL);groupRow.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+  LinearLayout groupCol=new LinearLayout(this);groupCol.setOrientation(LinearLayout.VERTICAL);
+  TextView gl=tvp("اسم المجموعة (اختياري)",15);boldFont(gl);gl.setGravity(Gravity.START);groupCol.addView(gl,new LinearLayout.LayoutParams(-1,-2));
+  EditText groupField=reviewField("مثال: الأصدقاء",bulkDraftGroup,1);LinearLayout.LayoutParams gfLp=new LinearLayout.LayoutParams(-1,UiResources.dp(this,48));gfLp.topMargin=UiResources.dp(this,8);groupCol.addView(groupField,gfLp);
+  groupRow.addView(groupCol,new LinearLayout.LayoutParams(0,-2,1));
+  LinearLayout save=new LinearLayout(this);save.setOrientation(LinearLayout.VERTICAL);save.setGravity(Gravity.CENTER);save.setPadding(UiResources.dp(this,6),UiResources.dp(this,6),UiResources.dp(this,6),UiResources.dp(this,6));save.setBackground(rounded(UiResources.color(this,R.color.primary_container),0,UiResources.dp(this,16)));save.setClickable(true);save.setFocusable(true);save.setOnClickListener(v->saveReviewAsGroup(recipients));
+  ImageView saveIcon=new ImageView(this);saveIcon.setImageResource(R.drawable.ic_bulk_save);save.addView(saveIcon,new LinearLayout.LayoutParams(UiResources.dp(this,24),UiResources.dp(this,24)));
+  TextView saveText=tvp("حفظ المستلمين كمجموعة",13);saveText.setTextColor(primary);boldFont(saveText);saveText.setGravity(Gravity.CENTER);save.addView(saveText,new LinearLayout.LayoutParams(-2,-2));
+  LinearLayout.LayoutParams svLp=new LinearLayout.LayoutParams(UiResources.dp(this,112),-1);svLp.setMarginEnd(0);svLp.setMarginStart(UiResources.dp(this,10));groupRow.addView(save,svLp);
+  names.addView(groupRow,new LinearLayout.LayoutParams(-1,-2));
+  LinearLayout campaignHead=new LinearLayout(this);campaignHead.setOrientation(LinearLayout.HORIZONTAL);campaignHead.setGravity(Gravity.CENTER_VERTICAL);campaignHead.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+  ImageView tagIcon=new ImageView(this);tagIcon.setImageResource(R.drawable.ic_bulk_tag);campaignHead.addView(tagIcon,new LinearLayout.LayoutParams(UiResources.dp(this,22),UiResources.dp(this,22)));
+  TextView cl=tvp("اسم الحملة (اختياري)",15);boldFont(cl);cl.setGravity(Gravity.START);cl.setPadding(UiResources.dp(this,8),0,0,0);campaignHead.addView(cl,new LinearLayout.LayoutParams(0,-2,1));
+  LinearLayout.LayoutParams clLp=new LinearLayout.LayoutParams(-1,-2);clLp.topMargin=UiResources.dp(this,16);names.addView(campaignHead,clLp);
   EditText campaignField=reviewField("مثال: حملة التوعية",bulkDraftName,0);LinearLayout.LayoutParams cfLp=new LinearLayout.LayoutParams(-1,UiResources.dp(this,48));cfLp.topMargin=UiResources.dp(this,8);names.addView(campaignField,cfLp);
   LinearLayout.LayoutParams nLp=new LinearLayout.LayoutParams(-1,-2);nLp.setMargins(UiResources.dp(this,4),0,UiResources.dp(this,4),0);list.addView(names,nLp);
   list.addView(new View(this),new LinearLayout.LayoutParams(1,UiResources.dp(this,96)));

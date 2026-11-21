@@ -140,9 +140,11 @@ public final class UiScreenshotTest {
             createCard.click();
             assertNotNull("Bulk compose screen not visible",
                     device.wait(Until.findObject(By.textStartsWith("اختيار من جهات الاتصال")), 5000));
-            UiObject2 nameField = device.wait(Until.findObject(By.clazz("android.widget.EditText")), 3000);
-            assertNotNull("Campaign name field not found", nameField);
-            nameField.setText("حملة اختبار");
+            device.wait(Until.hasObject(By.clazz("android.widget.EditText")), 3000);
+            java.util.List<UiObject2> fields = device.findObjects(By.clazz("android.widget.EditText"));
+            assertTrue("Compose fields not found", fields.size() >= 4);
+            // fields[0] is the main search box in the header; fields[1] is the campaign name.
+            fields.get(1).setText("حملة اختبار");
             UiObject2 pickButton = device.wait(
                     Until.findObject(By.textStartsWith("اختيار من جهات الاتصال")), 3000);
             assertNotNull("Contact picker button not found", pickButton);
@@ -160,6 +162,8 @@ public final class UiScreenshotTest {
             next.click();
             assertNotNull("Review screen not visible",
                     device.wait(Until.findObject(By.text("مراجعة المستلمين")), 5000));
+            assertNotNull("Campaign name was lost on review",
+                    device.wait(Until.findObject(By.text("حملة اختبار")), 3000));
             waitForUi();
             save(output, "07-bulk-review-" + theme + ".png");
             UiObject2 reviewNext = device.wait(Until.findObject(By.text("التالي")), 3000);
