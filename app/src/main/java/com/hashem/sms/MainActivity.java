@@ -729,7 +729,7 @@ void pickContactsForCompose(EditText destination){
    for(String[] person:new ArrayList<>(bulkPickSelected.values())){
     int idx=Math.max(0,bulkPickAll.indexOf(findPerson(person[1])));
     LinearLayout item=new LinearLayout(this);item.setOrientation(LinearLayout.VERTICAL);item.setGravity(Gravity.CENTER_HORIZONTAL);item.setPadding(UiResources.dp(this,8),0,UiResources.dp(this,8),0);
-    FrameLayout av=new FrameLayout(this);av.addView(pickAvatar(idx,56));TextView x=tvp("✕",10);x.setPadding(0,0,0,0);x.setTextColor(0xFFFFFFFF);x.setGravity(Gravity.CENTER);x.setBackground(rounded(UiResources.color(this,R.color.error),0,UiResources.dp(this,10)));av.addView(x,new FrameLayout.LayoutParams(UiResources.dp(this,20),UiResources.dp(this,20),Gravity.BOTTOM|Gravity.END));
+    FrameLayout av=new FrameLayout(this);av.addView(pickAvatar(idx,56));TextView x=tvp("✕",10);x.setPadding(0,0,0,0);x.setTextColor(0xFFFFFFFF);x.setGravity(Gravity.CENTER);x.setBackground(rounded(UiResources.color(this,R.color.error),0,UiResources.dp(this,10)));av.addView(x,new FrameLayout.LayoutParams(UiResources.dp(this,20),UiResources.dp(this,20),Gravity.BOTTOM|Gravity.START));
     item.addView(av,new LinearLayout.LayoutParams(UiResources.dp(this,60),UiResources.dp(this,60)));
     String label=person[0].trim().isEmpty()?person[1]:person[0].trim();TextView nm=tvp(label,13);nm.setGravity(Gravity.CENTER);nm.setSingleLine(true);nm.setEllipsize(android.text.TextUtils.TruncateAt.END);nm.setMaxWidth(UiResources.dp(this,84));item.addView(nm);
     final String key=pickKey(person[1]);item.setOnClickListener(v->{bulkPickSelected.remove(key);renderPickRows(rows,shown,selAll);});
