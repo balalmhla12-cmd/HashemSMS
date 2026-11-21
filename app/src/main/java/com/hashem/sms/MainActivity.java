@@ -701,8 +701,8 @@ void pickContactsForCompose(EditText destination){
   // selected strip card
   LinearLayout stripCard=new LinearLayout(this);stripCard.setOrientation(LinearLayout.VERTICAL);stripCard.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);stripCard.setPadding(UiResources.dp(this,14),UiResources.dp(this,12),UiResources.dp(this,14),UiResources.dp(this,10));stripCard.setBackground(rounded(cardBg,stroke,UiResources.dp(this,20)));
   LinearLayout stripHead=new LinearLayout(this);stripHead.setOrientation(LinearLayout.HORIZONTAL);stripHead.setGravity(Gravity.CENTER_VERTICAL);
-  TextView stripTitle=tv("جهات الاتصال المحددة",16);boldFont(stripTitle);stripTitle.setGravity(Gravity.START);stripHead.addView(stripTitle,new LinearLayout.LayoutParams(0,-2,1));
-  TextView badge=tv("",13);badge.setTextColor(0xFFFFFFFF);badge.setGravity(Gravity.CENTER);badge.setPadding(UiResources.dp(this,14),UiResources.dp(this,4),UiResources.dp(this,14),UiResources.dp(this,4));badge.setBackground(rounded(primary,0,UiResources.dp(this,16)));stripHead.addView(badge,new LinearLayout.LayoutParams(-2,-2));
+  TextView stripTitle=tvp("جهات الاتصال المحددة",16);boldFont(stripTitle);stripTitle.setGravity(Gravity.START);stripHead.addView(stripTitle,new LinearLayout.LayoutParams(0,-2,1));
+  TextView badge=tvp("",13);badge.setTextColor(0xFFFFFFFF);badge.setGravity(Gravity.CENTER);badge.setPadding(UiResources.dp(this,14),UiResources.dp(this,4),UiResources.dp(this,14),UiResources.dp(this,4));badge.setBackground(rounded(primary,0,UiResources.dp(this,16)));stripHead.addView(badge,new LinearLayout.LayoutParams(-2,-2));
   stripCard.addView(stripHead,new LinearLayout.LayoutParams(-1,-2));
   HorizontalScrollView stripScroll=new HorizontalScrollView(this);stripScroll.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);stripScroll.setHorizontalScrollBarEnabled(false);LinearLayout strip=new LinearLayout(this);strip.setOrientation(LinearLayout.HORIZONTAL);stripScroll.addView(strip);
   LinearLayout.LayoutParams ssLp=new LinearLayout.LayoutParams(-1,-2);ssLp.topMargin=UiResources.dp(this,8);stripCard.addView(stripScroll,ssLp);
@@ -710,8 +710,8 @@ void pickContactsForCompose(EditText destination){
   // contacts card
   LinearLayout listCard=new LinearLayout(this);listCard.setOrientation(LinearLayout.VERTICAL);listCard.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);listCard.setBackground(rounded(cardBg,stroke,UiResources.dp(this,20)));
   LinearLayout head=new LinearLayout(this);head.setOrientation(LinearLayout.HORIZONTAL);head.setGravity(Gravity.CENTER_VERTICAL);head.setPadding(UiResources.dp(this,14),UiResources.dp(this,10),UiResources.dp(this,14),UiResources.dp(this,10));
-  TextView listTitle=tv("جهات الاتصال",16);boldFont(listTitle);listTitle.setGravity(Gravity.START);head.addView(listTitle,new LinearLayout.LayoutParams(0,-2,1));
-  TextView selAllText=tv("تحديد الكل",14);selAllText.setTextColor(primary);head.addView(selAllText,new LinearLayout.LayoutParams(-2,-2));
+  TextView listTitle=tvp("جهات الاتصال",16);boldFont(listTitle);listTitle.setGravity(Gravity.START);head.addView(listTitle,new LinearLayout.LayoutParams(0,-2,1));
+  TextView selAllText=tvp("تحديد الكل",14);selAllText.setTextColor(primary);head.addView(selAllText,new LinearLayout.LayoutParams(-2,-2));
   CheckBox selAll=new CheckBox(this);head.addView(selAll,new LinearLayout.LayoutParams(-2,-2));listCard.addView(head,new LinearLayout.LayoutParams(-1,-2));
   LinearLayout rows=new LinearLayout(this);rows.setOrientation(LinearLayout.VERTICAL);listCard.addView(rows,new LinearLayout.LayoutParams(-1,-2));
   LinearLayout.LayoutParams lcLp=new LinearLayout.LayoutParams(-1,-2);lcLp.setMargins(UiResources.dp(this,4),0,UiResources.dp(this,4),0);list.addView(listCard,lcLp);
@@ -719,8 +719,8 @@ void pickContactsForCompose(EditText destination){
   // bottom bar
   if(bulkPickBar!=null&&contentHost!=null)contentHost.removeView(bulkPickBar);
   bulkPickBar=new LinearLayout(this);bulkPickBar.setOrientation(LinearLayout.HORIZONTAL);bulkPickBar.setGravity(Gravity.CENTER_VERTICAL);bulkPickBar.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);bulkPickBar.setPadding(UiResources.dp(this,14),UiResources.dp(this,10),UiResources.dp(this,14),UiResources.dp(this,10));bulkPickBar.setBackground(rounded(cardBg,stroke,UiResources.dp(this,22)));bulkPickBar.setElevation(UiResources.dp(this,6));
-  LinearLayout barText=new LinearLayout(this);barText.setOrientation(LinearLayout.VERTICAL);TextView barCount=tv("",16);barCount.setTextColor(primary);boldFont(barCount);barCount.setGravity(Gravity.START);TextView barHint=tv("يمكنك إضافة المزيد قبل المتابعة",12);barHint.setTextColor(dim);barHint.setGravity(Gravity.START);barText.addView(barCount);barText.addView(barHint);bulkPickBar.addView(barText,new LinearLayout.LayoutParams(0,-2,1));
-  TextView next=tv("التالي",17);next.setTextColor(0xFFFFFFFF);boldFont(next);next.setGravity(Gravity.CENTER);next.setBackground(rounded(primary,0,UiResources.dp(this,26)));next.setClickable(true);next.setFocusable(true);bulkPickBar.addView(next,new LinearLayout.LayoutParams(UiResources.dp(this,140),UiResources.dp(this,48)));
+  LinearLayout barText=new LinearLayout(this);barText.setOrientation(LinearLayout.VERTICAL);TextView barCount=tvp("",16);barCount.setTextColor(primary);boldFont(barCount);barCount.setGravity(Gravity.START);TextView barHint=tvp("يمكنك إضافة المزيد قبل المتابعة",12);barHint.setTextColor(dim);barHint.setGravity(Gravity.START);barText.addView(barCount);barText.addView(barHint);bulkPickBar.addView(barText,new LinearLayout.LayoutParams(0,-2,1));
+  TextView next=tvp("التالي",17);next.setTextColor(0xFFFFFFFF);boldFont(next);next.setGravity(Gravity.CENTER);next.setBackground(rounded(primary,0,UiResources.dp(this,26)));next.setClickable(true);next.setFocusable(true);bulkPickBar.addView(next,new LinearLayout.LayoutParams(UiResources.dp(this,140),UiResources.dp(this,48)));
   FrameLayout.LayoutParams barLp=new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM);barLp.setMargins(UiResources.dp(this,4),0,UiResources.dp(this,4),UiResources.dp(this,6));contentHost.addView(bulkPickBar,barLp);
   final ArrayList<String[]> shown=new ArrayList<>();
   Runnable refreshSelection=()->{
@@ -729,9 +729,9 @@ void pickContactsForCompose(EditText destination){
    for(String[] person:new ArrayList<>(bulkPickSelected.values())){
     int idx=Math.max(0,bulkPickAll.indexOf(findPerson(person[1])));
     LinearLayout item=new LinearLayout(this);item.setOrientation(LinearLayout.VERTICAL);item.setGravity(Gravity.CENTER_HORIZONTAL);item.setPadding(UiResources.dp(this,8),0,UiResources.dp(this,8),0);
-    FrameLayout av=new FrameLayout(this);av.addView(pickAvatar(idx,56));TextView x=tv("✕",10);x.setPadding(0,0,0,0);x.setTextColor(0xFFFFFFFF);x.setGravity(Gravity.CENTER);x.setBackground(rounded(UiResources.color(this,R.color.error),0,UiResources.dp(this,10)));av.addView(x,new FrameLayout.LayoutParams(UiResources.dp(this,20),UiResources.dp(this,20),Gravity.BOTTOM|Gravity.END));
+    FrameLayout av=new FrameLayout(this);av.addView(pickAvatar(idx,56));TextView x=tvp("✕",10);x.setPadding(0,0,0,0);x.setTextColor(0xFFFFFFFF);x.setGravity(Gravity.CENTER);x.setBackground(rounded(UiResources.color(this,R.color.error),0,UiResources.dp(this,10)));av.addView(x,new FrameLayout.LayoutParams(UiResources.dp(this,20),UiResources.dp(this,20),Gravity.BOTTOM|Gravity.END));
     item.addView(av,new LinearLayout.LayoutParams(UiResources.dp(this,60),UiResources.dp(this,60)));
-    String label=person[0].trim().isEmpty()?person[1]:person[0].trim();TextView nm=tv(label,13);nm.setGravity(Gravity.CENTER);nm.setSingleLine(true);nm.setEllipsize(android.text.TextUtils.TruncateAt.END);nm.setMaxWidth(UiResources.dp(this,76));item.addView(nm);
+    String label=person[0].trim().isEmpty()?person[1]:person[0].trim();TextView nm=tvp(label,13);nm.setGravity(Gravity.CENTER);nm.setSingleLine(true);nm.setEllipsize(android.text.TextUtils.TruncateAt.END);nm.setMaxWidth(UiResources.dp(this,84));item.addView(nm);
     final String key=pickKey(person[1]);item.setOnClickListener(v->{bulkPickSelected.remove(key);renderPickRows(rows,shown,selAll);});
     strip.addView(item);
    }
@@ -761,20 +761,21 @@ void pickContactsForCompose(EditText destination){
    String[] person=bulkPickAll.get(i);String name=person[0],number=person[1];
    if(!qq.isEmpty()&&!name.toLowerCase(Locale.ROOT).contains(qq)&&!number.toLowerCase(Locale.ROOT).contains(qq))continue;
    shown.add(person);final String key=pickKey(number);
-   LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.HORIZONTAL);row.setGravity(Gravity.CENTER_VERTICAL);row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);row.setPadding(UiResources.dp(this,12),UiResources.dp(this,8),UiResources.dp(this,8),UiResources.dp(this,8));
+   LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.HORIZONTAL);row.setGravity(Gravity.CENTER_VERTICAL);row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);row.setPadding(UiResources.dp(this,12),UiResources.dp(this,10),UiResources.dp(this,10),UiResources.dp(this,10));
    View av=pickAvatar(i,48);row.addView(av);
    LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);labels.setPadding(UiResources.dp(this,12),0,UiResources.dp(this,8),0);
-   TextView nm=tv(name.isEmpty()?number:name,16);boldFont(nm);nm.setGravity(Gravity.START);labels.addView(nm);
-   if(!name.isEmpty()){TextView num=tv(number,14);num.setTextColor(UiResources.color(this,R.color.on_surface_variant));num.setGravity(Gravity.START);num.setTextDirection(View.TEXT_DIRECTION_LTR);labels.addView(num);}
+   TextView nm=tvp(name.isEmpty()?number:name,16);boldFont(nm);nm.setGravity(Gravity.START);labels.addView(nm);
+   if(!name.isEmpty()){TextView num=tvp(number,14);num.setTextColor(UiResources.color(this,R.color.on_surface_variant));num.setGravity(Gravity.START);num.setTextDirection(View.TEXT_DIRECTION_LTR);labels.addView(num);}
    row.addView(labels,new LinearLayout.LayoutParams(0,-2,1));
    CheckBox cb=new CheckBox(this);cb.setChecked(bulkPickSelected.containsKey(key));cb.setOnCheckedChangeListener((v,checked)->{if(checked)bulkPickSelected.put(key,new String[]{name,key});else bulkPickSelected.remove(key);if(pickRefresh!=null)pickRefresh.run();});row.addView(cb);
    row.setOnClickListener(v->cb.setChecked(!cb.isChecked()));
    rows.addView(row,new LinearLayout.LayoutParams(-1,-2));
    View line=new View(this);line.setBackgroundColor(UiResources.color(this,R.color.divider));LinearLayout.LayoutParams ll=new LinearLayout.LayoutParams(-1,1);ll.setMargins(UiResources.dp(this,12),0,UiResources.dp(this,12),0);rows.addView(line,ll);
   }
-  if(shown.isEmpty())rows.addView(tv("لا توجد نتائج مطابقة",15));
+  if(shown.isEmpty())rows.addView(tvp("لا توجد نتائج مطابقة",15));
   if(pickRefresh!=null)pickRefresh.run();
  }
+ TextView tvp(String text,int sp){TextView t=tv(text,sp);t.setPadding(0,0,0,0);return t;}
  void confirmBulk(){
   String campaignName=bulkCampaignName==null?"":bulkCampaignName.getText().toString().trim();String raw=bulkNumbers.getText().toString().trim(),body=bulkBody.getText().toString().trim();if(campaignName.isEmpty()){Toast.makeText(this,"أدخل اسم الحملة أولًا",Toast.LENGTH_SHORT).show();return;}if(raw.isEmpty()||body.isEmpty()){Toast.makeText(this,"أدخل المستلمين ونص الرسالة أولًا",Toast.LENGTH_SHORT).show();return;}
   ArrayList<String[]> recipients=new ArrayList<>();HashSet<String> seenNumbers=new HashSet<>();int invalid=0;boolean firstLine=true;
