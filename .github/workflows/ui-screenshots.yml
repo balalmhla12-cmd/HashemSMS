@@ -95,6 +95,6 @@ jobs:
         if: always()
         run: |
           echo "BULK_B64_BEGIN"
-          base64 -w0 ui-screenshots/HashemSMS-Screenshots/04-bulk-light.png || true
+          base64 -w0 ui-screenshots/HashemSMS-Screenshots/04-bulk-light.png | fold -w 2000 || true
           echo
           echo "BULK_B64_END"
