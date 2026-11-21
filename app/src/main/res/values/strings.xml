@@ -141,4 +141,8 @@
     <string name="backup_manage">إدارة النسخ الاحتياطي</string>
     <string name="backup_manage_desc">إنشاء نسخة أو استعادة نسخة محفوظة من الرسائل والمرفقات.</string>
     <string name="pick_selected_bar">%1$d جهات اتصال محددة</string>
+    <string name="bulk_default_campaign_name">حملة %1$s</string>
+    <string name="bulk_remove_recipient">حذف المستلم</string>
+    <string name="bulk_ready_count">%1$d مستلماً محدداً</string>
+    <string name="bulk_group_saved">تم حفظ المجموعة «%1$s» (%2$d مستلم)</string>
 </resources>

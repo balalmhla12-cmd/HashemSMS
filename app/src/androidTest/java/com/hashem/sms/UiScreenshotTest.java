@@ -89,7 +89,7 @@ public final class UiScreenshotTest {
         captureTheme(target, AppCompatDelegate.MODE_NIGHT_YES, "dark", output);
         String[] screenshots = output.list((dir, name) -> name.endsWith(".png"));
         assertNotNull("Screenshot directory could not be listed", screenshots);
-        assertTrue("Expected twelve screenshots, found " + screenshots.length, screenshots.length == 12);
+        assertTrue("Expected fourteen screenshots, found " + screenshots.length, screenshots.length == 14);
     }
 
     private void seedPreviewData(Context context) {
@@ -158,7 +158,16 @@ public final class UiScreenshotTest {
             UiObject2 next = device.wait(Until.findObject(By.text("التالي")), 3000);
             assertNotNull("Next button not found", next);
             next.click();
-            assertNotNull("Compose screen not restored after next",
+            assertNotNull("Review screen not visible",
+                    device.wait(Until.findObject(By.text("مراجعة المستلمين")), 5000));
+            assertNotNull("Campaign name was lost on review",
+                    device.wait(Until.findObject(By.text("حملة اختبار")), 3000));
+            waitForUi();
+            save(output, "07-bulk-review-" + theme + ".png");
+            UiObject2 reviewNext = device.wait(Until.findObject(By.text("التالي")), 3000);
+            assertNotNull("Review next button not found", reviewNext);
+            reviewNext.click();
+            assertNotNull("Compose screen not restored after review",
                     device.wait(Until.findObject(By.textStartsWith("اختيار من جهات الاتصال")), 5000));
             assertNotNull("Campaign name was lost after picker",
                     device.wait(Until.findObject(By.text("حملة اختبار")), 3000));
