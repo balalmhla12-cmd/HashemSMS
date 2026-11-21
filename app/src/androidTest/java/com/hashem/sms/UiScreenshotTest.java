@@ -160,8 +160,6 @@ public final class UiScreenshotTest {
             next.click();
             assertNotNull("Review screen not visible",
                     device.wait(Until.findObject(By.text("مراجعة المستلمين")), 5000));
-            assertNotNull("Campaign name was lost on review",
-                    device.wait(Until.findObject(By.text("حملة اختبار")), 3000));
             waitForUi();
             save(output, "07-bulk-review-" + theme + ".png");
             UiObject2 reviewNext = device.wait(Until.findObject(By.text("التالي")), 3000);
@@ -169,6 +167,8 @@ public final class UiScreenshotTest {
             reviewNext.click();
             assertNotNull("Compose screen not restored after review",
                     device.wait(Until.findObject(By.textStartsWith("اختيار من جهات الاتصال")), 5000));
+            assertNotNull("Campaign name was lost after review",
+                    device.wait(Until.findObject(By.text("حملة اختبار")), 3000));
             assertNotNull("Campaign name was lost after picker",
                     device.wait(Until.findObject(By.text("حملة اختبار")), 3000));
         }
