@@ -71,13 +71,13 @@ jobs:
             tar -xf ui-screenshots.tar -C ui-screenshots
             rm -f ui-screenshots.tar
 
-      - name: Verify all sixteen screenshots exist
+      - name: Verify all eighteen screenshots exist
         run: |
           set -eu
           dir=ui-screenshots/HashemSMS-Screenshots
-          test "$(find "$dir" -maxdepth 1 -type f -name '*.png' | wc -l)" -eq 16
+          test "$(find "$dir" -maxdepth 1 -type f -name '*.png' | wc -l)" -eq 18
           for theme in light dark; do
-            for screen in 01-home 02-conversation 03-composer 04-bulk 05-sidebar 06-bulk-picker 07-bulk-review 08-bulk-track; do
+            for screen in 01-home 02-conversation 03-composer 04-bulk 05-sidebar 06-bulk-picker 07-bulk-review 08-bulk-track 09-bulk-groups; do
               test -s "$dir/$screen-$theme.png"
             done
           done
@@ -95,6 +95,6 @@ jobs:
         if: always()
         run: |
           echo "BULK_B64_BEGIN"
-          base64 -w0 ui-screenshots/HashemSMS-Screenshots/08-bulk-track-light.png | fold -w 2000 || true
+          base64 -w0 ui-screenshots/HashemSMS-Screenshots/09-bulk-groups-light.png | fold -w 2000 || true
           echo
           echo "BULK_B64_END"

@@ -89,7 +89,7 @@ public final class UiScreenshotTest {
         captureTheme(target, AppCompatDelegate.MODE_NIGHT_YES, "dark", output);
         String[] screenshots = output.list((dir, name) -> name.endsWith(".png"));
         assertNotNull("Screenshot directory could not be listed", screenshots);
-        assertTrue("Expected sixteen screenshots, found " + screenshots.length, screenshots.length == 16);
+        assertTrue("Expected eighteen screenshots, found " + screenshots.length, screenshots.length == 18);
     }
 
     private void seedPreviewData(Context context) {
@@ -106,7 +106,20 @@ public final class UiScreenshotTest {
         if (messageId <= 0) throw new AssertionError("Unable to seed campaign preview");
         db.updateBulkRecipientStatus(messageId, "تم الإرسال");
         seedSendingCampaign(db);
+        seedGroups(db);
         db.close();
+    }
+
+    private void seedGroups(Db db) {
+        String[][] groups = {{"الأصدقاء", "4"}, {"العائلة", "3"}, {"العمل", "5"}, {"العملاء", "2"}};
+        int phone = 700100000;
+        for (String[] group : groups) {
+            long gid = db.createGroup(group[0]);
+            if (gid <= 0) continue;
+            for (int i = 0; i < Integer.parseInt(group[1]); i++) {
+                db.addGroupMember(gid, String.valueOf(phone++), "");
+            }
+        }
     }
 
     /** Seeds a partly finished campaign and marks it as running, without sending anything. */
@@ -162,6 +175,19 @@ public final class UiScreenshotTest {
             assertNotNull("Bulk screen title not visible",
                     device.wait(Until.findObject(By.text("إنشاء رسالة جماعية")), 3000));
             save(output, "04-bulk-" + theme + ".png");
+
+            UiObject2 groupsCard = device.wait(Until.findObject(By.text("مجموعاتي")), 3000);
+            assertNotNull("My groups card not found", groupsCard);
+            groupsCard.click();
+            assertNotNull("Groups screen not visible",
+                    device.wait(Until.findObject(By.text("المجموعات المحفوظة")), 5000));
+            waitForUi();
+            save(output, "09-bulk-groups-" + theme + ".png");
+            UiObject2 groupsBack = device.wait(Until.findObject(By.desc("رجوع")), 3000);
+            assertNotNull("Back arrow not found on groups", groupsBack);
+            groupsBack.click();
+            assertNotNull("Bulk home not restored after groups",
+                    device.wait(Until.findObject(By.text("التفاصيل")), 5000));
 
             UiObject2 details = device.wait(Until.findObject(By.text("التفاصيل")), 5000);
             assertNotNull("Active campaign details link not found", details);

@@ -154,4 +154,8 @@
     <string name="bulk_ago_minute_two">منذ دقيقتين</string>
     <string name="bulk_ago_minutes_few">منذ %1$d دقائق</string>
     <string name="bulk_ago_minutes_many">منذ %1$d دقيقة</string>
+    <string name="bulk_group_members">%1$d جهة اتصال</string>
+    <string name="bulk_groups_count">%1$d مجموعات</string>
+    <string name="bulk_groups_one">مجموعة واحدة</string>
+    <string name="bulk_groups_two">مجموعتان</string>
 </resources>
