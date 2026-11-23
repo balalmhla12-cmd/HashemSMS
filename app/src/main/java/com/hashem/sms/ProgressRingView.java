@@ -13,6 +13,10 @@ final class ProgressRingView extends View {
     private final RectF bounds = new RectF();
     private float fraction;
 
+    ProgressRingView(Context context) {
+        this(context, 0x1A000000, 0xFF0A78A6);
+    }
+
     ProgressRingView(Context context, int trackColor, int arcColor) {
         super(context);
         float stroke = UiResources.dp(context, 10);
