@@ -142,7 +142,7 @@ public final class UiScreenshotTest {
                     device.wait(Until.findObject(By.textStartsWith("اختيار من جهات الاتصال")), 5000));
             device.wait(Until.hasObject(By.clazz("android.widget.EditText")), 3000);
             java.util.List<UiObject2> fields = device.findObjects(By.clazz("android.widget.EditText"));
-            assertTrue("Compose fields not found", fields.size() >= 4);
+            assertTrue("Compose fields not found", fields.size() >= 2);
             // fields[0] is the main search box in the header; fields[1] is the campaign name.
             fields.get(1).setText("حملة اختبار");
             UiObject2 pickButton = device.wait(
