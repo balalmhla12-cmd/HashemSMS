@@ -89,7 +89,7 @@ public final class UiScreenshotTest {
         captureTheme(target, AppCompatDelegate.MODE_NIGHT_YES, "dark", output);
         String[] screenshots = output.list((dir, name) -> name.endsWith(".png"));
         assertNotNull("Screenshot directory could not be listed", screenshots);
-        assertTrue("Expected fourteen screenshots, found " + screenshots.length, screenshots.length == 14);
+        assertTrue("Expected sixteen screenshots, found " + screenshots.length, screenshots.length == 16);
     }
 
     private void seedPreviewData(Context context) {
@@ -105,7 +105,35 @@ public final class UiScreenshotTest {
                 "تم الإرسال", campaignId);
         if (messageId <= 0) throw new AssertionError("Unable to seed campaign preview");
         db.updateBulkRecipientStatus(messageId, "تم الإرسال");
+        seedSendingCampaign(db);
         db.close();
+    }
+
+    /** Seeds a partly finished campaign and marks it as running, without sending anything. */
+    private void seedSendingCampaign(Db db) {
+        String[][] people = {{"777123456", "أحمد محمد"}, {"733456789", "محمد عبدالله"},
+                {"711222333", "علي حسن"}, {"770555222", "خالد أحمد"},
+                {"777888999", "عبدالله صالح"}, {"733111222", "إبراهيم علي"},
+                {"770111000", "سالم أحمد"}, {"711333444", "حسن محمد"}};
+        ArrayList<String[]> recipients = new ArrayList<>();
+        for (String[] person : people) recipients.add(person);
+        long campaignId = db.createBulkCampaign("حملة التوعية", recipients);
+        String[] statuses = {"تم التسليم", "تم التسليم", "لم يتم الإرسال", "تم التسليم", "تم الإرسال"};
+        for (int i = 0; i < statuses.length; i++) {
+            long id = db.addBulkMessage(people[i][0], "رسالة حملة التوعية", statuses[i], campaignId);
+            if (id <= 0) throw new AssertionError("Unable to seed sending campaign");
+            db.updateBulkRecipientStatus(id, statuses[i]);
+        }
+        try {
+            java.lang.reflect.Field field =
+                    Class.forName("com.hashem.sms.SmsSending").getDeclaredField("ACTIVE_BULK_IDS");
+            field.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            java.util.Set<Long> active = (java.util.Set<Long>) field.get(null);
+            active.add(campaignId);
+        } catch (Exception e) {
+            throw new AssertionError("Unable to mark seeded campaign as running", e);
+        }
     }
 
     private void captureTheme(Context target, int mode, String theme, File output)
@@ -134,6 +162,19 @@ public final class UiScreenshotTest {
             assertNotNull("Bulk screen title not visible",
                     device.wait(Until.findObject(By.text("إنشاء رسالة جماعية")), 3000));
             save(output, "04-bulk-" + theme + ".png");
+
+            UiObject2 details = device.wait(Until.findObject(By.text("التفاصيل")), 5000);
+            assertNotNull("Active campaign details link not found", details);
+            details.click();
+            assertNotNull("Sending details not visible",
+                    device.wait(Until.findObject(By.text("تفاصيل الإرسال")), 5000));
+            waitForUi();
+            save(output, "08-bulk-track-" + theme + ".png");
+            UiObject2 trackBack = device.wait(Until.findObject(By.desc("رجوع")), 3000);
+            assertNotNull("Back arrow not found on sending details", trackBack);
+            trackBack.click();
+            assertNotNull("Bulk home not restored after details",
+                    device.wait(Until.findObject(By.text("إنشاء رسالة جماعية")), 5000));
 
             UiObject2 createCard = device.wait(Until.findObject(By.text("إنشاء رسالة جماعية")), 3000);
             assertNotNull("Create bulk card not found", createCard);

@@ -145,4 +145,13 @@
     <string name="bulk_remove_recipient">حذف المستلم</string>
     <string name="bulk_ready_count">%1$d مستلماً محدداً</string>
     <string name="bulk_group_saved">تم حفظ المجموعة «%1$s» (%2$d مستلم)</string>
+    <string name="bulk_sent_of_total">تم إرسالها من أصل %1$d رسالة</string>
+    <string name="bulk_eta">الوقت المتبقي: حوالي %1$s</string>
+    <string name="bulk_ago_now">الآن</string>
+    <string name="bulk_ago_hours">منذ %1$d ساعة</string>
+    <string name="bulk_ago_days">منذ %1$d يوم</string>
+    <string name="bulk_ago_minute_one">منذ دقيقة</string>
+    <string name="bulk_ago_minute_two">منذ دقيقتين</string>
+    <string name="bulk_ago_minutes_few">منذ %1$d دقائق</string>
+    <string name="bulk_ago_minutes_many">منذ %1$d دقيقة</string>
 </resources>
