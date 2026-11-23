@@ -18,15 +18,21 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.io.File;
+import android.content.ContentValues;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 35)
 public class DbMigrationTest {
     private Context context;
 
-    private static final String[] V9_COLUMNS = {
+    private static final String[] V12_COLUMNS = {
             "id", "address", "body", "type", "status", "ts",
-            "provider_id", "read", "star", "trash"
+            "provider_id", "read", "star", "trash", "bulk_campaign_id"
+    };
+
+    private static final String[] V10_ATTACHMENT_COLUMNS = {
+            "id", "message_id", "local_path", "content_type", "size_bytes", "transaction_id"
     };
 
     private static final String[] REQUIRED_INDEXES = {
@@ -34,8 +40,10 @@ public class DbMigrationTest {
             "idx_messages_trash_type_ts",
             "idx_messages_type_read_trash_address",
             "idx_messages_star_ts",
-            "idx_messages_provider_id"
+            "idx_messages_provider_id",
+            "idx_messages_bulk_campaign_id"
     };
+    private static final String ATTACHMENT_INDEX = "idx_message_attachments_message_id";
 
     @Before
     public void setUp() {
@@ -49,7 +57,7 @@ public class DbMigrationTest {
         Db db = new Db(context);
         SQLiteDatabase upgraded = db.getWritableDatabase();
 
-        assertEquals(9, upgraded.getVersion());
+        assertEquals(12, upgraded.getVersion());
         assertEquals(5, countRows(upgraded, "messages"));
         assertArrayEquals(new long[]{101, 102, 103, 104, 105}, messageIds(upgraded));
         assertEquals(987L, providerId(upgraded, 101));
@@ -58,7 +66,10 @@ public class DbMigrationTest {
         assertEquals(-1L, providerId(upgraded, 104));
         assertEquals(321L, providerId(upgraded, 105));
 
-        assertArrayEquals(V9_COLUMNS, columns(upgraded, "messages"));
+        assertArrayEquals(V12_COLUMNS, columns(upgraded, "messages"));
+        assertArrayEquals(V10_ATTACHMENT_COLUMNS, columns(upgraded, "message_attachments"));
+        assertEquals(0, countRows(upgraded, "message_attachments"));
+        assertAttachmentIndex(upgraded);
         assertFalse(Arrays.asList(columns(upgraded, "messages")).contains("thread"));
 
         assertMessage(upgraded, 101, "incoming body", "in", "received", 0, 0, 0);
@@ -81,12 +92,14 @@ public class DbMigrationTest {
     }
 
     @Test
-    public void freshInstallCreatesVersion9ColumnsAndFiveStandardIndexes() {
+    public void freshInstallCreatesVersion12ColumnsAndRequiredIndexes() {
         Db db = new Db(context);
         SQLiteDatabase fresh = db.getWritableDatabase();
 
-        assertEquals(9, fresh.getVersion());
-        assertArrayEquals(V9_COLUMNS, columns(fresh, "messages"));
+        assertEquals(12, fresh.getVersion());
+        assertArrayEquals(V12_COLUMNS, columns(fresh, "messages"));
+        assertArrayEquals(V10_ATTACHMENT_COLUMNS, columns(fresh, "message_attachments"));
+        assertAttachmentIndex(fresh);
         assertFalse(Arrays.asList(columns(fresh, "messages")).contains("thread"));
         assertRequiredIndexes(fresh);
         db.close();
@@ -102,7 +115,7 @@ public class DbMigrationTest {
 
         Db second = new Db(context);
         SQLiteDatabase reopened = second.getWritableDatabase();
-        assertEquals(9, reopened.getVersion());
+        assertEquals(12, reopened.getVersion());
         assertEquals(5, countRows(reopened, "messages"));
         assertArrayEquals(new long[]{101, 102, 103, 104, 105}, messageIds(reopened));
         assertEquals(987L, providerId(reopened, 101));
@@ -111,6 +124,39 @@ public class DbMigrationTest {
         assertEquals(1, countRows(reopened, "schedules"));
         assertRequiredIndexes(reopened);
         second.close();
+    }
+
+    @Test
+    public void upgradesVersion9WithoutLosingMessagesAndCreatesAttachmentStorage() {
+        SQLiteDatabase old = context.openOrCreateDatabase("hashem.db", Context.MODE_PRIVATE, null);
+        old.execSQL("CREATE TABLE messages(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,type TEXT,status TEXT,ts INTEGER,provider_id INTEGER,read INTEGER DEFAULT 0,star INTEGER DEFAULT 0,trash INTEGER NOT NULL DEFAULT 0)");
+        old.execSQL("CREATE TABLE groups(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE)");
+        old.execSQL("CREATE TABLE group_members(gid INTEGER,address TEXT,name TEXT,PRIMARY KEY(gid,address))");
+        old.execSQL("CREATE TABLE schedules(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,at INTEGER)");
+        old.execSQL("CREATE TABLE forward_rules(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL UNIQUE,destination TEXT NOT NULL)");
+        old.execSQL("CREATE TABLE conversation_flags(address TEXT PRIMARY KEY,archived INTEGER NOT NULL DEFAULT 0,blocked INTEGER NOT NULL DEFAULT 0)");
+        old.execSQL("INSERT INTO messages(id,address,body,type,status,ts,provider_id,read,star,trash) VALUES(77,'+967700','legacy MMS row','out','sent',123,456,1,1,0)");
+        old.setVersion(9);
+        old.close();
+
+        Db db = new Db(context);
+        SQLiteDatabase upgraded = db.getWritableDatabase();
+        assertEquals(12, upgraded.getVersion());
+        assertEquals(1, countRows(upgraded, "messages"));
+        assertMessage(upgraded, 77, "legacy MMS row", "out", "sent", 1, 1, 0);
+        assertEquals(456L, providerId(upgraded, 77));
+        assertEquals(0, countRows(upgraded, "message_attachments"));
+        long attachmentId = db.addMmsAttachment(77, "/cache/IMG-1.jpg", "image/jpeg", 2048L, "tx-77");
+        assertTrue(attachmentId > 0);
+        try (Cursor attachment = db.mmsAttachments(77)) {
+            assertTrue(attachment.moveToFirst());
+            assertEquals("/cache/IMG-1.jpg", attachment.getString(2));
+            assertEquals("image/jpeg", attachment.getString(3));
+            assertEquals(2048L, attachment.getLong(4));
+            assertEquals("tx-77", attachment.getString(5));
+        }
+        assertAttachmentIndex(upgraded);
+        db.close();
     }
 
     private void createVersion6Database() {
@@ -174,6 +220,107 @@ public class DbMigrationTest {
         }
     }
 
+
+    @Test
+    public void openingPopulatedVersion12DatabasePreservesEveryTableSchemaAndAttachmentFile() throws Exception {
+        Db creator = new Db(context);
+        SQLiteDatabase original = creator.getWritableDatabase();
+        assertEquals(12, original.getVersion());
+
+        ContentValues message = new ContentValues();
+        message.put("id", 1201L);
+        message.put("address", "+9677001201");
+        message.put("body", "رسالة محفوظة في قاعدة v12");
+        message.put("type", "in");
+        message.put("status", "received");
+        message.put("ts", 1700000000123L);
+        message.put("provider_id", 8801L);
+        message.put("read", 1);
+        message.put("star", 1);
+        message.put("trash", 0);
+        message.put("bulk_campaign_id", 1201L);
+        original.insertOrThrow("messages", null, message);
+
+        original.execSQL("INSERT INTO groups(id,name) VALUES(1201,'مجموعة v12')");
+        original.execSQL("INSERT INTO group_members(gid,address,name) VALUES(1201,'+9677001201','عضو v12')");
+        original.execSQL("INSERT INTO schedules(id,address,body,at) VALUES(1201,'+9677001201','رسالة مجدولة v12',1700000001123)");
+        original.execSQL("INSERT INTO forward_rules(id,name,destination) VALUES(1201,'تحويل v12','+9677001202')");
+        original.execSQL("INSERT INTO conversation_flags(address,archived,blocked) VALUES('+9677001201',1,0)");
+        original.execSQL("INSERT INTO bulk_campaigns(id,name,created_at,recipient_count) VALUES(1201,'حملة v12',1700000002,1)");
+
+        File attachmentFile = new File(context.getFilesDir(), "v12-preserved-attachment.gif");
+        byte[] attachmentBytes = new byte[]{'G','I','F','8','9','a',1,2,3,4};
+        try (java.io.FileOutputStream output = new java.io.FileOutputStream(attachmentFile)) {
+            output.write(attachmentBytes);
+        }
+        long attachmentId = creator.addMmsAttachment(1201L, attachmentFile.getAbsolutePath(),
+                "image/gif", attachmentBytes.length, "v12-transaction");
+        assertTrue(attachmentId > 0);
+
+        original.execSQL("INSERT INTO bulk_campaign_recipients(id,campaign_id,address,display_name,message_id,status) VALUES(1201,1201,'+9677001201','عضو الحملة',1201,'sent')");
+
+        String[] tables = {
+                "messages", "groups", "group_members", "schedules", "forward_rules",
+                "conversation_flags", "message_attachments", "bulk_campaigns", "bulk_campaign_recipients"
+        };
+        for (String table : tables) assertEquals("fixture table " + table, 1, countRows(original, table));
+        assertEquals(12, original.getVersion());
+        java.util.List<String> schemaBefore = snapshotSchema(original);
+        java.util.Map<String, java.util.List<String>> rowsBefore = new java.util.LinkedHashMap<>();
+        for (String table : tables) rowsBefore.put(table, snapshotRows(original, table));
+        byte[] attachmentBefore = java.nio.file.Files.readAllBytes(attachmentFile.toPath());
+        creator.close();
+
+        Db reopenedDb = new Db(context);
+        SQLiteDatabase reopened = reopenedDb.getWritableDatabase();
+        assertEquals(12, reopened.getVersion());
+        assertEquals(schemaBefore, snapshotSchema(reopened));
+        for (String table : tables) {
+            assertEquals("rows changed in " + table, rowsBefore.get(table), snapshotRows(reopened, table));
+        }
+        assertArrayEquals(attachmentBefore, java.nio.file.Files.readAllBytes(attachmentFile.toPath()));
+        assertEquals(8801L, providerId(reopened, 1201L));
+        reopenedDb.close();
+    }
+
+    private static java.util.List<String> snapshotSchema(SQLiteDatabase db) {
+        java.util.List<String> schema = new ArrayList<>();
+        try (Cursor c = db.rawQuery(
+                "SELECT type,name,tbl_name,sql FROM sqlite_master "
+                        + "WHERE name NOT LIKE 'sqlite_%' ORDER BY type,name", null)) {
+            while (c.moveToNext()) {
+                schema.add(c.getString(0) + "|" + c.getString(1) + "|"
+                        + c.getString(2) + "|" + c.getString(3));
+            }
+        }
+        return schema;
+    }
+
+    private static java.util.List<String> snapshotRows(SQLiteDatabase db, String table) {
+        java.util.List<String> rows = new ArrayList<>();
+        try (Cursor c = db.rawQuery("SELECT * FROM " + table + " ORDER BY rowid", null)) {
+            while (c.moveToNext()) {
+                StringBuilder row = new StringBuilder();
+                for (int i = 0; i < c.getColumnCount(); i++) {
+                    if (i > 0) row.append('|');
+                    switch (c.getType(i)) {
+                        case Cursor.FIELD_TYPE_NULL:
+                            row.append("<NULL>");
+                            break;
+                        case Cursor.FIELD_TYPE_BLOB:
+                            row.append(java.util.Arrays.toString(c.getBlob(i)));
+                            break;
+                        default:
+                            row.append(c.getString(i));
+                            break;
+                    }
+                }
+                rows.add(row.toString());
+            }
+        }
+        return rows;
+    }
+
     private static int countRows(SQLiteDatabase db, String table) {
         try (Cursor c = db.rawQuery("SELECT COUNT(*) FROM " + table, null)) {
             assertTrue(c.moveToFirst());
@@ -189,6 +336,14 @@ public class DbMigrationTest {
         return names.toArray(new String[0]);
     }
 
+    private static void assertAttachmentIndex(SQLiteDatabase db) {
+        try (Cursor c = db.rawQuery("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='message_attachments'", null)) {
+            boolean found = false;
+            while (c.moveToNext()) if (ATTACHMENT_INDEX.equals(c.getString(0))) found = true;
+            assertTrue("missing index " + ATTACHMENT_INDEX, found);
+        }
+    }
+
     private static void assertRequiredIndexes(SQLiteDatabase db) {
         Set<String> actual = new HashSet<>();
         try (Cursor c = db.rawQuery(
@@ -196,7 +351,203 @@ public class DbMigrationTest {
             while (c.moveToNext()) actual.add(c.getString(0));
         }
         for (String index : REQUIRED_INDEXES) assertTrue("missing index " + index, actual.contains(index));
+        Set<String> campaignIndexes = new HashSet<>();
+        try (Cursor c = db.rawQuery("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='bulk_campaign_recipients'", null)) {
+            while (c.moveToNext()) campaignIndexes.add(c.getString(0));
+        }
+        assertTrue(campaignIndexes.contains("idx_bulk_campaign_recipients_campaign_id"));
+        assertTrue(campaignIndexes.contains("idx_bulk_campaign_recipients_message_id"));
     }
+    @Test
+    public void upgradesVersion10PreservingMessagesGroupsMembersAndSchedules() {
+        SQLiteDatabase old = context.openOrCreateDatabase("hashem.db", Context.MODE_PRIVATE, null);
+        old.execSQL("CREATE TABLE messages(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,type TEXT,status TEXT,ts INTEGER,provider_id INTEGER,read INTEGER DEFAULT 0,star INTEGER DEFAULT 0,trash INTEGER NOT NULL DEFAULT 0)");
+        old.execSQL("CREATE TABLE groups(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE)");
+        old.execSQL("CREATE TABLE group_members(gid INTEGER,address TEXT,name TEXT,PRIMARY KEY(gid,address))");
+        old.execSQL("CREATE TABLE schedules(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,at INTEGER)");
+        old.execSQL("CREATE TABLE forward_rules(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL UNIQUE,destination TEXT NOT NULL)");
+        old.execSQL("CREATE TABLE conversation_flags(address TEXT PRIMARY KEY,archived INTEGER NOT NULL DEFAULT 0,blocked INTEGER NOT NULL DEFAULT 0)");
+        old.execSQL("CREATE INDEX idx_messages_address_ts ON messages(address,ts DESC)");
+        old.execSQL("CREATE INDEX idx_messages_trash_type_ts ON messages(trash,type,ts DESC)");
+        old.execSQL("CREATE INDEX idx_messages_type_read_trash_address ON messages(type,read,trash,address)");
+        old.execSQL("CREATE INDEX idx_messages_star_ts ON messages(star,ts DESC)");
+        old.execSQL("CREATE INDEX idx_messages_provider_id ON messages(provider_id)");
+        old.execSQL("INSERT INTO messages(id,address,body,type,status,ts,provider_id,read,star,trash) VALUES(88,'+1008','version 10 message','out','sent',1234,987,1,0,0)");
+        old.execSQL("INSERT INTO groups(id,name) VALUES(7,'مجموعة الاختبار')");
+        old.execSQL("INSERT INTO group_members(gid,address,name) VALUES(7,'+1008','عضو الاختبار')");
+        old.execSQL("INSERT INTO schedules(id,address,body,at) VALUES(8,'+1008','رسالة مجدولة من v10',987654321)");
+        old.setVersion(10);
+        old.close();
+
+        Db db = new Db(context);
+        SQLiteDatabase upgraded = db.getWritableDatabase();
+        assertEquals(12, upgraded.getVersion());
+        assertEquals(1, countRows(upgraded, "messages"));
+        assertArrayEquals(V12_COLUMNS, columns(upgraded, "messages"));
+        assertMessage(upgraded, 88, "version 10 message", "out", "sent", 1, 0, 0);
+        assertEquals(987L, providerId(upgraded, 88));
+        assertEquals(1, countRows(upgraded, "groups"));
+        assertEquals(1, countRows(upgraded, "group_members"));
+        assertEquals(1, countRows(upgraded, "schedules"));
+        try (Cursor group = upgraded.rawQuery("SELECT name FROM groups WHERE id=7", null)) {
+            assertTrue(group.moveToFirst());
+            assertEquals("مجموعة الاختبار", group.getString(0));
+        }
+        try (Cursor member = upgraded.rawQuery("SELECT address,name FROM group_members WHERE gid=7", null)) {
+            assertTrue(member.moveToFirst());
+            assertEquals("+1008", member.getString(0));
+            assertEquals("عضو الاختبار", member.getString(1));
+        }
+        try (Cursor schedule = upgraded.rawQuery("SELECT address,body,at FROM schedules WHERE id=8", null)) {
+            assertTrue(schedule.moveToFirst());
+            assertEquals("+1008", schedule.getString(0));
+            assertEquals("رسالة مجدولة من v10", schedule.getString(1));
+            assertEquals(987654321L, schedule.getLong(2));
+        }
+        assertRequiredIndexes(upgraded);
+        db.close();
+    }
+
+    @Test
+    public void upgradesVersion11PreservingMessagesGroupsMembersSchedulesAndCampaigns() {
+        SQLiteDatabase old = context.openOrCreateDatabase("hashem.db", Context.MODE_PRIVATE, null);
+        old.execSQL("CREATE TABLE messages(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,type TEXT,status TEXT,ts INTEGER,provider_id INTEGER,read INTEGER DEFAULT 0,star INTEGER DEFAULT 0,trash INTEGER NOT NULL DEFAULT 0,bulk_campaign_id INTEGER)");
+        old.execSQL("CREATE TABLE groups(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE)");
+        old.execSQL("CREATE TABLE group_members(gid INTEGER,address TEXT,name TEXT,PRIMARY KEY(gid,address))");
+        old.execSQL("CREATE TABLE schedules(id INTEGER PRIMARY KEY AUTOINCREMENT,address TEXT,body TEXT,at INTEGER)");
+        old.execSQL("CREATE TABLE forward_rules(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL UNIQUE,destination TEXT NOT NULL)");
+        old.execSQL("CREATE TABLE conversation_flags(address TEXT PRIMARY KEY,archived INTEGER NOT NULL DEFAULT 0,blocked INTEGER NOT NULL DEFAULT 0)");
+        old.execSQL("CREATE TABLE bulk_campaigns(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,created_at INTEGER NOT NULL,recipient_count INTEGER NOT NULL CHECK(recipient_count>=0))");
+        old.execSQL("CREATE INDEX idx_bulk_campaigns_created_at ON bulk_campaigns(created_at DESC)");
+        old.execSQL("CREATE INDEX idx_messages_bulk_campaign_id ON messages(bulk_campaign_id)");
+        old.execSQL("CREATE INDEX idx_messages_address_ts ON messages(address,ts DESC)");
+        old.execSQL("CREATE INDEX idx_messages_trash_type_ts ON messages(trash,type,ts DESC)");
+        old.execSQL("CREATE INDEX idx_messages_type_read_trash_address ON messages(type,read,trash,address)");
+        old.execSQL("CREATE INDEX idx_messages_star_ts ON messages(star,ts DESC)");
+        old.execSQL("CREATE INDEX idx_messages_provider_id ON messages(provider_id)");
+        old.execSQL("INSERT INTO messages(id,address,body,type,status,ts,provider_id,read,star,trash,bulk_campaign_id) VALUES(89,'+1011','version 11 message','out','sent',2234,988,1,0,0,4)");
+        old.execSQL("INSERT INTO groups(id,name) VALUES(9,'مجموعة الإصدار 11')");
+        old.execSQL("INSERT INTO group_members(gid,address,name) VALUES(9,'+1011','عضو الإصدار 11')");
+        old.execSQL("INSERT INTO schedules(id,address,body,at) VALUES(10,'+1011','رسالة مجدولة من v11',987654322)");
+        old.execSQL("INSERT INTO bulk_campaigns(id,name,created_at,recipient_count) VALUES(4,'حملة محفوظة من v11',123456,1)");
+        old.setVersion(11);
+        old.close();
+
+        Db db = new Db(context);
+        SQLiteDatabase upgraded = db.getWritableDatabase();
+        assertEquals(12, upgraded.getVersion());
+        assertEquals(1, countRows(upgraded, "messages"));
+        assertArrayEquals(V12_COLUMNS, columns(upgraded, "messages"));
+        assertMessage(upgraded, 89, "version 11 message", "out", "sent", 1, 0, 0);
+        assertEquals(988L, providerId(upgraded, 89));
+        assertEquals(1, countRows(upgraded, "groups"));
+        assertEquals(1, countRows(upgraded, "group_members"));
+        assertEquals(1, countRows(upgraded, "schedules"));
+        assertEquals(1, countRows(upgraded, "bulk_campaigns"));
+        try (Cursor campaign = upgraded.rawQuery("SELECT name,recipient_count FROM bulk_campaigns WHERE id=4", null)) {
+            assertTrue(campaign.moveToFirst());
+            assertEquals("حملة محفوظة من v11", campaign.getString(0));
+            assertEquals(1, campaign.getInt(1));
+        }
+        try (Cursor schedule = upgraded.rawQuery("SELECT address,body,at FROM schedules WHERE id=10", null)) {
+            assertTrue(schedule.moveToFirst());
+            assertEquals("+1011", schedule.getString(0));
+            assertEquals("رسالة مجدولة من v11", schedule.getString(1));
+            assertEquals(987654322L, schedule.getLong(2));
+        }
+        assertRequiredIndexes(upgraded);
+        db.close();
+    }
+
+    @Test
+    public void bulkCampaignHistoryCountsOnlyConfirmedSentAndFailedMessages() {
+        Db db = new Db(context);
+        long campaignId = db.createBulkCampaign("تعميم بداية الاختبارات", new ArrayList<>(Arrays.asList(new String[]{"+1001", ""}, new String[]{"+1002", ""}, new String[]{"+1003", ""})));
+        assertTrue(campaignId > 0);
+        long sentId = db.addBulkMessage("+1001", "رسالة 1", "sending", campaignId);
+        long failedId = db.addBulkMessage("+1002", "رسالة 2", "sending", campaignId);
+        assertTrue(sentId > 0);
+        assertTrue(failedId > 0);
+        db.status(sentId, "تم الإرسال");
+        db.updateBulkRecipientStatus(sentId, "تم الإرسال");
+        db.status(failedId, "لم يتم الإرسال");
+        db.updateBulkRecipientStatus(failedId, "لم يتم الإرسال");
+        try (Cursor campaigns = db.listBulkCampaigns()) {
+            assertTrue(campaigns.moveToFirst());
+            assertEquals("تعميم بداية الاختبارات", campaigns.getString(campaigns.getColumnIndexOrThrow("name")));
+            assertEquals(3, campaigns.getInt(campaigns.getColumnIndexOrThrow("recipient_count")));
+            assertEquals(1, campaigns.getInt(campaigns.getColumnIndexOrThrow("sent_count")));
+            assertEquals(1, campaigns.getInt(campaigns.getColumnIndexOrThrow("failed_count")));
+            assertEquals(1, campaigns.getInt(campaigns.getColumnIndexOrThrow("pending_count")));
+        }
+        db.getWritableDatabase().delete("messages", "id=?", new String[]{String.valueOf(sentId)});
+        try (Cursor campaigns = db.listBulkCampaigns()) {
+            assertTrue(campaigns.moveToFirst());
+            assertEquals(1, campaigns.getInt(campaigns.getColumnIndexOrThrow("sent_count")));
+        }
+        db.close();
+    }
+
+    @Test
+    public void deliveryFailureDoesNotOverwriteConfirmedSmsSendFailure() {
+        Db db = new Db(context);
+        long campaignId = db.createBulkCampaign("حملة حالات الإرسال", new ArrayList<>(Collections.singletonList(new String[]{"+1009", ""})));
+        long failedId = db.addBulkMessage("+1009", "رسالة فاشلة", "sending", campaignId);
+        db.status(failedId, "لم يتم الإرسال");
+        db.updateBulkRecipientStatus(failedId, "لم يتم الإرسال");
+        db.updateDeliveryStatus(failedId, "لم يتم التسليم");
+        try (Cursor campaigns = db.listBulkCampaigns()) {
+            assertTrue(campaigns.moveToFirst());
+            assertEquals(1, campaigns.getInt(campaigns.getColumnIndexOrThrow("failed_count")));
+            assertEquals(0, campaigns.getInt(campaigns.getColumnIndexOrThrow("sent_count")));
+            assertEquals(0, campaigns.getInt(campaigns.getColumnIndexOrThrow("pending_count")));
+        }
+        db.close();
+    }
+
+    @Test
+    public void permanentlyDeletingMessageRemovesAttachmentRowsAndLocalFiles() throws Exception {
+        Db db = new Db(context);
+        SQLiteDatabase writable = db.getWritableDatabase();
+        try (Cursor foreignKeys = writable.rawQuery("PRAGMA foreign_keys", null)) {
+            assertTrue(foreignKeys.moveToFirst());
+            assertEquals(1, foreignKeys.getInt(0));
+        }
+
+        long messageId = db.addMessage("+967700", "image message", "out", "failed");
+        ContentValues trash = new ContentValues();
+        trash.put("trash", 1);
+        writable.update("messages", trash, "id=?", new String[]{String.valueOf(messageId)});
+
+        File attachmentFile = new File(context.getFilesDir(), "mms-delete-test-IMG-1.jpg");
+        assertTrue(attachmentFile.createNewFile());
+        db.addMmsAttachment(messageId, attachmentFile.getAbsolutePath(),
+                "image/jpeg", 128L, "tx-delete-test");
+
+        db.permanentlyDeleteTrashMessage(messageId);
+
+        assertFalse(attachmentFile.exists());
+        assertEquals(0, countRows(writable, "message_attachments"));
+        assertEquals(0, countRows(writable, "messages"));
+        db.close();
+    }
+
+    @Test
+    public void deletingAttachmentRecordAlsoDeletesItsLocalFile() throws Exception {
+        Db db = new Db(context);
+        long messageId = db.addMessage("+967701", "image message", "out", "failed");
+        File attachmentFile = new File(context.getFilesDir(), "mms-record-delete-test-IMG-1.jpg");
+        assertTrue(attachmentFile.createNewFile());
+        db.addMmsAttachment(messageId, attachmentFile.getAbsolutePath(),
+                "image/jpeg", 128L, "tx-record-delete-test");
+
+        db.deleteMmsAttachments(messageId);
+
+        assertFalse(attachmentFile.exists());
+        assertEquals(0, countRows(db.getReadableDatabase(), "message_attachments"));
+        db.close();
+    }
+
     @Test
     public void conversationDiffDetectsChangedContentAndDifferentIds() {
         ConversationActivity.MessageDiffCallback diff = new ConversationActivity.MessageDiffCallback();

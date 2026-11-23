@@ -4,22 +4,63 @@ import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
+import android.util.Log;
 
-public class SentReceiver extends BroadcastReceiver {
- @Override public void onReceive(Context context,Intent intent){
-  long id=intent.getLongExtra("id",-1);if(id<=0)return;
-  int total=Math.max(1,intent.getIntExtra("partCount",1)),index=intent.getIntExtra("partIndex",0);if(index<0||index>=total)return;
-  boolean success=getResultCode()==Activity.RESULT_OK;String prefix="message_"+id+"_";boolean finished=false;
-  synchronized(SentReceiver.class){
-   SharedPreferences prefs=context.getSharedPreferences("sms_send_results",Context.MODE_PRIVATE);
-   if(prefs.getBoolean(prefix+"done_"+index,false))return;
-   int completed=prefs.getInt(prefix+"completed",0)+1,failures=prefs.getInt(prefix+"failures",0)+(success?0:1);finished=completed>=total;
-   SharedPreferences.Editor e=prefs.edit().putBoolean(prefix+"done_"+index,true).putInt(prefix+"completed",completed).putInt(prefix+"failures",failures);
-   Db db=new Db(context);db.status(id,finished?(failures==0?"تم الإرسال":"لم يتم الإرسال"):"جارٍ الإرسال");
-   if(finished){if(failures>0)android.util.Log.e("HashemSMS","Multipart SMS send failed for message id="+id+" partsFailed="+failures);db.updateSystemProviderStatus(context,id,failures==0);e.remove(prefix+"completed").remove(prefix+"failures");for(int i=0;i<total;i++)e.remove(prefix+"done_"+i);}
-   e.commit();
-  }
-  if(finished&&"NOTIFICATION_REPLY".equals(intent.getStringExtra("tag"))){String address=intent.getStringExtra(NotificationHelper.EXTRA_ADDRESS);if(address!=null&&!address.trim().isEmpty()&&NotificationHelper.isConversationNotificationActive(context,address))NotificationHelper.showConversationNotification(context,address);}
- }
+public final class SentReceiver extends BroadcastReceiver {
+    private static final String TAG = "HashemSMSSentReceiver";
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        if (intent == null) return;
+        long id = intent.getLongExtra("messageId", intent.getLongExtra("id", -1L));
+        int partCount = intent.getIntExtra("partCount", 1);
+        int partIndex = intent.getIntExtra("partIndex", 0);
+        if (id <= 0 || partCount < 1 || partIndex < 0 || partIndex >= partCount) return;
+
+        final int resultCode = getResultCode();
+        final String tag = intent.getStringExtra("tag");
+        final String address = intent.getStringExtra(NotificationHelper.EXTRA_ADDRESS);
+        final Context app = context.getApplicationContext();
+        final PendingResult pending = goAsync();
+        try {
+            SmsSending.RECEIVER_EXECUTOR.execute(() -> {
+                try {
+                    process(app, id, partCount, partIndex, resultCode, tag, address);
+                } catch (Exception e) {
+                    Log.e(TAG, "Unable to process sent callback", e);
+                } finally {
+                    pending.finish();
+                }
+            });
+        } catch (RuntimeException e) {
+            Log.e(TAG, "Unable to queue sent callback", e);
+            pending.finish();
+        }
+    }
+
+    static void applyFinalResult(Context context, Db db, long id, boolean success) {
+        db.status(id, success ? "تم الإرسال" : "لم يتم الإرسال");
+        db.updateSystemProviderStatus(context, id, success);
+    }
+
+    void process(Context context, long messageId, int partCount, int partIndex,
+                 int resultCode, String ignoredTag, String address) {
+        boolean success = resultCode == Activity.RESULT_OK;
+        SmsPartResultTracker.Result result = SmsPartResultTracker.record(
+                context, "sent", messageId, partIndex, partCount, success);
+        if (!result.accepted || !result.complete) return;
+
+        Db db = new Db(context);
+        boolean finalSuccess = !result.failed;
+        applyFinalResult(context, db, messageId, finalSuccess);
+        db.updateBulkRecipientStatus(messageId,
+                finalSuccess ? "تم الإرسال" : "لم يتم الإرسال");
+
+        context.sendBroadcast(new Intent(SmsReceiver.ACTION_SMS_UPDATED)
+                .setPackage(context.getPackageName()));
+        if (finalSuccess && address != null && !address.trim().isEmpty()
+                && NotificationHelper.isConversationNotificationActive(context, address)) {
+            NotificationHelper.showConversationNotification(context, address);
+        }
+    }
 }

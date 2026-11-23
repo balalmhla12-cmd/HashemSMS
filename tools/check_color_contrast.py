@@ -16,6 +16,8 @@ PAIRS = [
     ("on_primary_container", "primary_container"),
     ("conversation_text", "bubble_in"),
     ("conversation_text", "bubble_out"),
+    ("on_bubble_in", "bubble_in"),
+    ("on_bubble_out", "bubble_out"),
     ("on_error", "error"),
     ("text", "card_surface"),
     ("timestamp", "surface"),

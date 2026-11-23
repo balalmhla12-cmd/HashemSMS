@@ -1,0 +1,853 @@
+package com.hashem.sms;
+
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.provider.Settings;
+import android.telephony.SubscriptionInfo;
+import android.telephony.SubscriptionManager;
+import android.view.Gravity;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
+import androidx.appcompat.widget.SwitchCompat;
+import android.widget.Toast;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.content.res.ResourcesCompat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import com.google.mlkit.common.model.RemoteModelManager;
+import com.google.mlkit.nl.translate.TranslateLanguage;
+import com.google.mlkit.nl.translate.TranslateRemoteModel;
+
+public final class SettingsActivity extends AppCompatActivity {
+    private LinearLayout content;
+    private EditText search;
+    private TextView empty, defaultDetail, permissionsDetail, simDetail;
+    private final ArrayList<Entry> entries = new ArrayList<>();
+    private final ArrayList<TextView> sectionTitles = new ArrayList<>();
+    private static final String PREFS = SimPreferenceStore.PREFERENCES_NAME;
+    private static final String NIGHT_KEY = "night_mode";
+    private static final ExecutorService BACKUP_EXECUTOR = Executors.newSingleThreadExecutor();
+    private final AtomicBoolean backupOperationRunning = new AtomicBoolean(false);
+    private ActivityResultLauncher<String> backupCreateLauncher;
+    private ActivityResultLauncher<String[]> backupOpenLauncher;
+
+    @Override protected void onCreate(Bundle state) {
+        super.onCreate(state);
+        UiResources.configureSystemBars(this);
+        backupCreateLauncher = registerForActivityResult(
+                new ActivityResultContracts.CreateDocument("application/zip"), this::exportBackupTo);
+        backupOpenLauncher = registerForActivityResult(
+                new ActivityResultContracts.OpenDocument(), this::confirmBackupRestore);
+        build();
+        if (getIntent().getBooleanExtra("open_app_lock_settings", false)) {
+            new android.os.Handler(android.os.Looper.getMainLooper()).post(this::showPrivacySettings);
+        }
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        if (defaultDetail != null) defaultDetail.setText(defaultStatus());
+        if (permissionsDetail != null) permissionsDetail.setText(permissionStatus());
+        if (simDetail != null) simDetail.setText(simStatus());
+    }
+
+    private void build() {
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        root.setPadding(dp(16), dp(10), dp(16), dp(10));
+        root.setBackgroundResource(R.drawable.bg_hashem_gradient);
+
+        LinearLayout header = new LinearLayout(this);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        ImageButton back = new ImageButton(this);
+        back.setImageResource(R.drawable.ic_arrow_back_right);
+        back.setContentDescription(getString(R.string.settings_title));
+        back.setColorFilter(col(R.color.primary_variant));
+        back.setBackground(round(col(R.color.surface_variant), 0, dp(24)));
+        header.addView(back, new LinearLayout.LayoutParams(dp(44), dp(44)));
+        back.setOnClickListener(v -> finish());
+        LinearLayout titleBox = new LinearLayout(this);
+        titleBox.setOrientation(LinearLayout.VERTICAL);
+        titleBox.setPadding(dp(10), 0, 0, 0);
+        TextView title = txt(getString(R.string.settings_title), 22);
+        title.setTypeface(bold());
+        TextView subtitle = txt(getString(R.string.app_name), 13);
+        subtitle.setTextColor(col(R.color.on_surface_variant));
+        titleBox.addView(title);
+        titleBox.addView(subtitle);
+        header.addView(titleBox, new LinearLayout.LayoutParams(0, -2, 1));
+        root.addView(header);
+
+        search = new EditText(this);
+        search.setSingleLine(true);
+        search.setHint(R.string.settings_search_hint);
+        search.setTextSize(15);
+        search.setTextColor(col(R.color.on_surface));
+        search.setHintTextColor(col(R.color.on_surface_variant));
+        search.setPaddingRelative(dp(16), 0, dp(16), 0);
+        search.setBackground(round(col(R.color.surface_variant), col(R.color.search_border), dp(26)));
+        LinearLayout.LayoutParams searchLp = new LinearLayout.LayoutParams(-1, dp(48));
+        searchLp.topMargin = dp(12);
+        searchLp.bottomMargin = dp(8);
+        root.addView(search, searchLp);
+
+        ScrollView scroll = new ScrollView(this);
+        content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
+        root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
+        empty = txt(getString(R.string.settings_search_empty), 15);
+        empty.setGravity(Gravity.CENTER);
+        empty.setVisibility(View.GONE);
+        content.addView(empty, new LinearLayout.LayoutParams(-1, dp(90)));
+
+        section(R.string.settings_general, "العامة لغة التطبيق المظهر الإشعارات النغمات");
+        buildStatus();
+        buildAppearance();
+        row(R.string.settings_notifications, R.string.settings_notifications_desc, R.drawable.ic_settings,
+                "الإشعارات التنبيهات النغمات", this::openNotificationSettings);
+        row(R.string.settings_scheduling, R.string.settings_schedule_desc, R.drawable.ic_schedule,
+                "الجدولة المنبهات", this::openScheduleSettings);
+
+        section(R.string.settings_colors, "تخصيص الألوان الواردة الصادرة خلفية المحادثة الشرائح");
+        row(R.string.settings_colors, R.string.settings_colors_desc, R.drawable.ic_settings,
+                "الألوان لون الرسائل الواردة الصادرة الخلفية شريحة sim", this::showColorSettings);
+
+        section(R.string.settings_translation, "الترجمة إنجليزي عربي نموذج تنزيل");
+        row(R.string.settings_translation_manage, R.string.settings_translation_manage_desc, R.drawable.ic_translate,
+                "ترجمة الإنجليزية إلى العربية نموذج الترجمة تنزيل حذف الموافقة", this::manageTranslationModel);
+
+        section(R.string.settings_sim_section, "الشرائح sim الشركات إعادة تسمية الافتراضية الإرسال");
+        row(R.string.settings_sim, R.string.settings_sim_note, R.drawable.ic_settings,
+                "شرائح الهاتف sim الشركة الناقلة اختيار الشريحة", this::showSims);
+
+        section(R.string.settings_conversations, "المحادثات حجم النص الفقاعات التمرير الردود السريعة");
+        row(R.string.settings_message_size, R.string.settings_message_size_desc, R.drawable.ic_settings,
+                "حجم النص تكبير تصغير الرسائل الفقاعات المحادثات", this::showMessageTextSize);
+
+        section(R.string.settings_privacy, "الخصوصية والحماية قفل التطبيق حظر الأرقام المزعجة الصلاحيات");
+        row(R.string.settings_privacy, R.string.settings_privacy_desc, R.drawable.ic_block,
+                "الخصوصية الصلاحيات الأذونات الحماية قفل التطبيق إعدادات النظام", this::showPrivacySettings);
+
+        section(R.string.settings_backup, "النسخ الاحتياطي الاستعادة تصدير استيراد الرسائل المرفقات");
+        row(R.string.settings_backup, R.string.settings_backup_desc, R.drawable.ic_settings,
+                "النسخ الاحتياطي الاستعادة تصدير استيراد", this::showBackupStatus);
+        row(R.string.backup_manage, R.string.backup_manage_desc, R.drawable.ic_settings,
+                "إدارة النسخ الاحتياطي إنشاء استعادة تصدير استيراد", this::openBackupActivity);
+
+        section(R.string.settings_about_section, "حول التطبيق المساعدة الملاحظات الإصدار");
+        row(R.string.settings_about, R.string.settings_about_desc, R.drawable.ic_nav_messages,
+                "حول التطبيق الإصدار معلومات المساعدة الملاحظات", this::about);
+
+        search.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { filter(s.toString()); }
+            @Override public void afterTextChanged(android.text.Editable s) {}
+        });
+        setContentView(root);
+        filter("");
+    }
+
+    private void buildStatus() {
+        LinearLayout card = card();
+        addStatus(card, R.drawable.ic_nav_messages, R.string.settings_default_sms, defaultStatus(),
+                "الرسائل الافتراضي", this::requestDefaultRole);
+        divider(card);
+        addStatus(card, R.drawable.ic_block, R.string.settings_permissions, permissionStatus(),
+                "الصلاحيات الأذونات", this::openAppSettings);
+        content.addView(card, margin(10));
+        addFilter(card, "حالة التطبيق الصلاحيات الرسائل الافتراضي شرائح sim الهاتف");
+    }
+
+    private void buildAppearance() {
+        LinearLayout card = card();
+        TextView heading = txt(getString(R.string.settings_preview_title), 16);
+        heading.setTypeface(bold());
+        card.addView(heading, margin(8));
+        LinearLayout options = new LinearLayout(this);
+        options.setGravity(Gravity.CENTER);
+        options.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        themeOption(options, R.string.settings_system_default, AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+        themeOption(options, R.string.settings_light, AppCompatDelegate.MODE_NIGHT_NO);
+        themeOption(options, R.string.settings_dark, AppCompatDelegate.MODE_NIGHT_YES);
+        card.addView(options, margin(12));
+        LinearLayout preview = new LinearLayout(this);
+        preview.setOrientation(LinearLayout.VERTICAL);
+        preview.setPadding(dp(12), dp(10), dp(12), dp(10));
+        preview.setBackground(round(col(R.color.surface_variant), col(R.color.card_stroke), dp(16)));
+        TextView incoming = txt(getString(R.string.settings_preview_incoming), 14);
+        incoming.setPadding(dp(12), dp(7), dp(12), dp(7));
+        incoming.setBackground(round(col(R.color.bubble_in), 0, dp(18)));
+        TextView outgoing = txt(getString(R.string.settings_preview_outgoing), 14);
+        outgoing.setTextColor(col(R.color.on_bubble_out));
+        outgoing.setPadding(dp(12), dp(7), dp(12), dp(7));
+        outgoing.setBackground(round(col(R.color.bubble_out), 0, dp(18)));
+        LinearLayout.LayoutParams inLp = new LinearLayout.LayoutParams(-2, -2);
+        inLp.gravity = Gravity.START;
+        inLp.bottomMargin = dp(8);
+        preview.addView(incoming, inLp);
+        LinearLayout.LayoutParams outLp = new LinearLayout.LayoutParams(-2, -2);
+        outLp.gravity = Gravity.END;
+        preview.addView(outgoing, outLp);
+        card.addView(preview);
+        content.addView(card, margin(10));
+        addFilter(card, "المظهر معاينة الألوان فاتح داكن حسب النظام");
+    }
+
+    private void showColorSettings() {
+        String[] labels = {
+                getString(R.string.color_incoming),
+                getString(R.string.color_outgoing),
+                getString(R.string.color_conversation_background),
+                getString(R.string.color_sim_one),
+                getString(R.string.color_sim_two)
+        };
+        String[] keys = {ColorSettings.INCOMING, ColorSettings.OUTGOING,
+                ColorSettings.CONVERSATION_BACKGROUND, ColorSettings.SIM_ONE, ColorSettings.SIM_TWO};
+        int[] defaults = {R.color.bubble_in, R.color.bubble_out, R.color.conversation_background,
+                R.color.primary_variant, R.color.icon_orange};
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle(R.string.settings_colors)
+                .setItems(labels, (dialog, which) -> {
+                    if (which >= 0 && which < keys.length) {
+                        ColorSettings.showPicker(this, keys[which], labels[which], defaults[which]);
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void themeOption(LinearLayout parent, int label, int mode) {
+        TextView option = txt(getString(label), 13);
+        option.setGravity(Gravity.CENTER);
+        option.setPadding(dp(6), dp(9), dp(6), dp(9));
+        option.setTypeface(bold());
+        styleThemeOption(option, mode);
+        option.setOnClickListener(v -> {
+            getSharedPreferences(PREFS, MODE_PRIVATE).edit().putInt(NIGHT_KEY, mode).apply();
+            AppCompatDelegate.setDefaultNightMode(mode);
+            Toast.makeText(this, R.string.settings_theme_applied, Toast.LENGTH_SHORT).show();
+        });
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, -2, 1);
+        lp.setMargins(dp(3), 0, dp(3), 0);
+        parent.addView(option, lp);
+    }
+
+    private void styleThemeOption(TextView option, int mode) {
+        int current = getSharedPreferences(PREFS, MODE_PRIVATE)
+                .getInt(NIGHT_KEY, AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+        boolean selected = current == mode;
+        option.setTextColor(col(selected ? R.color.on_primary : R.color.on_surface));
+        option.setBackground(round(col(selected ? R.color.primary_variant : R.color.card_surface),
+                col(R.color.card_stroke), dp(18)));
+    }
+
+    private void section(int titleRes, String terms) {
+        TextView heading = txt(getString(titleRes), 17);
+        heading.setTypeface(bold());
+        heading.setPadding(dp(2), dp(10), dp(2), dp(5));
+        content.addView(heading, margin(2));
+        sectionTitles.add(heading);
+        addFilter(heading, terms + " " + getString(titleRes));
+    }
+
+    private void row(int titleRes, int descriptionRes, int iconRes, String terms, Runnable action) {
+        LinearLayout card = card();
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        ImageView icon = new ImageView(this);
+        icon.setImageResource(iconRes);
+        icon.setColorFilter(col(R.color.primary_variant));
+        card.addView(icon, new LinearLayout.LayoutParams(dp(26), dp(26)));
+        LinearLayout labels = new LinearLayout(this);
+        labels.setOrientation(LinearLayout.VERTICAL);
+        labels.setPadding(dp(12), 0, dp(8), 0);
+        TextView title = txt(getString(titleRes), 15);
+        title.setTypeface(bold());
+        TextView desc = txt(getString(descriptionRes), 12);
+        desc.setTextColor(col(R.color.on_surface_variant));
+        desc.setMaxLines(2);
+        labels.addView(title);
+        labels.addView(desc);
+        card.addView(labels, new LinearLayout.LayoutParams(0, -2, 1));
+        ImageView arrow = new ImageView(this);
+        arrow.setImageResource(R.drawable.ic_arrow_back);
+        arrow.setColorFilter(col(R.color.on_surface_variant));
+        card.addView(arrow, new LinearLayout.LayoutParams(dp(20), dp(20)));
+        card.setClickable(true);
+        card.setFocusable(true);
+        card.setOnClickListener(v -> action.run());
+        content.addView(card, margin(8));
+        addFilter(card, terms + " " + getString(titleRes) + " " + getString(descriptionRes));
+    }
+
+    private void showMessageTextSize() {
+        float current = getSharedPreferences(PREFS, MODE_PRIVATE).getFloat("message_text_scale", 1f);
+        int selected = Math.max(0, Math.min(10, Math.round((current - 0.8f) * 10f)));
+        String[] choices = {"80%", "90%", "100%", "110%", "120%", "130%", "140%", "150%", "160%", "170%", "180%"};
+        new AlertDialog.Builder(this).setTitle(R.string.settings_message_size)
+                .setSingleChoiceItems(choices, selected, (dialog, which) -> {
+                    float scale = 0.8f + (which * 0.1f);
+                    getSharedPreferences(PREFS, MODE_PRIVATE).edit().putFloat("message_text_scale", scale).apply();
+                    dialog.dismiss();
+                    Toast.makeText(this, getString(R.string.settings_message_size_saved, choices[which]), Toast.LENGTH_SHORT).show();
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void openBackupActivity() {
+        startActivity(new Intent(this, BackupActivity.class));
+    }
+
+    private void showBackupStatus() {
+        String[] options = {
+                getString(R.string.backup_create),
+                getString(R.string.backup_restore)
+        };
+        new AlertDialog.Builder(this).setTitle(R.string.settings_backup)
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        String stamp = new SimpleDateFormat("yyyyMMdd-HHmm", Locale.ROOT).format(new Date());
+                        backupCreateLauncher.launch("HashemSMS-backup-" + stamp + ".hsmbackup");
+                    } else if (which == 1) {
+                        backupOpenLauncher.launch(new String[]{"application/zip", "application/octet-stream"});
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void exportBackupTo(Uri destination) {
+        if (destination == null) return;
+        runBackupOperation(R.string.backup_export_started, R.string.backup_export_done,
+                () -> HashemBackupManager.exportBackup(getApplicationContext(), destination));
+    }
+
+    private void confirmBackupRestore(Uri source) {
+        if (source == null) return;
+        new AlertDialog.Builder(this).setTitle(R.string.backup_restore)
+                .setMessage(R.string.backup_restore_confirm)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.backup_restore, (dialog, which) ->
+                        runBackupOperation(R.string.backup_restore_started, R.string.backup_restore_done, () -> {
+                            HashemBackupManager.restoreBackup(getApplicationContext(), source);
+                            sendBroadcast(new Intent(SmsReceiver.ACTION_SMS_UPDATED).setPackage(getPackageName()));
+                        })).show();
+    }
+
+    private void runBackupOperation(int startedMessage, int successMessage, BackupTask task) {
+        if (!backupOperationRunning.compareAndSet(false, true)) {
+            Toast.makeText(this, R.string.backup_operation_running, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Toast.makeText(this, startedMessage, Toast.LENGTH_SHORT).show();
+        BACKUP_EXECUTOR.execute(() -> {
+            try {
+                task.run();
+                runOnUiThread(() -> Toast.makeText(this, successMessage, Toast.LENGTH_LONG).show());
+            } catch (Exception error) {
+                android.util.Log.e("HashemSMS", "Backup or restore operation failed", error);
+                runOnUiThread(() -> Toast.makeText(this,
+                        getString(R.string.backup_failed) + " " + (error.getMessage() == null ? "" : error.getMessage()),
+                        Toast.LENGTH_LONG).show());
+            } finally {
+                backupOperationRunning.set(false);
+            }
+        });
+    }
+
+    private interface BackupTask {
+        void run() throws Exception;
+    }
+
+    private void manageTranslationModel() {
+        TranslateRemoteModel model = TranslationConfig.targetModel(
+                getSharedPreferences(TranslationConfig.PREFERENCES_NAME, MODE_PRIVATE));
+        RemoteModelManager manager = RemoteModelManager.getInstance();
+        manager.isModelDownloaded(model)
+                .addOnSuccessListener(downloaded -> {
+                    if (!isFinishing() && !isDestroyed()) {
+                        showTranslationModelOptions(manager, model, downloaded);
+                    }
+                })
+                .addOnFailureListener(error -> {
+                    if (!isFinishing() && !isDestroyed()) {
+                        Toast.makeText(this, R.string.translation_model_status_failed, Toast.LENGTH_LONG).show();
+                    }
+                    android.util.Log.w("HashemSMS", "Unable to check downloaded translation model state", error);
+                });
+    }
+
+    private void showTranslationModelOptions(RemoteModelManager manager, TranslateRemoteModel model, boolean downloaded) {
+        android.content.SharedPreferences prefs = getSharedPreferences(TranslationConfig.PREFERENCES_NAME, MODE_PRIVATE);
+        String status = getString(downloaded ? R.string.translation_model_downloaded : R.string.translation_model_not_downloaded);
+        String[] options = {
+                getString(R.string.translation_change_network),
+                getString(R.string.translation_revoke_and_delete)
+        };
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.settings_translation_manage)
+                .setMessage(status)
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        boolean wifiOnly = prefs.getBoolean("wifi_only", true);
+                        String[] networks = {
+                                getString(R.string.translation_wifi_only),
+                                getString(R.string.translation_wifi_or_mobile)
+                        };
+                        new AlertDialog.Builder(this)
+                                .setTitle(R.string.translation_change_network)
+                                .setSingleChoiceItems(networks, wifiOnly ? 0 : 1, (choiceDialog, selected) -> {
+                                    prefs.edit().putBoolean("wifi_only", selected == 0).apply();
+                                    choiceDialog.dismiss();
+                                    Toast.makeText(this, R.string.translation_network_saved, Toast.LENGTH_SHORT).show();
+                                })
+                                .setNegativeButton(android.R.string.cancel, null)
+                                .show();
+                    } else {
+                        new AlertDialog.Builder(this)
+                                .setTitle(R.string.translation_revoke_title)
+                                .setMessage(R.string.translation_revoke_message)
+                                .setNegativeButton(android.R.string.cancel, null)
+                                .setPositiveButton(R.string.translation_revoke_and_delete, (confirm, result) -> {
+                                    prefs.edit().remove("model_download_consented").apply();
+                                    manager.deleteDownloadedModel(model)
+                                            .addOnSuccessListener(unused -> Toast.makeText(this, R.string.translation_model_deleted, Toast.LENGTH_SHORT).show())
+                                            .addOnFailureListener(error -> Toast.makeText(this, R.string.translation_model_delete_failed, Toast.LENGTH_LONG).show());
+                                })
+                                .show();
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void buildAdvanced() {
+        LinearLayout wrapper = new LinearLayout(this);
+        wrapper.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout head = card();
+        head.setOrientation(LinearLayout.HORIZONTAL);
+        head.setGravity(Gravity.CENTER_VERTICAL);
+        ImageView icon = new ImageView(this);
+        icon.setImageResource(R.drawable.ic_settings);
+        icon.setColorFilter(col(R.color.icon_gold));
+        head.addView(icon, new LinearLayout.LayoutParams(dp(26), dp(26)));
+        TextView title = txt(getString(R.string.settings_advanced), 15);
+        title.setTypeface(bold());
+        title.setPadding(dp(12), 0, dp(8), 0);
+        head.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
+        ImageView arrow = new ImageView(this);
+        arrow.setImageResource(R.drawable.ic_arrow_back);
+        arrow.setColorFilter(col(R.color.on_surface_variant));
+        head.addView(arrow, new LinearLayout.LayoutParams(dp(20), dp(20)));
+        wrapper.addView(head);
+        LinearLayout options = new LinearLayout(this);
+        options.setOrientation(LinearLayout.VERTICAL);
+        options.setVisibility(View.GONE);
+        addExpandedOption(options, R.string.settings_open_system, this::openAppSettings);
+        addExpandedOption(options, R.string.settings_notifications, this::openNotificationSettings);
+        addExpandedOption(options, R.string.settings_scheduling, this::openScheduleSettings);
+        wrapper.addView(options);
+        head.setClickable(true);
+        head.setFocusable(true);
+        head.setOnClickListener(v -> {
+            boolean visible = options.getVisibility() != View.VISIBLE;
+            options.setVisibility(visible ? View.VISIBLE : View.GONE);
+            arrow.setRotation(visible ? -90f : 0f);
+        });
+        content.addView(wrapper, margin(8));
+        addFilter(wrapper, "الإعدادات المتقدمة النظام التطبيق advanced");
+    }
+
+    private void addExpandedOption(LinearLayout parent, int label, Runnable action) {
+        TextView option = txt(getString(label), 14);
+        option.setPadding(dp(18), dp(10), dp(18), dp(10));
+        option.setOnClickListener(v -> action.run());
+        parent.addView(option);
+    }
+
+    private void addStatus(LinearLayout parent, int iconRes, int titleRes, String summary, String terms, Runnable action) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        ImageView icon = new ImageView(this);
+        icon.setImageResource(iconRes);
+        icon.setColorFilter(col(R.color.primary_variant));
+        row.addView(icon, new LinearLayout.LayoutParams(dp(24), dp(24)));
+        LinearLayout labels = new LinearLayout(this);
+        labels.setOrientation(LinearLayout.VERTICAL);
+        labels.setPadding(dp(10), dp(4), dp(8), dp(4));
+        TextView title = txt(getString(titleRes), 14);
+        title.setTypeface(bold());
+        TextView detail = txt(summary, 12);
+        detail.setTextColor(col(R.color.on_surface_variant));
+        detail.setMaxLines(2);
+        labels.addView(title);
+        labels.addView(detail);
+        row.addView(labels, new LinearLayout.LayoutParams(0, -2, 1));
+        ImageView arrow = new ImageView(this);
+        arrow.setImageResource(R.drawable.ic_arrow_back);
+        arrow.setColorFilter(col(R.color.on_surface_variant));
+        row.addView(arrow, new LinearLayout.LayoutParams(dp(20), dp(20)));
+        row.setClickable(true);
+        row.setFocusable(true);
+        row.setOnClickListener(v -> action.run());
+        parent.addView(row, new LinearLayout.LayoutParams(-1, -2));
+        addFilter(row, terms + " " + getString(titleRes) + " " + summary);
+        if (titleRes == R.string.settings_default_sms) defaultDetail = detail;
+        if (titleRes == R.string.settings_permissions) permissionsDetail = detail;
+        if (titleRes == R.string.settings_sim) simDetail = detail;
+    }
+
+    private String defaultStatus() {
+        return getPackageName().equals(android.provider.Telephony.Sms.getDefaultSmsPackage(this))
+                ? getString(R.string.settings_status_default_yes) : getString(R.string.settings_status_default_no);
+    }
+
+    private String permissionStatus() {
+        String[] permissions = {"android.permission.READ_SMS", "android.permission.SEND_SMS",
+                "android.permission.RECEIVE_SMS", "android.permission.READ_CONTACTS"};
+        int granted = 0;
+        for (String permission : permissions) {
+            if (checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED) granted++;
+        }
+        int total = permissions.length;
+        if (Build.VERSION.SDK_INT >= 33) {
+            total++;
+            if (checkSelfPermission("android.permission.POST_NOTIFICATIONS") == PackageManager.PERMISSION_GRANTED) granted++;
+        }
+        return getString(R.string.settings_status_permissions_format, granted, total);
+    }
+
+    private String simStatus() {
+        if (checkSelfPermission("android.permission.READ_PHONE_STATE") != PackageManager.PERMISSION_GRANTED)
+            return getString(R.string.settings_status_sim_permission);
+        try {
+            SubscriptionManager manager = (SubscriptionManager) getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
+            List<SubscriptionInfo> active = manager == null ? null : manager.getActiveSubscriptionInfoList();
+            int count = active == null ? 0 : active.size();
+            return count == 0 ? getString(R.string.settings_status_sim_none)
+                    : getString(R.string.settings_status_sim_count, count);
+        } catch (RuntimeException e) {
+            return getString(R.string.settings_sim_error);
+        }
+    }
+
+    private void showSims() {
+        if (checkSelfPermission("android.permission.READ_PHONE_STATE") != PackageManager.PERMISSION_GRANTED) {
+            new AlertDialog.Builder(this).setTitle(R.string.settings_manage_sim)
+                    .setMessage(R.string.settings_status_sim_permission)
+                    .setPositiveButton(R.string.settings_open_system, (d, w) -> openAppSettings())
+                    .setNegativeButton(android.R.string.cancel, null).show();
+            return;
+        }
+        try {
+            SubscriptionManager manager = (SubscriptionManager) getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
+            List<SubscriptionInfo> active = manager == null ? null : manager.getActiveSubscriptionInfoList();
+            if (active == null || active.isEmpty()) {
+                new AlertDialog.Builder(this).setTitle(R.string.settings_manage_sim)
+                        .setMessage(R.string.settings_status_sim_none)
+                        .setPositiveButton(R.string.settings_open_system, (d, w) -> openAppSettings())
+                        .setNegativeButton(android.R.string.cancel, null).show();
+                return;
+            }
+            String[] labels = new String[active.size() + 1];
+            labels[0] = "استخدام الشريحة الافتراضية للنظام";
+            for (int i = 0; i < active.size(); i++) {
+                SubscriptionInfo info = active.get(i);
+                CharSequence name = info.getDisplayName();
+                CharSequence carrier = info.getCarrierName();
+                CharSequence label = name == null || name.length() == 0 ? carrier : name;
+                labels[i + 1] = "SIM " + (info.getSimSlotIndex() + 1) + " — "
+                        + (label == null || label.length() == 0 ? "الشريحة " + (i + 1) : label);
+            }
+            android.content.SharedPreferences preferences = getSharedPreferences(PREFS, MODE_PRIVATE);
+            DefaultSimPreferenceStore.Result saved = DefaultSimPreferenceStore.resolve(this, preferences);
+            int selected = saved.state == DefaultSimPreferenceStore.State.SYSTEM_DEFAULT ? 0 : -1;
+            if (saved.state == DefaultSimPreferenceStore.State.AVAILABLE) {
+                for (int i = 0; i < active.size(); i++) {
+                    if (active.get(i).getSubscriptionId() == saved.subscriptionId) selected = i + 1;
+                }
+            }
+            new AlertDialog.Builder(this).setTitle("شريحة الإرسال الافتراضية")
+                    .setSingleChoiceItems(labels, selected, (dialog, which) -> {
+                        int subscriptionId = which == 0 ? -1 : active.get(which - 1).getSubscriptionId();
+                        DefaultSimPreferenceStore.save(preferences, subscriptionId);
+                        dialog.dismiss();
+                        Toast.makeText(this, "تم حفظ شريحة الإرسال الافتراضية", Toast.LENGTH_SHORT).show();
+                        simDetail.setText(simStatus());
+                    })
+                    .setPositiveButton(R.string.settings_delivery_reports, (dialog, which) ->
+                            showDeliveryReportSettings(active, preferences))
+                    .setNeutralButton(R.string.settings_open_system, (dialog, which) -> openAppSettings())
+                    .setNegativeButton(android.R.string.cancel, null).show();
+        } catch (SecurityException | IllegalStateException error) {
+            android.util.Log.w("HashemSMS", "Unable to load active SIM subscriptions", error);
+            Toast.makeText(this, R.string.settings_sim_error, Toast.LENGTH_LONG).show();
+        } catch (RuntimeException error) {
+            android.util.Log.w("HashemSMS", "Unable to load active SIM subscriptions", error);
+            Toast.makeText(this, R.string.settings_sim_error, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void showDeliveryReportSettings(List<SubscriptionInfo> active,
+            android.content.SharedPreferences preferences) {
+        SimPreferenceStore store = new SimPreferenceStore(preferences);
+        LinearLayout rows = new LinearLayout(this);
+        rows.setOrientation(LinearLayout.VERTICAL);
+        rows.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        rows.setPadding(dp(20), dp(8), dp(20), dp(8));
+
+        addDeliveryReportSwitch(rows, store, -1,
+                getString(R.string.settings_delivery_reports_system_default));
+        for (int i = 0; i < active.size(); i++) {
+            SubscriptionInfo info = active.get(i);
+            CharSequence name = info.getDisplayName();
+            CharSequence carrier = info.getCarrierName();
+            CharSequence label = name == null || name.length() == 0 ? carrier : name;
+            String title = "SIM " + (info.getSimSlotIndex() + 1) + " — "
+                    + (label == null || label.length() == 0 ? "الشريحة " + (i + 1) : label);
+            addDeliveryReportSwitch(rows, store, info.getSubscriptionId(), title);
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.settings_delivery_reports_title)
+                .setView(rows)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
+    }
+
+    private void addDeliveryReportSwitch(LinearLayout parent, SimPreferenceStore store,
+            int subscriptionId, String label) {
+        SwitchCompat toggle = new SwitchCompat(this);
+        toggle.setText(label);
+        toggle.setTextSize(15);
+        toggle.setTextColor(col(R.color.on_surface));
+        toggle.setPadding(0, dp(10), 0, dp(10));
+        toggle.setMinHeight(dp(52));
+        toggle.setChecked(store.deliveryReportsEnabled(subscriptionId));
+        toggle.setOnCheckedChangeListener((button, enabled) ->
+                store.setDeliveryReportsEnabled(subscriptionId, enabled));
+        parent.addView(toggle, new LinearLayout.LayoutParams(-1, -2));
+    }
+
+    private void requestDefaultRole() {
+        if (getPackageName().equals(android.provider.Telephony.Sms.getDefaultSmsPackage(this))) {
+            Toast.makeText(this, R.string.settings_status_default_yes, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= 29) {
+                android.app.role.RoleManager manager =
+                        (android.app.role.RoleManager) getSystemService(Context.ROLE_SERVICE);
+                if (manager != null && manager.isRoleAvailable(android.app.role.RoleManager.ROLE_SMS)) {
+                    startActivityForResult(manager.createRequestRoleIntent(android.app.role.RoleManager.ROLE_SMS), 702);
+                    return;
+                }
+            }
+            Intent intent = new Intent(android.provider.Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT);
+            intent.putExtra(android.provider.Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, getPackageName());
+            startActivity(intent);
+        } catch (Exception e) {
+            Toast.makeText(this, R.string.settings_role_request_failed, Toast.LENGTH_LONG).show();
+        }
+    }
+
+
+    void showPrivacySettings() {
+        boolean enabled = AppLockController.isEnabled(this);
+        String[] options = enabled
+                ? new String[]{getString(R.string.app_lock_disable), getString(R.string.app_lock_timeout),
+                        getString(R.string.settings_open_system)}
+                : new String[]{getString(R.string.app_lock_enable), getString(R.string.settings_open_system)};
+        new AlertDialog.Builder(this).setTitle(R.string.settings_privacy)
+                .setItems(options, (dialog, which) -> {
+                    if (enabled && which == 1) {
+                        showAppLockTimeout();
+                    } else if ((!enabled && which == 1) || (enabled && which == 2)) {
+                        openAppSettings();
+                    } else if (enabled) {
+                        new AlertDialog.Builder(this).setTitle(R.string.app_lock_disable)
+                                .setMessage(R.string.app_lock_disable_confirm)
+                                .setNegativeButton(android.R.string.cancel, null)
+                                .setPositiveButton(R.string.app_lock_disable, (confirm, result) -> {
+                                    AppLockController.setEnabled(this, false);
+                                    Toast.makeText(this, R.string.app_lock_disabled, Toast.LENGTH_SHORT).show();
+                                }).show();
+                    } else {
+                        android.app.KeyguardManager keyguard =
+                                (android.app.KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
+                        if (keyguard == null || !keyguard.isDeviceSecure()) {
+                            new AlertDialog.Builder(this).setTitle(R.string.app_lock_requires_screen_lock)
+                                    .setMessage(R.string.app_lock_requires_screen_lock_message)
+                                    .setPositiveButton(R.string.settings_open_system, (confirm, result) -> {
+                                        try { startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS)); }
+                                        catch (Exception error) { openAppSettings(); }
+                                    }).setNegativeButton(android.R.string.cancel, null).show();
+                            return;
+                        }
+                        AppLockController.setEnabled(this, true);
+                        AppLockController.lockNow(this);
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void showAppLockTimeout() {
+        String[] labels = {
+                getString(R.string.app_lock_timeout_immediate),
+                getString(R.string.app_lock_timeout_one_minute),
+                getString(R.string.app_lock_timeout_five_minutes)
+        };
+        int current = AppLockController.getTimeoutMinutes(this);
+        int selected = current == 1 ? 1 : current == 5 ? 2 : 0;
+        new AlertDialog.Builder(this).setTitle(R.string.app_lock_timeout)
+                .setSingleChoiceItems(labels, selected, (dialog, which) -> {
+                    int minutes = which == 1 ? 1 : which == 2 ? 5 : 0;
+                    AppLockController.setTimeoutMinutes(this, minutes);
+                    dialog.dismiss();
+                    Toast.makeText(this, R.string.app_lock_timeout_saved, Toast.LENGTH_SHORT).show();
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void openNotificationSettings() {
+        Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+        intent.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+        try { startActivity(intent); } catch (Exception e) { openAppSettings(); }
+    }
+
+    private void openScheduleSettings() {
+        if (Build.VERSION.SDK_INT >= 31) {
+            try {
+                startActivity(new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+                        Uri.parse("package:" + getPackageName())));
+                return;
+            } catch (Exception ignored) {}
+        }
+        openAppSettings();
+    }
+
+    private void openAppSettings() {
+        try {
+            startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:" + getPackageName())));
+        } catch (Exception e) {
+            Toast.makeText(this, R.string.settings_role_request_failed, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void about() {
+        String version = "—";
+        try {
+            PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+            version = info.versionName == null ? "—" : info.versionName;
+        } catch (PackageManager.NameNotFoundException ignored) {}
+        String message = getString(R.string.settings_about_version, version) + "\n"
+                + "رقم النسخة البرمجية: " + BuildConfig.GIT_COMMIT + "\n"
+                + getString(R.string.settings_about_package, getPackageName());
+        new androidx.appcompat.app.AlertDialog.Builder(this).setTitle(R.string.settings_about)
+                .setMessage(message).setPositiveButton(android.R.string.ok, null).show();
+    }
+
+    private void filter(String raw) {
+        String query = raw == null ? "" : raw.trim().toLowerCase(Locale.ROOT);
+        boolean any = false;
+        for (Entry entry : entries) {
+            boolean show = query.isEmpty() || entry.terms.contains(query);
+            entry.view.setVisibility(show ? View.VISIBLE : View.GONE);
+            if (show) any = true;
+        }
+        for (int i = 0; i < sectionTitles.size(); i++) {
+            TextView title = sectionTitles.get(i);
+            int start = content.indexOfChild(title) + 1;
+            int end = i + 1 < sectionTitles.size() ? content.indexOfChild(sectionTitles.get(i + 1)) : content.getChildCount();
+            boolean childVisible = false;
+            for (int j = start; j < end; j++) {
+                View child = content.getChildAt(j);
+                if (child.getVisibility() == View.VISIBLE) { childVisible = true; break; }
+            }
+            if (!query.isEmpty()) title.setVisibility(childVisible || title.getText().toString().toLowerCase(Locale.ROOT).contains(query) ? View.VISIBLE : View.GONE);
+        }
+        empty.setVisibility(any ? View.GONE : View.VISIBLE);
+    }
+
+    private void addFilter(View view, String terms) {
+        entries.add(new Entry(view, terms.toLowerCase(Locale.ROOT)));
+    }
+
+    private LinearLayout card() {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(12), dp(10), dp(12), dp(10));
+        card.setBackground(round(col(R.color.card_surface), col(R.color.card_stroke), dp(18)));
+        return card;
+    }
+
+    private void divider(LinearLayout parent) {
+        View line = new View(this);
+        line.setBackgroundColor(col(R.color.divider));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(1));
+        lp.topMargin = dp(4);
+        lp.bottomMargin = dp(4);
+        parent.addView(line, lp);
+    }
+
+    private LinearLayout.LayoutParams margin(int value) {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+        lp.bottomMargin = dp(value);
+        return lp;
+    }
+
+    private TextView txt(String value, int size) {
+        TextView view = new TextView(this);
+        view.setText(value);
+        view.setTextSize(size);
+        view.setTextColor(col(R.color.on_surface));
+        view.setGravity(Gravity.CENTER_VERTICAL);
+        try { view.setTypeface(ResourcesCompat.getFont(this, R.font.almarai_regular)); }
+        catch (Exception e) { view.setTypeface(Typeface.DEFAULT); }
+        return view;
+    }
+
+    private Typeface bold() {
+        try { return ResourcesCompat.getFont(this, R.font.almarai_bold); }
+        catch (Exception e) { return Typeface.create(Typeface.DEFAULT, Typeface.BOLD); }
+    }
+
+    private GradientDrawable round(int fill, int stroke, int radius) {
+        GradientDrawable d = new GradientDrawable();
+        d.setColor(fill);
+        d.setCornerRadius(radius);
+        if (stroke != 0) d.setStroke(dp(1), stroke);
+        return d;
+    }
+
+    private int col(int resource) { return UiResources.color(this, resource); }
+    private int dp(float value) { return UiResources.dp(this, value); }
+
+    private static final class Entry {
+        final View view;
+        final String terms;
+        Entry(View view, String terms) { this.view = view; this.terms = terms; }
+    }
+}
+

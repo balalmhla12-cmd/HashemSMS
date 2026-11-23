@@ -12,7 +12,9 @@ final class UiResources {
     private UiResources() {}
 
     static int color(Context context, int resourceId) {
-        return ContextCompat.getColor(context, resourceId);
+        int customized = ColorSettings.colorOverride(context, resourceId);
+        return customized == ColorSettings.NO_OVERRIDE
+                ? ContextCompat.getColor(context, resourceId) : customized;
     }
 
     static int dp(Context context, float value) {
